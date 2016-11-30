@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Dark world</title>
+    <script src="phaser.js"></script>
+    <script src="illuminated.js"></script>
+    <script src="phaser_illuminated.js"></script>
+</head>
+<body>
+<div id="container"></div>
+
+<script src="game2_pixel_shadows_attempt2.js"></script>
+<script>
+    var game = new Phaser.Game(640, 640, Phaser.AUTO, 'container', {
+        preload: preload,
+        create: create1,
+        update: update1,
+        render: debugRender1 }, undefined, false/*antialias*/);
+</script>
+</body>
+</html>

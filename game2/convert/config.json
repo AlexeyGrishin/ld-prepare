@@ -1,0 +1,28 @@
+{
+  "size": 16,
+  "pad": 1,
+  "tiles": [
+    {"tileNr": 530, "hotspotOffsetY": 4},
+    {"tileNr": 644, "tileTopNr": 587, "hotspotOffsetY": 4},
+    {"tileNr": 1411},
+    {"tileNr": 1358, "projection": "flatX", "projectionCoord": 13, "projectionWidth": 2},
+    {"tileNr": 1361, "projection": "flatY", "projectionTile": 1358, "projectionCoord": 13, "projectionWidth": 2},
+
+    {"tileNr": 544, "hotspotOffsetY": 4, "tileTopNr": 587, "_todo": "delete!"},
+    {"tileNr": 1136},
+    {"tileNr": 1250, "projection": "flatX", "projectionCoord": 15},
+    {"tileNr": 1410},
+    {"tileNr": 1409},
+    {"tileNr": 1362, "projection": "flatY", "projectionTile": 1364, "projectionCoord": 0, "projectionWidth": 2},
+    {"tileNr": 1359, "projection": "flatX", "projectionCoord": 13, "projectionWidth": 2},
+    {"tileNr": 1363, "projection": "flatX", "projectionCoord": 13, "projectionWidth": 2},
+    {"tileNr": 1364, "projection": "flatX", "projectionCoord": 13, "projectionWidth": 2},
+    {"tileNr": 849, "projection": "flatX", "projectionCoord": 13, "projectionWidth": 1},
+    {"tileNr": 850, "projection": "flatX", "projectionCoord": 13, "projectionWidth": 1},
+    {"tileNr": 792, "projection": "flatX", "projectionCoord": 13, "projectionWidth": 1},
+    {"tileNr": 793, "projection": "flatX", "projectionCoord": 13, "projectionWidth": 1},
+    {"tileNr": 522, "projection": "flatX", "projectionCoord": 13, "projectionWidth": 1},
+    {"tileNr": 680, "projection": "flatX", "projectionCoord": 13, "projectionWidth": 1},
+    {"tileNr": 677, "tileTopNr": 620, "projection": "flatX", "projectionCoord": 13, "projectionWidth": 1}
+  ]
+}
