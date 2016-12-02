@@ -16539,6 +16539,11 @@ PIXI.PixiShader.prototype.initSampler2D = function(uniform)
             wrapS = gl.REPEAT;
             wrapT = gl.REPEAT;
         }
+        //todo: alexey
+        if (data.nearest) {
+            magFilter = gl.NEAREST;
+            minFilter = gl.NEAREST;
+        }
 
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, !!data.flipY);
 
@@ -31134,8 +31139,9 @@ Phaser.Filter.prototype = {
 
             if (x !== this.prevPoint.x || y !== this.prevPoint.y)
             {
-                this.uniforms.mouse.value.x = x.toFixed(2);
-                this.uniforms.mouse.value.y = y.toFixed(2);
+                //todo: changed by me
+                this.uniforms.mouse.value.x = x;//.toFixed(2);
+                this.uniforms.mouse.value.y = y;//.toFixed(2);
                 this.prevPoint.set(x, y);
             }
         }
