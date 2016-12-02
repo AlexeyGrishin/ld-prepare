@@ -61,10 +61,42 @@ Phaser.Filter.Shadow5 = function(game) {
         "#define SHADOW_CHECK_DIST " + (Performance.ShadowsStepsCount || 64),
 
         "bool checkBit(float val, float bit) { float f = pow(2., floor(mod(bit, 16.))); float vf = val - mod(val,f); return abs(floor(vf/f/2.)*2.*f - (vf-f)) < 1.;  }",
+         //1 if match, 0 if not
+        "float checkBitF(float val, float bit) { float f = pow(2., floor(mod(bit, 16.))); float vf = val - mod(val,f); return 1. - step(1., abs(floor(vf/f/2.)*2.*f - (vf-f)));  }",
 
     ];
 
+
+    function checkPoints(n) {
+      var a = [];
+      for (var i = 0; i < (n||Performance.ShadowsStepsCount||64); i++) a.push("CHECK_POINT(" + i + ".)");
+      return a.join("\n");
+    }
+
+    var jitter = false;
+
     var main = [
+
+        "void checkPoint(inout vec4 color, vec3 point) {",
+                "vec4 hp = texture2D(iChannel0, vec2(floor(point.x) + wSize.x*floor(point.z / 16.), floor(point.y))/vec2(wSize.x*2., wSize.y));",
+                "float mask = hp.g*255.0 * 256. + hp.r*255.0;",
+                "color.a = max(color.a, checkBitF(mask, point.z)*0.5);",
+        "}",
+        "void checkPointJ(inout vec4 color, vec3 point) {",
+                "vec4 hp = texture2D(iChannel0, vec2(floor(point.x) + wSize.x*floor(point.z / 16.), floor(point.y))/vec2(wSize.x*2., wSize.y));",
+                "float mask = hp.g*255.0 * 256. + hp.r*255.0;",
+                "color.a = max(color.a, (checkBitF(mask, point.z)*0.5 + checkBitF(mask, point.z-3.)*0.5 + checkBitF(mask, point.z+3.)*0.5) / 1.5);",
+        "}",
+        jitter ? 
+              "#define CHECK_POINT(n) checkPointJ(rcolor, start + toLight * n / maxSteps);"
+            //"#define CHECK_POINT(n) checkPoint(rcolor, start + toLight * n / maxSteps); checkPoint(jcolor1, start + (toLight + vec3(3., 3., 3.)) * n / maxSteps); checkPoint(jcolor2, start + (toLight - vec3(3., 3., 3.)) * n / maxSteps);"
+            : "#define CHECK_POINT(n) checkPoint(rcolor, start + toLight * n / maxSteps);",
+        
+
+        jitter ? 
+             "#define SUMMARIZE rcolor.a = (rcolor.a + jcolor1.a + jcolor2.a)/3.;"
+             : "#define SUMMARIZE",
+        
 
         "void main(void) {",
 
@@ -73,25 +105,27 @@ Phaser.Filter.Shadow5 = function(game) {
         "float lt = (lightSize.x < 0. ? 1.0 : smoothstep(1.0, 0.0, (distance(coords, light))/lightSize.x));",
         //raycast
         "vec3 point = coords;",
-        "vec4 shadowPoint = texture2D(iChannel1, point.xy / shadowPrecision / wSize);",
+        Performance.UseShadowBitmask ? "vec4 shadowPoint = texture2D(iChannel1, point.xy / shadowPrecision / wSize); float initialStart = shadowPoint.r;" : "",
         "vec4 ownHeight = texture2D(iChannel2, point.xy / tSize);",
         "vec4 rcolor = vec4(0);",
-        "if (/*shadowPoint.a > 0.0 && */lt > 0.0) {",
+        "vec4 jcolor1 = vec4(0); vec4 jcolor2 = vec4(0);",
+        Performance.UseShadowBitmask ? "if (shadowPoint.a > 0.0 && lt > 0.0) {" : "if (lt > 0.0) {",
             "float dy = ownHeight.y > 0. ? (ownHeight.y * 255.0 - 128.0 + 1.) : 0.0;",
             "point.y += dy;",
             "point.z = ceil(ownHeight.z*255.0);",
             "vec3 start = point;",
             "vec3 toLight = light - start;",
-            "int maxSteps = int(max(abs(toLight.x), abs(toLight.y))/shadowQ1);// int(length(toLight))-1;",
-            "int rg[2];",
-            "for (int i = 0; i < SHADOW_CHECK_DIST; i++) {",
-                "if (i > maxSteps || point.z > 31.) break;",
-                "//if (point.z > 31.) {gl_FragColor = vec4(1,0,0,1); break;}",
-                "vec4 hp = texture2D(iChannel0, vec2(point.x*2.0 + floor(point.z / 16.), point.y)/vec2(wSize.x*2., wSize.y));",
-                "float mask = hp.g*255.0 * 256. + hp.r*255.0;",
-                "if (checkBit(mask, point.z)) { rcolor.a = 0.5; break;}",
-                "point = start + toLight * float(i+1)/float(maxSteps);",
-            "}",
+            Performance.UseShadowBitmask ? "start = start + initialStart*toLight; toLight = light - start;" : "",
+            "float maxSteps = (max(abs(toLight.x), abs(toLight.y))/float(shadowQ1));// int(length(toLight))-1;",
+            checkPoints(),
+            "SUMMARIZE",
+            //"int rg[2];",
+            //"for (int i = 0; i < SHADOW_CHECK_DIST; i++) {",
+            //    "vec4 hp = texture2D(iChannel0, vec2(floor(point.x) + wSize.x*floor(point.z / 16.), floor(point.y))/vec2(wSize.x*2., wSize.y));",
+            //    "float mask = hp.g*255.0 * 256. + hp.r*255.0;",
+            //    "if (checkBit(mask, point.z)) { rcolor.a = 0.5; break;}",
+            //    "point = start + toLight * float(i+1)/float(maxSteps);",
+            //"}",
 
         "}",
 
@@ -110,7 +144,7 @@ Phaser.Filter.Shadow5 = function(game) {
         "vec3 point = vec3(mouse.x * wSize.x, (1. - mouse.y) * wSize.y, 0.);",
         "vec4 shadowPoint = texture2D(iChannel1, coords.xy / shadowPrecision / wSize);",
 
-        "vec4 hp1 = texture2D(iChannel0, vec2(coords.x*2.0 + floor(coords.z / 16.), coords.y)/vec2(wSize.x*2., wSize.y));",
+        "vec4 hp1 = texture2D(iChannel0, vec2(floor(coords.x) + wSize.x*floor(point.z / 16.), floor(coords.y))/vec2(wSize.x*2., wSize.y));",
         "float mask1 = hp1.g*255.0 * 256. + hp1.r*255.0;",
         "if (checkBit(mask1, coords.z)) {gl_FragColor = vec4(1,0,0,1); }",
 
@@ -131,8 +165,9 @@ Phaser.Filter.Shadow5 = function(game) {
             "for (int i = 0; i < SHADOW_CHECK_DIST; i++) {",
                 "if (i > maxSteps || point.z > 31.) break;",
                 //check height 0 only - temp
-                "vec4 hp = texture2D(iChannel0, vec2(floor(point.x)*2.0 + floor(point.z / 16.), floor(point.y))/vec2(wSize.x*2., wSize.y));",
+                "vec4 hp = texture2D(iChannel0, vec2(floor(point.x) + wSize.x*floor(point.z / 16.), floor(point.y))/vec2(wSize.x*2., wSize.y));",
                 "float mask = hp.g*255.0 * 256. + hp.r*255.0;",
+                "if (mask > 0. && point.z>16.) {gl_FragColor = vec4(1,1,0,1); break;} ",
                 "if (checkBit(mask, point.z) && distance(point.xy, coords.xy) < 2.) {gl_FragColor += vec4(point.z>16. ? 1. : 0.,0.,0,0); break;} ",
                 "if (checkBit(mask, point.z)) { break;}",
                 "if (distance(point.xy, coords.xy) < 1.) {gl_FragColor += vec4(0,mod(float(i),2.),1,0); break;} ",
@@ -146,19 +181,25 @@ Phaser.Filter.Shadow5 = function(game) {
     var debug_show3dMap = [
         "void main(void) {",
             "gl_FragColor = vec4(0,0,0,0);",
-            "float z = mod(mouse.y * wSize.y, 32.);",
+            "float z = mouse.y * wSize.y;",
+            //"z = 17.0;",
             "vec3 coords = vec3(gl_FragCoord.x, wSize.y-gl_FragCoord.y, z);",
             "vec3 point = coords;",
-            "vec4 hp = texture2D(iChannel0, vec2(point.x*2.0 + floor(point.z / 16.), point.y)/vec2(wSize.x*2., wSize.y));",
+            "vec4 hp = texture2D(iChannel0, vec2(floor(point.x) + wSize.x*floor(point.z / 16.), floor(point.y))/vec2(wSize.x*2., wSize.y));",
             "float mask = hp.g*255.0 * 256. + hp.r*255.0;",
             "if (checkBit(mask, point.z)) {gl_FragColor = vec4(1,0,0,1); }",
+            "if (wSize.y-coords.y <= 32.) gl_FragColor = vec4(0,0,0.5,0.5);",
+            "if (wSize.y-coords.y <= 16.) gl_FragColor = vec4(0,0,1,0.5);",
 
         "}"
     ];
 
-    this.fragmentSrc = header.concat(debug_showRay);
-    //this.fragmentSrc = header.concat(main);
+    var debug_nothing = ["void main() { gl_FragColor = vec4(0); }"];
+
+    //this.fragmentSrc = header.concat(debug_showRay);
+    this.fragmentSrc = header.concat(main);
     //this.fragmentSrc = header.concat(debug_show3dMap);
+    //this.fragmentSrc = header.concat(debug_nothing);
 
 
 };

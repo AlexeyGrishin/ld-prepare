@@ -1,10 +1,11 @@
 
 var Performance = {
-    ShadowsBitmask: 1,
-    LightsAmount: 1,
+    ShadowsBitmask: 1,  //not used
+    LightsAmount: 4,
     Debug: false,
-    ShadowStep: 1,
-    ShadowsStepsCount: 128
+    ShadowStep: 2,
+    ShadowsStepsCount: 32,
+    UseShadowBitmask: false
 };
 
 function preload() {
@@ -110,7 +111,6 @@ function initHeightConfig() {
     for (var i = 0; i < hconfig.tiles.length; i++) {
         var tile = hconfig.tiles[i];
         var idx = tile.tileNr + 1;
-        if (tile.tileNr != 1136) continue;
         hconfig.byIndex[idx] = {
             projection: tile.projection,
             projectionCoord: tile.projectionCoord,
@@ -143,7 +143,7 @@ function create1() {
 
     bgLayer.resizeWorld();
 
-    lightHero = game.add.sprite(100, 90, "sprites", 0);
+    lightHero = game.add.sprite(120, 30, "sprites", 0);
 
     game.physics.enable(lightHero, Phaser.Physics.ARCADE);
 
@@ -234,6 +234,7 @@ function prepareMap3d(bitmap, tiles, debug) {
     var shadowsBitmap = game.add.bitmapData(shadows.width, shadows.height);
     shadowsBitmap.copy(shadows);
     shadowsBitmap.update(0, 0, shadows.width, shadows.height);
+    bitmap.context.clearRect(0,0,bitmap.width,bitmap.height);
     bitmap.update(0,0,bitmap.width,bitmap.height);
     //1pix = 16 heights
     tiles.forEach(function(tile) {
@@ -241,7 +242,7 @@ function prepareMap3d(bitmap, tiles, debug) {
         if (!config) return;
         var baseY = config.hotspot * 16;
         var tileY = tile.y * 16;
-        var tileX = tile.x * 16 * 2;
+        var tileX = tile.x * 16;
         for (var y = 0; y < 16; y++) {
             for (var x = 0; x < 16; x++) {
                 var colors = [0xff000000, 0xff000000];
@@ -254,8 +255,8 @@ function prepareMap3d(bitmap, tiles, debug) {
                     //bitmap.copyRect(shadows, frame, tile.x*16, tile.y*16 - 16);
                 }};
                 //colors[1] = 0xff000000;
-                //bitmap.pixels[(tileY+y+config.hotspotOffsetY) * bitmap.width + tileX + x*2] = colors[1];
-                bitmap.pixels[(tileY+y+config.hotspotOffsetY) * bitmap.width + tileX + x*2 + 1] = colors[0];
+                bitmap.pixels[((tileY+y+config.hotspotOffsetY) * bitmap.width + tileX + x)|0] = colors[0];
+                bitmap.pixels[((tileY+y+config.hotspotOffsetY) * bitmap.width + tileX + x + bitmap.width/2)|0] = colors[1];
                 //console.log(colors);
             }
         }
@@ -317,13 +318,13 @@ function update1() {
     });
 
     var lights = [
-        {x: lightHero.x+4, y: lightHero.y+8, z:heroHeight, distance: 200, radius: 40, strength: 1.0},
+        {x: lightHero.x+4, y: lightHero.y+8, z:heroHeight, distance: 200, radius: 40, strength: 0.8},
 
         //{x: lightHero.x+10, y: lightHero.y+8, z:heroHeight, distance: distance, radius: 16},
         //{x: lightHero.x+16, y: lightHero.y+8, z:heroHeight, distance: distance, radius: 16}
 
     ].concat(fireParticles.map(function(fp) {
-        return {x: fire.centerX + fp.dx, y: fire.centerY + fp.dy, z: 15, strength: 0.2, distance: fireDistance + fp.ddistance, radius: 3}
+        return {x: fire.centerX + fp.dx, y: fire.centerY + fp.dy, z: 15, strength: 0.3, distance: fireDistance + fp.ddistance, radius: 3}
     }));
 
 
@@ -335,6 +336,7 @@ function update1() {
     lights = lights.slice(0, Performance.LightsAmount);
     lights.forEach(function(light, li) {
         //prepareShadowMask(shadowMaskBitmaps[li], tiles, [light]);
+        prepareShadowInitialMask(shadowMaskBitmaps[li], treesLayer, [light]);
         shadow5[li].uniforms.light.value = light;
         shadow5[li].uniforms.lightSize.value = {x: light.distance, y: light.radius};
         shadow5[li].uniforms.lightStrength.value = light.strength;
@@ -342,6 +344,58 @@ function update1() {
     });
 
 
+}
+
+function prepareShadowInitialMask(bitmap, layer, lights) { if (!Performance.UseShadowBitmask) return;
+   var tw = game.world.width/16, th = game.world.height/16;
+   var t1 = new Date().getTime();
+
+   bitmap.context.clearRect(0,0,bitmap.width,bitmap.height);
+
+   var ray = new Phaser.Line(0,0, lights[0].x, lights[0].y);
+   for (var x = 0; x < tw; x++) {
+      for (var y = 0; y < th; y++) {
+         ray.start.x = x*16 + 8; ray.start.y = y*16+8;
+         var rayZ = {start: 0, end: lights[0].z};
+         if (ray.length > lights[0].distance + 16) continue;
+         var metTiles = [];//layer.getRayCastTiles(ray, (ray.length / 16)|0, true);
+         var p = {x: ray.start.x, y: ray.start.y, z: rayZ.start};
+         var count = Math.ceil(ray.length / 16); 
+         var dx = (ray.end.x - ray.start.x)/count; var dy = (ray.end.y - ray.start.y)/count;
+         var dz = (rayZ.end - rayZ.start)/count;
+
+         var closestTile = {tile: null, distance: -1};
+         function checkT(t) { 
+		if (t) { 
+			var config = hconfig.byIndex[t.index]; 
+			if (config && config.height > p.z) {
+             			var dist = Phaser.Point.distance({x: t.worldX+8, y: t.worldY+8}, ray.start);
+				if (dist < closestTile.distance || closestTile.distance == -1) closestTile.distance = dist;;
+			}
+		} 
+	}
+ 
+         for (var i = 0; i < count; i++) { 
+               
+             checkT(map.getTile((p.x/16)|0, (p.y/16)|0, layer));
+             checkT(map.getTile(((p.x + ray.normalX*8)/16)|0, ((p.y+ray.normalY*8)/16)|0, layer));
+             checkT(map.getTile(((p.x - ray.normalX*8)/16)|0, ((p.y-ray.normalY*8)/16)|0, layer));
+             
+             p.x += dx; p.y += dy; p.z += dz;
+             if (p.z > 32.) break;
+         }
+         
+         var r=0,a=0; 
+         if (closestTile.distance != -1) { 
+             r = (255 * (closestTile.distance / ray.length))|0;
+             a = 0.5;
+         }
+         bitmap.context.fillStyle = "rgba(" + r + ",0,0," + a.toFixed(1) + ")";
+         bitmap.context.fillRect(x*16, y*16, 16, 16);
+      }
+   }
+   bitmap.dirty = true;
+   //console.log("done in ", (new Date().getTime() - t1), "ms");
 }
 
 function prepareShadowMask(bitmap, tiles, lights) {
