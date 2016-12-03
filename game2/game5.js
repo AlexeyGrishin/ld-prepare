@@ -3,9 +3,11 @@ var Performance = {
     ShadowsBitmask: 1,  //not used
     LightsAmount: 4,
     Debug: false,
-    ShadowStep: 2,
-    ShadowsStepsCount: 32,
-    UseShadowBitmask: false
+    ShadowStep: 1,
+    ShadowsStepsCount: 128,
+    UseShadowBitmask: false,
+
+    Map3dScale: 4
 };
 
 function preload() {
@@ -17,6 +19,7 @@ function preload() {
     game.load.spritesheet('sprites', 'sprites.png', 16, 16);
 
     game.load.script('shadow5', 'shadow5.js');
+    game.load.script('blur', 'blurs.js');
 
     game.load.image("shadows", "roguelikeSheet_shadows2.png");
     game.load.spritesheet("hotspots", "roguelikeSheet_hotspots.png", 16, 16);
@@ -163,7 +166,7 @@ function create1() {
     //shadowMaskSprites[0].x = shadowMaskSprites[0].y = 0;
 
     //1. prepare BIG height texture
-    var map3d = game.add.bitmapData(game.world.width * 2, game.world.height);
+    var map3d = game.add.bitmapData(game.world.width * 2 / Performance.Map3dScale, game.world.height / Performance.Map3dScale);
     var map3dSprite = game.add.sprite(game.world.width, 0, map3d);
     //map3dSprite.x = 0;
 
@@ -174,8 +177,10 @@ function create1() {
 
     var shadowsOverlay = game.add.bitmapData(game.world.width, game.world.height);
     shadowsOverlay.context.fillStyle = "rgba(0,0,0,0.5);";
-    shadowsOverlay.context.fillRect(0,0,game.world.width, game.world.height);
+    shadowsOverlay.context.fillRect(0,0,shadowsOverlay.width, shadowsOverlay.height);
     var soSprite = game.add.sprite(0,0,shadowsOverlay);
+    //soSprite.scale.setTo(Performance.Map3dScale, Performance.Map3dScale);
+    //console.log(soSprite.width);
     var amb = game.add.filter("AmbientColor5");
     shadow5 = shadowMaskSprites.map(function(_, i) {
         var f = game.add.filter("Shadow5");
@@ -186,6 +191,7 @@ function create1() {
         f.uniforms.iChannel2.value = heightsSprite.texture;
         f.uniforms.iChannel2.textureData = {nearest: true};
         f.uniforms.wSize.value = {x: game.world.width, y: game.world.height};
+        f.uniforms.shSize.value = {x: game.world.width / Performance.Map3dScale, y: game.world.height/ Performance.Map3dScale};
         f.uniforms.tSize.value = {x: textureSize, y: textureSize};
         f.uniforms.shadowPrecision.value = Performance.ShadowsBitmask;
         f.uniforms.shadowQ1.value = Performance.ShadowStep;
@@ -193,6 +199,13 @@ function create1() {
     });
 
     soSprite.filters = [amb].concat(shadow5);
+
+    if (Performance.Map3dScale > 1) {
+        var rb = game.add.filter("ResizeBack");
+        var bx = game.add.filter("BlurX");
+        var by = game.add.filter("BlurY");
+        soSprite.filters = soSprite.filters.concat([rb, bx, by]);
+    }
 
     //heightsSprite.x = heightsSprite.y = 0; //for debug
     //tempSprite.x = tempSprite.y = 0; //for debug
@@ -255,8 +268,10 @@ function prepareMap3d(bitmap, tiles, debug) {
                     //bitmap.copyRect(shadows, frame, tile.x*16, tile.y*16 - 16);
                 }};
                 //colors[1] = 0xff000000;
-                bitmap.pixels[((tileY+y+config.hotspotOffsetY) * bitmap.width + tileX + x)|0] = colors[0];
-                bitmap.pixels[((tileY+y+config.hotspotOffsetY) * bitmap.width + tileX + x + bitmap.width/2)|0] = colors[1];
+                var idx = ((((tileY+y+config.hotspotOffsetY) / Performance.Map3dScale)|0) * bitmap.width + (((tileX + x) / Performance.Map3dScale)|0));
+                bitmap.pixels[idx] = bitmap.pixels[idx] | colors[0];
+                bitmap.pixels[idx+ bitmap.width/2] = bitmap.pixels[idx+ bitmap.width/2] | colors[1];
+                //bitmap.pixels[((tileY+y+config.hotspotOffsetY) * bitmap.width + tileX + x + bitmap.width/2)|0] = colors[1];
                 //console.log(colors);
             }
         }
@@ -318,13 +333,13 @@ function update1() {
     });
 
     var lights = [
-        {x: lightHero.x+4, y: lightHero.y+8, z:heroHeight, distance: 200, radius: 40, strength: 0.8},
+        {x: lightHero.x+4, y: lightHero.y+8, z:heroHeight, distance: 200, radius: 40, strength: 2* Performance.Map3dScale},
 
         //{x: lightHero.x+10, y: lightHero.y+8, z:heroHeight, distance: distance, radius: 16},
         //{x: lightHero.x+16, y: lightHero.y+8, z:heroHeight, distance: distance, radius: 16}
 
     ].concat(fireParticles.map(function(fp) {
-        return {x: fire.centerX + fp.dx, y: fire.centerY + fp.dy, z: 15, strength: 0.3, distance: fireDistance + fp.ddistance, radius: 3}
+        return {x: fire.centerX + fp.dx, y: fire.centerY + fp.dy, z: 15, strength: 0.2, distance: fireDistance + fp.ddistance, radius: 3}
     }));
 
 
@@ -337,8 +352,8 @@ function update1() {
     lights.forEach(function(light, li) {
         //prepareShadowMask(shadowMaskBitmaps[li], tiles, [light]);
         prepareShadowInitialMask(shadowMaskBitmaps[li], treesLayer, [light]);
-        shadow5[li].uniforms.light.value = light;
-        shadow5[li].uniforms.lightSize.value = {x: light.distance, y: light.radius};
+        shadow5[li].uniforms.light.value = {x: light.x / Performance.Map3dScale, y : light.y / Performance.Map3dScale, z: light.z};
+        shadow5[li].uniforms.lightSize.value = {x: light.distance / Performance.Map3dScale, y: light.radius / Performance.Map3dScale};
         shadow5[li].uniforms.lightStrength.value = light.strength;
         shadow5[li].update(game.input.mousePointer);
     });

@@ -29,7 +29,8 @@ Phaser.Filter.Shadow5 = function(game) {
 
     this.uniforms.wSize = {value: {x: 0, y: 0}, type: '2f'};
     this.uniforms.tSize = {value: {x: 0, y: 0}, type: '2f'};
-    //this.uniforms.sSize = {value: {x: 0, y: 0}, type: '2f'};
+    this.uniforms.sSize = {value: {x: 16, y: 16}, type: '2f'};
+    this.uniforms.shSize = {value: {x: 16, y: 16}, type: '2f'};
 
     this.uniforms.light = {value: {x: 0, y: 0, z:0}, type: '3f'};
     this.uniforms.lightSize = {value: {x: 0, y: 0}, type: '2f'};
@@ -48,6 +49,7 @@ Phaser.Filter.Shadow5 = function(game) {
         'varying vec2 vTextureCoord;',
 
         "uniform vec2 wSize;",
+        "uniform vec2 shSize;",
         "uniform vec2 tSize;",
         "uniform vec2 sSize;",
         "uniform vec2 mouse;",
@@ -56,6 +58,8 @@ Phaser.Filter.Shadow5 = function(game) {
         "uniform vec2 lightSize;",
         "uniform float lightStrength;",
         "uniform float shadowPrecision;",
+        
+        //"uniform float map3d"
 
         "uniform float shadowQ1;",
         "#define SHADOW_CHECK_DIST " + (Performance.ShadowsStepsCount || 64),
@@ -78,12 +82,12 @@ Phaser.Filter.Shadow5 = function(game) {
     var main = [
 
         "void checkPoint(inout vec4 color, vec3 point) {",
-                "vec4 hp = texture2D(iChannel0, vec2(floor(point.x) + wSize.x*floor(point.z / 16.), floor(point.y))/vec2(wSize.x*2., wSize.y));",
+                "vec4 hp = texture2D(iChannel0, vec2(floor(point.x) + shSize.x*floor(point.z / 16.), floor(point.y))/vec2(shSize.x*2., shSize.y));",
                 "float mask = hp.g*255.0 * 256. + hp.r*255.0;",
                 "color.a = max(color.a, checkBitF(mask, point.z)*0.5);",
         "}",
         "void checkPointJ(inout vec4 color, vec3 point) {",
-                "vec4 hp = texture2D(iChannel0, vec2(floor(point.x) + wSize.x*floor(point.z / 16.), floor(point.y))/vec2(wSize.x*2., wSize.y));",
+                "vec4 hp = texture2D(iChannel0, vec2(floor(point.x) + shSize.x*floor(point.z / 16.), floor(point.y))/vec2(shSize.x*2., shSize.y));",
                 "float mask = hp.g*255.0 * 256. + hp.r*255.0;",
                 "color.a = max(color.a, (checkBitF(mask, point.z)*0.5 + checkBitF(mask, point.z-3.)*0.5 + checkBitF(mask, point.z+3.)*0.5) / 1.5);",
         "}",
@@ -100,8 +104,9 @@ Phaser.Filter.Shadow5 = function(game) {
 
         "void main(void) {",
 
-        "gl_FragColor = texture2D(uSampler, vTextureCoord);",
         "vec3 coords = vec3(gl_FragCoord.x, wSize.y-gl_FragCoord.y, 0);",
+        "if (coords.x > shSize.x || coords.y > shSize.y) return;",
+        "gl_FragColor = texture2D(uSampler, vTextureCoord);",
         "float lt = (lightSize.x < 0. ? 1.0 : smoothstep(1.0, 0.0, (distance(coords, light))/lightSize.x));",
         //raycast
         "vec3 point = coords;",
@@ -221,3 +226,23 @@ Phaser.Filter.AmbientColor5 = function(game) {
 
 Phaser.Filter.AmbientColor5.prototype = Object.create(Phaser.Filter.prototype);
 Phaser.Filter.AmbientColor5.prototype.constructor = Phaser.Filter.AmbientColor5;
+
+Phaser.Filter.ResizeBack = function(game) {
+    Phaser.Filter.call(this, game);
+    
+    this.fragmentSrc = [
+        "precision mediump float;",
+
+        "uniform sampler2D uSampler;",
+        'varying vec2 vTextureCoord;',
+
+        "const float scale = " + (Performance.Map3dScale) + ".;",
+
+        //"void main() { gl_FragColor = texture2D(uSampler, vTextureCoord/" + (Performance.Map3dScale) + ".);}"
+        "void main() { gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.x / scale, 1. - (1.-vTextureCoord.y) / scale));}"
+
+    ];
+};
+
+Phaser.Filter.ResizeBack.prototype = Object.create(Phaser.Filter.prototype);
+Phaser.Filter.ResizeBack.prototype.constructor = Phaser.Filter.ResizeBack;

@@ -106,9 +106,8 @@ module.exports.extractTileShadows = function(inputPath, outputPath, config, cb) 
             idx++;
 
         }
-        out.write(outputPath);
+        out.write(outputPath, cb);
         console.log(config);
-        cb();
     })
 };
 
@@ -142,6 +141,7 @@ module.exports.extractHotspots = function(inputPath, outputPath, config, cb) {
         cb();
     });
 };
+
 
 module.exports.extractHeightMaps = function(inputPath, outputPath, config, cb) {
   //for x,y=z specify exact x,y,z in 3d
@@ -178,7 +178,50 @@ module.exports.extractHeightMaps = function(inputPath, outputPath, config, cb) {
             }
             
         }
-        out.write(outputPath);
-        cb();
+        out.write(outputPath, cb);
+    });
+};
+
+
+function setBit(i, nr) {
+    var mask = 0x01 << nr;
+    return i | mask;
+}
+
+module.exports.prepare3dSprites = function(inputPath, outputPath, config, cb) {
+    Jimp.read(inputPath, function(err, img) {
+        if (err) return cb(err);
+        let spritesCount = img.bitmap.height / config.size;
+        let maxHeight = img.bitmap.width / config.size;
+        let hCount = Math.floor(maxHeight / 16);
+
+        //store 2 sprites for each sprite (if height up to 32)
+        let out = new Jimp(spritesCount * config.size, hCount * config.size);
+        for (let i = 0; i < spritesCount; i++) {
+            for (var y = 0; y < config.size; y++) {
+                for (var x = 0; x < config.size; x++) {
+                    var colors = [];
+                    for (var k = 0; k < hCount; k++) colors.push(0xff000000);
+                    for (var z = 0; z < maxHeight; z++) {
+                        //var frame = {x: z*16, y: baseY, width: 16, height: 16};
+                        var ci = (z/16)|0;
+                        if ((img.getPixelColor(z*config.size + x, i*config.size + y) & 0xFF) > 0)
+                            colors[ci] = setBit(colors[ci], z % 16);
+                        //bitmap.copyRect(shadows, frame, tile.x*16, tile.y*16 - 16);
+                    }
+                    //colors[1] = 0xff000000;
+                    for (var k = 0; k < hCount; k++) {
+                        //todo: setPixelColor uses BE, I need LE. Not actually need, but I have code for LE
+                        var idx = out.getPixelIndex(i*config.size + x, k*config.size + y);
+                        out.bitmap.data.writeUInt32LE(colors[k], idx, true);
+                        //out.setPixelColor((colors[k] << 8) | 0xFF, );
+                    }
+                    //bitmap.pixels[((tileY+y+config.hotspotOffsetY) * bitmap.width + tileX + x)|0] = colors[0];
+                    //bitmap.pixels[((tileY+y+config.hotspotOffsetY) * bitmap.width + tileX + x + bitmap.width/2)|0] = colors[1];
+                    //console.log(colors);
+                }
+            }
+        }
+        out.write(outputPath, cb);
     });
 };
