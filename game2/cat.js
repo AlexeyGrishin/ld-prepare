@@ -3,8 +3,10 @@ var Performance = {
     LightsAmount: 4,
     Debug: false,
     ShadowStep: 1,
-    ShadowsStepsCount: 128,
-    UseShadowBitmask: false
+    ShadowsStepsCount: 64,
+    UseShadowBitmask: false,
+
+    Map3dScale: 1
 };
 
 function preload() {
@@ -118,6 +120,7 @@ function create1() {
     shadow5.uniforms.iChannel2.value = heightsSprite.texture;
     shadow5.uniforms.iChannel2.textureData = {nearest: true};
     shadow5.uniforms.wSize.value = {x: game.world.width, y: game.world.height};
+    shadow5.uniforms.shSize.value = {x: game.world.width, y: game.world.height};
     shadow5.uniforms.tSize.value = {x: textureSize, y: textureSize};
     shadow5.uniforms.shadowPrecision.value = Performance.ShadowsBitmask;
     shadow5.uniforms.shadowQ1.value = Performance.ShadowStep;
