@@ -4,7 +4,7 @@ var Performance = {
     LightsAmount: 4,
     Debug: false,
     ShadowStep: 1,
-    ShadowsStepsCount: 128,
+    ShadowsStepsCount: 32,
     UseShadowBitmask: false,
 
     Map3dScale: 4

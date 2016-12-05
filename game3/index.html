@@ -1,0 +1,20 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Caco world</title>
+    <script src="phaser.js"></script>
+</head>
+<body>
+<div id="container"></div>
+
+<script src="game.js"></script>
+<script>
+    var game = new Phaser.Game(640, 640, Phaser.AUTO, 'container', {
+        preload: preload,
+        create: create1,
+        update: update1,
+        render: debugRender1 }, undefined, false/*antialias*/);
+</script>
+</body>
+</html>
