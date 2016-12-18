@@ -262,6 +262,26 @@ function createLamp(o) {
     lampItself.data.room = room;
     lampItself.data.color = o.properties.color;
 
+    //prepare polygons for light
+    var angleRight = Math.PI / 2 + LAMP_HALF_ANGLE;
+    var angleLeft = Math.PI / 2 - LAMP_HALF_ANGLE;
+    room.lighted = [
+        {x: lampItself.centerX, y: lampItself.centerY},
+        {x: room.right, y: lampItself.centerY - Math.tan(angleRight) * (room.right - lampItself.centerX)},
+        {x: room.right, y: room.bottom},
+        {x: room.left, y: room.bottom},
+        {x: room.left, y: lampItself.centerY - Math.tan(angleLeft) * (room.left - lampItself.centerX)}
+    ];
+    room.semiLighted = [
+        {x: lampItself.centerX, y: lampItself.centerY},
+        {x: room.right, y: lampItself.centerY - Math.tan(angleRight) * (room.right - lampItself.centerX)},
+        {x: room.right, y: room.top},
+        {x: room.left, y: room.top},
+        {x: room.left, y: lampItself.centerY - Math.tan(angleLeft) * (room.left - lampItself.centerX)}
+
+    ];
+
+
 }
 
 var furnitureGroup, enemiesGroup, particlesFar, particlesNear, flyingFurnitureGroup;
@@ -334,15 +354,11 @@ function drawRoom(ctx, lamp, clr) {
     }
     //draw room
     ctx.beginPath();
-    ctx.moveTo(lamp.centerX, lamp.centerY);
-    var angleRight = Math.PI / 2 + LAMP_HALF_ANGLE;
-    var angleLeft = Math.PI / 2 - LAMP_HALF_ANGLE;
-    //console.log(angleRight, Math.tan(angleRight), (lamp.data.room.right - lamp.centerX));
-    ctx.lineTo(lamp.data.room.right, lamp.centerY - Math.tan(angleRight) * (lamp.data.room.right - lamp.centerX));
-    ctx.lineTo(lamp.data.room.right, lamp.data.room.bottom);
-    ctx.lineTo(lamp.data.room.left, lamp.data.room.bottom);
-    ctx.lineTo(lamp.data.room.left, lamp.centerY - Math.tan(angleLeft) * (lamp.data.room.left - lamp.centerX));
-    ctx.lineTo(lamp.centerX, lamp.centerY);
+    ctx.moveTo(lamp.data.room.lighted[0].x, lamp.data.room.lighted[0].y);
+    lamp.data.room.lighted.slice(1).forEach(function(p) {
+        ctx.lineTo(p.x, p.y);
+    })
+    ctx.lineTo(lamp.data.room.lighted[0].x, lamp.data.room.lighted[0].y);
     ctx.fill();
 
     lamp.data.room.extensions.forEach(function (ext) {
@@ -361,12 +377,11 @@ function drawRoom(ctx, lamp, clr) {
         //ctx.fillStyle = "rgba(255,0,0,0.4)";
     }
     ctx.beginPath();
-    ctx.moveTo(lamp.centerX, lamp.centerY);
-    ctx.lineTo(lamp.data.room.right, lamp.centerY - Math.tan(angleRight) * (lamp.data.room.right - lamp.centerX));
-    ctx.lineTo(lamp.data.room.right, lamp.data.room.top);
-    ctx.lineTo(lamp.data.room.left, lamp.data.room.top);
-    ctx.lineTo(lamp.data.room.left, lamp.centerY - Math.tan(angleLeft) * (lamp.data.room.left - lamp.centerX));
-    ctx.lineTo(lamp.centerX, lamp.centerY);
+    ctx.moveTo(lamp.data.room.semiLighted[0].x, lamp.data.room.semiLighted[0].y);
+    lamp.data.room.semiLighted.slice(1).forEach(function(p) {
+        ctx.lineTo(p.x, p.y);
+    });
+    ctx.lineTo(lamp.data.room.semiLighted[0].x, lamp.data.room.semiLighted[0].y);
     ctx.fill();
 }
 
@@ -382,7 +397,7 @@ function recalculateLights() {
     lamps.forEach(function(lamp) {
         drawRoom(ctx, lamp);
     });
-    ctx.globalCompositeOperation = "multiply";
+    ctx.globalCompositeOperation = "source-over";
     lamps.forEach(function(lamp) {
         var clr = Phaser.Color.hexToColor("#" + lamp.data.color.substring(3));
         drawRoom(ctx, lamp, clr);
