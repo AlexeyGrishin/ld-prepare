@@ -1,4 +1,6 @@
 let Jimp = require("jimp");
+let fs = require("fs");
+let {Buffer} = require("buffer");
 
 function blitProjectionSymmetry(img, out, idx, x, y, config, startCol = 0) {
     let col = startCol;
@@ -224,4 +226,104 @@ module.exports.prepare3dSprites = function(inputPath, outputPath, config, cb) {
         }
         out.write(outputPath, cb);
     });
+};
+
+
+
+module.exports.map3dToVex = function(inputPath, outputPath, config, cb) {
+    Jimp.read(inputPath, function(err, img) {
+        if (err) return cb(err);
+        let spritesCount = img.bitmap.height / config.size;
+        let maxHeight = img.bitmap.width / config.size;
+        let hCount = Math.floor(maxHeight / 16);
+
+        let sprites = [];
+
+        for (var i = 0; i < spritesCount; i++) {
+            let sprite = {
+                width: config.size, height: config.size, zheight: maxHeight,
+                voxels: []
+            };
+            for (var x = 0; x < config.size; x++) {
+                for (var y = 0; y < config.size; y++) {
+                    for (var z = 0; z < maxHeight; z++) {
+                        if ((img.getPixelColor(z*config.size + x, i*config.size + y) & 0xFF) > 0) {
+                            sprite.voxels.push([x,y,z,0]);
+                        }
+                    }
+                }
+            }
+            let mainChunk = {
+                id: 'MAIN',
+                contentSize: 0,
+                childrenSize: 0,
+                children: [{
+                    id: 'PACK',
+                    content: [1],
+                    contentSize: 4,
+                    childrenSize: 0
+                },{
+                    id: 'SIZE',
+                    content: [sprite.width, sprite.height, sprite.zheight],
+                    contentSize: 4*3,
+                    childrenSize: 0
+                },{
+                    id: 'XYZI',
+                    content: [sprite.voxels.length].concat(sprite.voxels),
+                    contentSize: 4 + sprite.voxels.length*4,
+                    childrenSize: 0
+                }]
+            };
+            let totalSize = 8;
+            function process(chunk, parent) {
+                totalSize += (4 + 4 + 4 + chunk.contentSize);
+                (chunk.children || []).forEach((ch) => process(ch, chunk));
+                if (parent) parent.childrenSize += (chunk.contentSize + chunk.childrenSize + 12);
+
+            }
+            process(mainChunk);
+            let buffer = Buffer.alloc(totalSize);
+
+            let offset = 0;
+
+            offset = buffer.write("VOX ");
+            offset = buffer.writeInt32LE(150, offset);  //version
+
+            function write(chunk) {
+                offset += buffer.write(chunk.id, offset);
+                offset = buffer.writeInt32LE(chunk.contentSize, offset);
+                offset = buffer.writeInt32LE(chunk.childrenSize, offset);
+                switch (chunk.id) {
+                    case 'PACK':
+                    case 'SIZE':
+                        chunk.content.forEach(function(n) {
+                            //console.log(chunk.id, offset);
+                            offset = buffer.writeInt32LE(n, offset);
+                        });
+                        break;
+                    case 'XYZI':
+                        offset = buffer.writeInt32LE(chunk.content[0], offset);
+                        chunk.content.slice(1).forEach(function(n) {
+                            offset = buffer.writeUInt8(n[0], offset);
+                            offset = buffer.writeUInt8(n[1], offset);
+                            offset = buffer.writeUInt8(n[2], offset);
+                            offset = buffer.writeUInt8(n[3], offset);
+                        });
+                        break;
+                }
+                (chunk.children || []).forEach(write);
+            }
+            write(mainChunk);
+            fs.writeFileSync(outputPath + "-" + i + ".vox", buffer);
+        }
+        cb();
+
+
+
+
+    });
+};
+
+module.exports.vexToMap3d = function(inputPath, outputPath, config, cb) {
+
 };

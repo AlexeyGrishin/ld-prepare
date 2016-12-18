@@ -4,10 +4,10 @@ var Performance = {
     LightsAmount: 4,
     Debug: false,
     ShadowStep: 1,
-    ShadowsStepsCount: 32,
+    ShadowsStepsCount: 128,
     UseShadowBitmask: false,
 
-    Map3dScale: 4
+    Map3dScale: 2
 };
 
 function preload() {
@@ -249,6 +249,9 @@ function prepareMap3d(bitmap, tiles, debug) {
     shadowsBitmap.update(0, 0, shadows.width, shadows.height);
     bitmap.context.clearRect(0,0,bitmap.width,bitmap.height);
     bitmap.update(0,0,bitmap.width,bitmap.height);
+
+    var voxels = [];
+
     //1pix = 16 heights
     tiles.forEach(function(tile) {
         var config = hconfig.byIndex[tile.index];
@@ -263,8 +266,10 @@ function prepareMap3d(bitmap, tiles, debug) {
                 for (var z = 0; z < config.height; z++) {
                     //var frame = {x: z*16, y: baseY, width: 16, height: 16};
                     var ci = (z/16)|0;
-                    if (shadowsBitmap.getPixel(z*16 + x, baseY + y).a > 0)
+                    if (shadowsBitmap.getPixel(z*16 + x, baseY + y).a > 0) {
                         colors[ci] = setBit(colors[ci], z % 16);
+                        voxels.push([tileX + x, tileY + y, z]);
+                    }
                     //bitmap.copyRect(shadows, frame, tile.x*16, tile.y*16 - 16);
                 }};
                 //colors[1] = 0xff000000;
@@ -281,6 +286,8 @@ function prepareMap3d(bitmap, tiles, debug) {
     });
     bitmap.context.putImageData(bitmap.imageData, 0, 0);
     bitmap.dirty = true;
+
+    //console.log(JSON.stringify(voxels));
 }
 
 function prepareHeightsMap(bitmap, tiles) {

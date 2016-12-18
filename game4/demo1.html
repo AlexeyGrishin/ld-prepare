@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Demo 1</title>
+    <script src="phaser.js"></script>
+</head>
+<body>
+<div id="container"></div>
+
+<script src="demo1.js"></script>
+<script>
+    var game = new Phaser.Game({
+        width: 16*18,
+        height: 16*4,
+        renderer: Phaser.AUTO,
+        parent: 'container',
+        antialias: false,
+        state: {preload: preload,
+            create: create,
+            update: update,
+            render: debugRender1 }
+    });
+
+</script>
+</body>
+</html>
