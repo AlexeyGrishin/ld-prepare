@@ -74,6 +74,26 @@
                  "width":16,
                  "x":224,
                  "y":48
+                }, 
+                {
+                 "gid":18,
+                 "height":16,
+                 "id":26,
+                 "name":"",
+                 "properties":
+                    {
+                     "lamps":"2,3"
+                    },
+                 "propertytypes":
+                    {
+                     "lamps":"string"
+                    },
+                 "rotation":0,
+                 "type":"switcher",
+                 "visible":true,
+                 "width":16,
+                 "x":5.0306563335848,
+                 "y":47.0919690007544
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -116,11 +136,15 @@
                  "name":"",
                  "properties":
                     {
-                     "color":"#ffd87666"
+                     "color":"#ffd87666",
+                     "flashing":"100,300,500,100,300,100",
+                     "id":2
                     },
                  "propertytypes":
                     {
-                     "color":"color"
+                     "color":"color",
+                     "flashing":"string",
+                     "id":"int"
                     },
                  "rotation":0,
                  "type":"lamp",
@@ -136,11 +160,15 @@
                  "name":"",
                  "properties":
                     {
-                     "color":"#ff25ca1a"
+                     "color":"#ff25ca1a",
+                     "flashing":"150,300,500,100,300,100",
+                     "id":3
                     },
                  "propertytypes":
                     {
-                     "color":"color"
+                     "color":"color",
+                     "flashing":"string",
+                     "id":"int"
                     },
                  "rotation":0,
                  "type":"lamp",
@@ -212,7 +240,7 @@
          "x":0,
          "y":0
         }],
- "nextobjectid":25,
+ "nextobjectid":28,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tileheight":16,

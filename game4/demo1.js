@@ -216,10 +216,31 @@ function createLamp(o) {
     var lampItself = game.add.sprite(o.x, o.y-16, "things", 11);    //11 - on, 12 - off
     lampItself.data = {
         type: 'lamp',
-        on: true
+        on: true,
+        power: true,
+        _oldLight: true,
+        id: o.properties.id
     };
+    if (o.properties.flashing) {
+        lampItself.data.schedule = o.properties.flashing.split(",").map(function(f) { return parseInt(f)});
+        lampItself.data.passed = 0;
+    }
     lampItself.update = function() {
-        this.frame = this.data.on ? 11 : 12;
+        if (lampItself.data.schedule) {
+            lampItself.data.passed += game.time.elapsed;
+            if (lampItself.data.passed >= lampItself.data.schedule[0]) {
+                lampItself.data.passed -= lampItself.data.schedule[0];
+                lampItself.data.schedule.push(lampItself.data.schedule.shift());
+                lampItself.data.on = !lampItself.data.on;
+            }
+        }
+
+        var light = this.data.on && this.data.power;
+        if (light != this.data._oldLight) {
+            this.data._oldLight = light;
+            recalculateLights();
+        }
+        this.frame = light ? 11 : 12;
     };
     lamps.add(lampItself);
 
@@ -284,6 +305,31 @@ function createLamp(o) {
 
 }
 
+function createSwitcher(o) {
+    var sw = game.add.sprite(o.x, o.y-16, "things", 17); //17 - on, 18 - off
+    sw.data = {
+        on: true,
+        type: "",
+        opBounds: new Phaser.Rectangle(sw.x, sw.y, sw.width, sw.height),
+        lampIds: o.properties.lamps.split(",").map(function(l) { return parseInt(l)}),
+        operations: [
+            {
+                title: "Turn light",
+                execute: function() {
+                    sw.data.on = !sw.data.on;
+                    lamps.filter(function(lamp) { return sw.data.lampIds.indexOf(lamp.data.id) != -1}).list.forEach(function(lamp) {
+                        lamp.data.power = sw.data.on;
+                    });
+                }
+            }
+        ]
+    };
+    sw.update = function() {
+        this.frame = this.data.on ? 18 : 17;
+    }
+    furnitureGroup.add(sw);
+}
+
 var furnitureGroup, enemiesGroup, particlesFar, particlesNear, flyingFurnitureGroup;
 var lamps, lightBitmap;
 
@@ -296,7 +342,8 @@ var PerObject = {
     garderob: createGarderob,
     audio: createAudio,
 
-    lamp: createLamp
+    lamp: createLamp,
+    switcher: createSwitcher
 };
 
 function create() {
@@ -394,11 +441,12 @@ function recalculateLights() {
     //ctx.globalCompositeOperation = "copy";
     ctx.globalCompositeOperation = "destination-out";
     ctx.fillStyle = "rgba(0,0,0,1)"; //no matter what color, alpha shall be = 1
-    lamps.forEach(function(lamp) {
+    var onlyLightedLamps = lamps.filter(function(lamp) { return lamp.data.on && lamp.data.power;}).list;
+    onlyLightedLamps.forEach(function(lamp) {
         drawRoom(ctx, lamp);
     });
     ctx.globalCompositeOperation = "source-over";
-    lamps.forEach(function(lamp) {
+    onlyLightedLamps.forEach(function(lamp) {
         var clr = Phaser.Color.hexToColor("#" + lamp.data.color.substring(3));
         drawRoom(ctx, lamp, clr);
         //todo: draw some "penumbra" under ceiling
