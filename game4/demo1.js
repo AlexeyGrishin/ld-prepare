@@ -250,7 +250,7 @@ function createLamp(o) {
         {x: room.right, y: room.bottom-16, tileX: (room.right-8)/16, tileY: (room.bottom/16)-1}
     ];
     possibleBT.forEach(function(bt) {
-        if (Phaser.Math.distance(lampItself.x, bt.x, lampItself.y, bt.y) > LAMP_RADIUS) return;
+        //if (Phaser.Math.distance(lampItself.x, bt.x, lampItself.y, bt.y) > LAMP_RADIUS) return;
         //var angle = Phaser.Math.atan2(bt.x - lamp.x, bt.y - lamp.y)
         //todo: check angle?
         var p1 = {x: bt.x, y: bt.y};
@@ -325,40 +325,68 @@ function create() {
     lightBitmap = game.add.bitmapData(game.world.width, game.world.height);
     var lightHover = game.add.sprite(0,0, lightBitmap);
     recalculateLights();
+    //todo: may add shader, but actually no need
 }
+
+function drawRoom(ctx, lamp, clr) {
+    if (clr) {
+        ctx.fillStyle = "rgba(" + clr.r + "," + clr.g + "," + clr.b + ",0.2)";
+    }
+    //draw room
+    ctx.beginPath();
+    ctx.moveTo(lamp.centerX, lamp.centerY);
+    var angleRight = Math.PI / 2 + LAMP_HALF_ANGLE;
+    var angleLeft = Math.PI / 2 - LAMP_HALF_ANGLE;
+    //console.log(angleRight, Math.tan(angleRight), (lamp.data.room.right - lamp.centerX));
+    ctx.lineTo(lamp.data.room.right, lamp.centerY - Math.tan(angleRight) * (lamp.data.room.right - lamp.centerX));
+    ctx.lineTo(lamp.data.room.right, lamp.data.room.bottom);
+    ctx.lineTo(lamp.data.room.left, lamp.data.room.bottom);
+    ctx.lineTo(lamp.data.room.left, lamp.centerY - Math.tan(angleLeft) * (lamp.data.room.left - lamp.centerX));
+    ctx.lineTo(lamp.centerX, lamp.centerY);
+    ctx.fill();
+
+    lamp.data.room.extensions.forEach(function (ext) {
+        if (!map.getTile(ext.tileX | 0, ext.tileY | 0, wallsLayer)) {
+            ctx.beginPath();
+            ctx.moveTo(ext.p1.x, ext.p1.y);
+            ctx.lineTo(ext.p2.x, ext.p2.y);
+            ctx.lineTo(ext.p3.x, ext.p3.y);
+            ctx.fill();
+        }
+    });
+
+    //draw "penumbra"
+    if (clr) {
+        ctx.fillStyle = "rgba(" + Math.floor(clr.r/2) + "," + Math.floor(clr.g/2) + "," + Math.floor(clr.b/2) + ",0.2)";
+        //ctx.fillStyle = "rgba(255,0,0,0.4)";
+    }
+    ctx.beginPath();
+    ctx.moveTo(lamp.centerX, lamp.centerY);
+    ctx.lineTo(lamp.data.room.right, lamp.centerY - Math.tan(angleRight) * (lamp.data.room.right - lamp.centerX));
+    ctx.lineTo(lamp.data.room.right, lamp.data.room.top);
+    ctx.lineTo(lamp.data.room.left, lamp.data.room.top);
+    ctx.lineTo(lamp.data.room.left, lamp.centerY - Math.tan(angleLeft) * (lamp.data.room.left - lamp.centerX));
+    ctx.lineTo(lamp.centerX, lamp.centerY);
+    ctx.fill();
+}
+
 
 function recalculateLights() {
     var ctx = lightBitmap.context;
     ctx.clearRect(0, 0, lightBitmap.width, lightBitmap.height);
-    ctx.fillStyle = "rgba(0,0,0,0.2)";
+    ctx.fillStyle = "rgba(0,0,0,0.4)";
     ctx.fillRect(0, 0, lightBitmap.width, lightBitmap.height);
     //ctx.globalCompositeOperation = "copy";
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.fillStyle = "rgba(0,0,0,1)"; //no matter what color, alpha shall be = 1
+    lamps.forEach(function(lamp) {
+        drawRoom(ctx, lamp);
+    });
+    ctx.globalCompositeOperation = "multiply";
     lamps.forEach(function(lamp) {
         var clr = Phaser.Color.hexToColor("#" + lamp.data.color.substring(3));
-        console.log(clr);
-        ctx.fillStyle = "rgba(" + clr.r + "," + clr.g + "," + clr.b + ",0.2)";
-        //draw room
-        ctx.beginPath();
-        ctx.moveTo(lamp.centerX, lamp.centerY);
-        var angleRight = Math.PI/2 + LAMP_HALF_ANGLE;
-        var angleLeft = Math.PI/2 - LAMP_HALF_ANGLE;
-        //console.log(angleRight, Math.tan(angleRight), (lamp.data.room.right - lamp.centerX));
-        ctx.lineTo(lamp.data.room.right, lamp.centerY - Math.tan(angleRight) * (lamp.data.room.right - lamp.centerX));
-        ctx.lineTo(lamp.data.room.right, lamp.data.room.bottom);
-        ctx.lineTo(lamp.data.room.left, lamp.data.room.bottom);
-        ctx.lineTo(lamp.data.room.left, lamp.centerY - Math.tan(angleLeft) * (lamp.data.room.left - lamp.centerX));
-        ctx.lineTo(lamp.centerX, lamp.centerY);
-        ctx.fill();
-
-        lamp.data.room.extensions.forEach(function(ext) {
-            if (!map.getTile(ext.tileX|0, ext.tileY|0, wallsLayer))  {
-                ctx.beginPath();
-                ctx.moveTo(ext.p1.x, ext.p1.y);
-                ctx.lineTo(ext.p2.x, ext.p2.y);
-                ctx.lineTo(ext.p3.x, ext.p3.y);
-                ctx.fill();
-            }
-        });
+        drawRoom(ctx, lamp, clr);
+        //todo: draw some "penumbra" under ceiling
         //console.log(lamp.data.room);
     });
     lightBitmap.dirty = true;
@@ -514,6 +542,38 @@ function update() {
         }
 
     }
+}
+
+var tempCanvas;
+//impactPoint - x:0-1, y:0-1
+//impactDirection - x:-1-1, y: -1-1
+//force = 5
+function producePixelParticles(spriteSource, impactPoint, impactDirection, force, singleColor) {
+    var partFar = game.add.bitmapData(spriteSource.width*5, spriteSource.height*3);
+    var partNear = game.add.bitmapData(spriteSource.width*5, spriteSource.height*3);
+    //todo: pixel reading could be cached!
+
+    tempCanvas = tempCanvas || (game.add.bitmapData(48,48));
+    tempCanvas.copy(spriteSource, 0, 0);
+    var pixels = [];
+    tempCanvas.processPixel(function(color, x, y) {
+        if (color.alpha > 0) {
+            var pix = {
+                x: x,
+                y: y,
+                color: singleColor !== undefined ? singleColor : color,
+                far: Math.random() < 0.5
+            };
+            //todo: calculate initial velocity - (pix-impactPoint)*force*impactDirection
+            pixels.push(pix);
+        }
+    }, null, 0, 0, spriteSource.width, spriteSource.height);
+
+    //todo: generate update fn which will recalculate pixel positions and redraw them
+    //todo: optimize - use 1 color (so less redraws), use less pixels
+    //todo: calculate most used color and use it automatically
+
+
 }
 
 function debugRender1() {
