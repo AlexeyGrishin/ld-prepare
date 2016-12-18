@@ -113,6 +113,14 @@ function init(afterInit) {
         loadModel('speaker2', loadSingleObject.bind(null, [0, -Math.PI/2, 0]))
     }
 
+    function loadDrill() {
+        loadModel('perforator', loadSingleObject.bind(null, [Math.PI/4, 0, 0]));
+    }
+
+    function loadPult() {
+        loadModel('pult', loadSingleObject.bind(null, [Math.PI/8,0,Math.PI/8]));
+    }
+
     function loadAnimated(rotations, objects, oframes) {
         frames = oframes;
         doorContainer = new THREE.Group();
@@ -143,7 +151,8 @@ function init(afterInit) {
     //loadDoor();
     //loadGarderob();
     //loadAudiosystem();
-    loadSpeaker2();
+    //loadSpeaker2();
+    loadPult();
 }
 
 let frameChange = {
@@ -157,6 +166,19 @@ let frameChange = {
 var ctx = targetCanvas.getContext('2d');
 var i = 0;
 var justAnimation = true;
+
+function rotateKick(direction) {
+    //doorContainer.rotateX(Math.PI/180);
+    let sp1 = Math.PI/180*2;
+    //doorContainer.rotateX(-sp1*4);
+    doorContainer.rotateY(sp1*8 * (direction || 1));
+    doorContainer.rotateZ(-sp1*4);
+}
+
+function rotateShow() {
+    let sp1 = -Math.PI/180*16;
+    doorContainer.rotateY(sp1);
+}
 
 function render() {
     //if (i > 2) return;
@@ -172,12 +194,9 @@ function render() {
         if (i == frames.length) justAnimation = false;
         if (justAnimation) return;
     }
-    //controls.update();
-    //doorContainer.rotateX(Math.PI/180);
-    let sp1 = Math.PI/180*2;
-    //doorContainer.rotateX(-sp1*4);
-    doorContainer.rotateY(sp1*8);
-    doorContainer.rotateZ(-sp1*4);
+
+    rotateShow();
+
     if (frames) {
         frameChange.passed = new Date().getTime() - frameChange.started;
         //if (frameChange.passed >= frameChange.ts) {

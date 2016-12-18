@@ -1,6 +1,8 @@
+NO_FLASH = false;
+
 function preload() {
     game.time.advancedTiming = true;
-    game.load.tilemap('demo1', 'demo1.json', null, Phaser.Tilemap.TILED_JSON);
+    game.load.tilemap('demo1', 'demo2.json', null, Phaser.Tilemap.TILED_JSON);
 
     game.load.image('door_part_1', 'door_part_1.png');
     game.load.image('door_part_2', 'door_part_2.png');
@@ -19,6 +21,13 @@ function preload() {
     game.load.spritesheet('speaker2', 'speaker2.png', 24, 24);
 
     game.load.spritesheet('items', 'items.png', 16, 16);
+    game.load.spritesheet('perforator', 'perforator.png', 24, 24);
+    game.load.spritesheet('pult', 'pult.png', 24, 24);
+    game.load.spritesheet('outside', 'outside.png', 48, 16);
+    game.load.spritesheet('baby', 'pups.png', 16, 16);
+    game.load.spritesheet('elevator', 'elevator.png', 16, 16);
+
+    game.load.bitmapFont('myfont', 'font.png', 'font.fnt')
 
 }
 
@@ -54,54 +63,155 @@ function createHero(o) {
     hero.animations.add("drill", [32,40,48,56], 10, false);
 }
 
+function manExplosion(man) {
+    return new PixelsExplosion(man);    //todo: color replacement
+}
+
 function createPerfoman(o) {
-    var man = game.add.sprite(o.x, o.y+1, "perfoman2");
+    var man = game.add.sprite(o.x+8, o.y+1, "perfoman2");
+    man.anchor.x = 0.5;
     man.animations.add("drill", [5,6,7,8,5,6,7,8,5,5,5,9,10,11,10,9,10,11,9,5,5], 10, true)
     man.animations.play("drill");
-    man.data.item = {
-        type: 'perforator',
-        create: createPerforator
-    };
+    if (o.properties.item) {
+        man.data.item = addItem(o.properties.item);
+    }
+    man.data.explosion = manExplosion(man);
     enemiesGroup.add(man);
 }
 
-function createPerforator(man) {
-    var p = game.add.sprite(man.x, man.y, "items", 0);
-    furnitureGroup.add(p);
-    //todo: 3d, rotate, I think
-    p.data = {
-        type: 'perforator',
-        opBounds: new Phaser.Rectangle(man.x, man.y, 16, 16),
-        operations: [{
-            title: "Take",
-            execute: function() {
-                //todo: takeable, common
-                var item = game.add.sprite(items.length*20+2, game.camera.height - 16, "items", p.frame);
-                item.data.type = p.data.type;
-                item.fixedToCamera = true;
-                items.push(item);
-                p.destroy();
-            }
-        }]
-    }
-
+var words = {
+    pult: 'remote control'
 }
 
+function addItem(type, key) {
+    return {
+        type: type,
+        create: function(man) {
+            var p = game.add.sprite(man.x-8, man.y-8+24, key || type);
+            p.animations.add('rotate', range(0,20), 5, true);
+            p.animations.play('rotate');
+            p.anchor.x = 0.5;
+            p.anchor.y = 1;
+            p.scale.x = 0.2;
+            p.scale.y = 0.2;
+            game.add.tween(p.scale).to({x: 1, y: 1}, 500, null, true);
+            game.add.tween(p).to({y: p.y - 4}, 1000, Phaser.Easing.Quartic.In, true, 0, true, true);
+            furnitureGroup.add(p);
+            p.data = {
+                type: type,
+                title: type,
+                opBounds: new Phaser.Rectangle(p.x-12, p.y, 24, 24),
+                operations: [{
+                    title: "Take",
+                    execute: function() {
+                        //todo: takeable, common
+                        var item = game.add.sprite(game.camera.width - items.length*24-28, game.camera.height - 24, p.key, 0);
+                        item.data.type = p.data.type;
+                        item.fixedToCamera = true;
+                        items.push(item);
+                        p.destroy();
+                    }
+                }]
+            }
+        }
+    }
+}
+
+
 function createGopokid(o) {
-    var kid = game.add.sprite(o.x, o.y-8, "gopokid");
+    var kid = game.add.sprite(o.x+8, o.y-8, "gopokid");
     kid.anchor.x = 0.5;
-    kid.animations.add("dance", [4,5,6,7], 10, true);
+    var da = kid.animations.add("dance", [4,5,6,7], 10, true);
+    kid.animations.add("mindblow-1", [8,9,10], 10);
+    kid.animations.add("mindblow-2", [11,12,11,12,11,12,11,12,11,12,11,12,11,12], 30);
+    kid.data.explosion = manExplosion(kid);
     enemiesGroup.add(kid);
-    kid.scale.x = -1;
+    if (o.properties && o.properties.flip) {
+        kid.scale.x = -1;
+    }
     kid.animations.play("dance");
+    if (o.properties && o.properties.frame) {
+       da.setFrame(o.properties.frame, true);
+    }
+    if (o.properties && o.properties.item) {
+        kid.data.item = addItem(o.properties.item);
+    }
+}
+
+function createBaby(o) {
+    var baby = game.add.sprite(o.x, o.y, "baby");
+    baby.animations.add("leg", [1,2,3,4], 10).onComplete.add(function() {
+        baby.frame = 0;
+    });
+    baby.data = {
+        legCooldown: 5000,
+        lastLegAnimation: 0
+    };
+    baby.update = function() {
+        baby.data.lastLegAnimation += game.time.elapsed;
+        if (baby.data.lastLegAnimation >= baby.data.legCooldown && Math.random() < 0.1) {
+            baby.animations.play("leg");
+            baby.data.lastLegAnimation = 0;
+        }
+    }
+}
+
+var levels = [];
+
+function createElevator(o) {
+    var elevator = game.add.sprite(o.x, o.y, "elevator");
+    var doors = game.add.sprite(o.x, o.y, "elevator", 7);
+    doors.animations.add("close", [1,2,3,4,5,6,7], 10);
+    doors.animations.add("open", [1,2,3,4,5,6,7].reverse(), 10);
+    //todo: add small lamp just over elevator
+    //windows.push({x: elevator.x + 3, y: elevator.y+1, width: elevator.width-6, height: elevator.height-2});
+    elevatorsGroup.add(elevator);
+    elevatorDoorsGroup.add(doors);
+    levels.push(o.properties.level);
+
+    elevator.data = {
+        doors: doors,
+        level: o.properties.level,
+        use: function(targetLevel) {
+            hero.inAction = true;
+            hero.x = elevator.x + Math.abs(hero.offsetX);
+            var targetElevator = elevatorsGroup.filter(function(e) { return e.data.level == targetLevel;}).list[0];
+            doors.animations.play("open").onComplete.addOnce(function() {
+                overHeroDoorsGroup.add(doors)
+                overHeroDoorsGroup.add(targetElevator.data.doors);
+                doors.animations.play("close").onComplete.addOnce(function() {
+                   hero.alpha = 0;
+                   game.add.tween(hero.body).to({x: targetElevator.x + 4, y: targetElevator.y}, 200, null, true).onComplete.addOnce(function() {
+
+                       targetElevator.data.doors.play("open").onComplete.addOnce(function() {
+                           elevatorDoorsGroup.add(doors);
+                           elevatorDoorsGroup.add(targetElevator.data.doors);
+                           targetElevator.data.doors.play("close");
+                           hero.inAction = false;
+                       });
+                       hero.alpha = 1;
+                   })
+                });
+            });
+        }
+    };
+
+    return elevator;
 }
 
 function createGirl(o) {
-    var kid = game.add.sprite(o.x, o.y+1, "girl1");
+    var kid = game.add.sprite(o.x+8, o.y+1, "girl1");
     kid.anchor.x = 0.5;
     kid.animations.add("dance", [4,5,6,7], 10, true);
+    kid.animations.add("mindblow-1", [8,9,10], 10, true);
+    kid.animations.add("mindblow-2", [11,12,11,12,11,12,11,12,11,12], 30, true);
+
+    kid.data.explosion = manExplosion(kid);
     enemiesGroup.add(kid);
     kid.animations.play("dance");
+    if (o.properties && o.properties.item) {
+        kid.data.item = addItem(o.properties.item);
+    }
 }
 
 function pos24To16(o) {
@@ -147,8 +257,10 @@ function createDoor(o) {
             }
         ],
         speed: 4,
-        velocityX: 0
+        velocityX: 0,
+        explosion: new PixelsExplosion(door)
     };
+    door.data.explosion.bounceBack = true;
     door.animations.add("fly", range(0,19), 30, true);
     return door;
 }
@@ -164,6 +276,7 @@ function createGarderob(o) {
     var garderob = game.add.sprite(pos.x, pos.y, "garderob_fly", undefined, furnitureGroup);
     garderob.anchor.x = 0.5;
     makeKickable(garderob, 'garderob', 3, 0, 19);
+    return garderob;
 }
 
 function makeKickable(obj, type, speed, animRange1, animRange2) {
@@ -177,8 +290,10 @@ function makeKickable(obj, type, speed, animRange1, animRange2) {
             }
         ],
         speed: speed,
-        velocityX: 0
+        velocityX: 0,
+        explosion: new PixelsExplosion(obj)
     };
+    obj.data.explosion.bounceBack = true;
     obj.animations.add("fly", range(animRange1,animRange2), 30, true);
 }
 
@@ -207,6 +322,51 @@ function createAudio(o) {
     furnitureGroup.add(speaker1);
     furnitureGroup.add(audio);
     furnitureGroup.add(speaker2);
+
+    if (o.properties && o.properties.controllable) {
+
+        var pseudoFurniture = game.add.sprite(pos.x, pos.y + 4);
+        pseudoFurniture.anchor.x = 0.5;
+        pseudoFurniture.width = 16 * 6;
+        pseudoFurniture.height = 16;
+        pseudoFurniture.data = {
+            type: 'audio',
+            opBounds: new Phaser.Rectangle(pseudoFurniture.left, pseudoFurniture.top, pseudoFurniture.width, pseudoFurniture.height),
+            operations: [{
+                title: "Max bass",
+                execute: function () {
+                    var enemiesToBlowMinds = enemiesGroup.filter(function (en) {
+                        return Phaser.Point.distance(en, pseudoFurniture) < 16 * 3;
+                    }).list;
+                    var audioDestroyed = false;
+                    enemiesToBlowMinds.forEach(function (en) {
+                        en.animations.play("mindblow-1").onComplete.addOnce(function () {
+                            en.animations.play("mindblow-2").onComplete.addOnce(function () {
+                                en.data.explosion.impactPoint = {x: 0.5, y: 0.2};
+                                en.data.explosion.impactForce = {x: 5, y: 5};
+                                en.data.explosion.start();
+                                if (!audioDestroyed) {
+                                    audio.data.explosion.start();
+                                    speaker1.data.explosion.start();
+                                    speaker2.data.explosion.start();
+                                    audioDestroyed = true;
+                                }
+                            });
+                        });
+                    });
+                },
+                available: function () {
+                    return items.some(function (item) {
+                        return item.data.type == "pult"
+                    });
+                },
+                unavailableTitle: 'need remote control'
+
+            }]
+        };
+        furnitureGroup.add(pseudoFurniture);
+    }
+
 }
 
 var LAMP_RADIUS = 320;
@@ -221,7 +381,8 @@ function createLamp(o) {
         _oldLight: true,
         id: o.properties.id
     };
-    if (o.properties.flashing) {
+
+    if (o.properties.flashing && !NO_FLASH) {
         lampItself.data.schedule = o.properties.flashing.split(",").map(function(f) { return parseInt(f)});
         lampItself.data.passed = 0;
     }
@@ -259,7 +420,7 @@ function createLamp(o) {
     }
     for (var y = tileY; y < map.height; y++) {
         if (map.getTile(tileX, y, wallsLayer)) {
-            room.bottom = y*16;
+            room.bottom = y*16; break;
         }
     }
     room.top = tileY*16 - 13;
@@ -326,12 +487,13 @@ function createSwitcher(o) {
     };
     sw.update = function() {
         this.frame = this.data.on ? 18 : 17;
-    }
+    };
     furnitureGroup.add(sw);
 }
 
-var furnitureGroup, enemiesGroup, particlesFar, particlesNear, flyingFurnitureGroup;
-var lamps, lightBitmap;
+var furnitureGroup, enemiesGroup, particlesFar, particlesNear, flyingFurnitureGroup, elevatorsGroup, elevatorDoorsGroup, overHeroDoorsGroup;
+var bgGroup;
+var lamps, lightBitmap, windows = [];
 
 var PerObject = {
     hero: createHero,
@@ -343,7 +505,9 @@ var PerObject = {
     audio: createAudio,
 
     lamp: createLamp,
-    switcher: createSwitcher
+    switcher: createSwitcher,
+    baby: createBaby,
+    elevator: createElevator
 };
 
 function create() {
@@ -356,10 +520,14 @@ function create() {
 
     map.addTilesetImage('some things');
 
+    bgGroup = game.add.group();
     wallsLayer = map.createLayer('walls');
     effectsLayer = map.createLayer('effects');
     particlesFar = game.add.group();
     furnitureGroup = game.add.group();
+    elevatorsGroup = game.add.group();
+    elevatorDoorsGroup = game.add.group();
+    overHeroDoorsGroup = game.add.group();
     enemiesGroup = game.add.group();
     particlesNear = game.add.group();
     flyingFurnitureGroup = game.add.group();
@@ -369,19 +537,13 @@ function create() {
 
     wallsLayer.resizeWorld();
 
-    map.objects.rooms.forEach(function(o) {
+    function create(o) {
         (PerObject[o.type] || function() {})(o);
+    }
 
-        console.log(o);
-    });
-    map.objects.people.forEach(function(o) {
-        (PerObject[o.type] || function() {})(o);
-        console.log(o);
-    });
-    map.objects.furniture.forEach(function(o) {
-        console.log(o);
-        (PerObject[o.type] || function() {})(o);
-    });
+    map.objects.rooms.forEach(create);
+    map.objects.people.forEach(create);
+    map.objects.furniture.forEach(create);
 
     game.camera.follow(hero);
 
@@ -389,10 +551,19 @@ function create() {
     space = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
 
     prepareWallsForDrilling();
+    prepareWindows();
     lightBitmap = game.add.bitmapData(game.world.width, game.world.height);
     var lightHover = game.add.sprite(0,0, lightBitmap);
     recalculateLights();
     //todo: may add shader, but actually no need
+
+
+    game.world.bringToTop(particlesNear);
+    game.world.bringToTop(overHeroDoorsGroup);
+    game.world.bringToTop(lightHover);
+
+    optionsText = game.add.bitmapText(2,game.camera.height-10,'myfont','',12);
+    optionsText.fixedToCamera = true;
 }
 
 function drawRoom(ctx, lamp, clr) {
@@ -404,7 +575,7 @@ function drawRoom(ctx, lamp, clr) {
     ctx.moveTo(lamp.data.room.lighted[0].x, lamp.data.room.lighted[0].y);
     lamp.data.room.lighted.slice(1).forEach(function(p) {
         ctx.lineTo(p.x, p.y);
-    })
+    });
     ctx.lineTo(lamp.data.room.lighted[0].x, lamp.data.room.lighted[0].y);
     ctx.fill();
 
@@ -445,6 +616,9 @@ function recalculateLights() {
     onlyLightedLamps.forEach(function(lamp) {
         drawRoom(ctx, lamp);
     });
+    windows.forEach(function(w) {
+        ctx.fillRect(w.x, w.y, w.width, w.height);
+    });
     ctx.globalCompositeOperation = "source-over";
     onlyLightedLamps.forEach(function(lamp) {
         var clr = Phaser.Color.hexToColor("#" + lamp.data.color.substring(3));
@@ -452,7 +626,41 @@ function recalculateLights() {
         //todo: draw some "penumbra" under ceiling
         //console.log(lamp.data.room);
     });
+
     lightBitmap.dirty = true;
+}
+
+function prepareWindows() {
+    var wi = 0;
+    effectsLayer.getTiles(0,0,game.world.width,game.world.height).forEach(function(tile) {
+        if ([20,22].indexOf(tile.index) != -1) {
+            //this is window
+            var bounds = {x: tile.worldX, y: tile.worldY, width: 16, height: 16};
+            if (tile.index == 22) bounds.width = 10;
+            if (tile.index == 20) bounds.width = 32;
+            windows.push(bounds);
+
+            var bg = game.add.sprite(tile.worldX, tile.worldY, "outside", wi, bgGroup);
+            var minCrop = 0;
+            var maxCrop = bg.width - bounds.width;
+            bg.crop(new Phaser.Rectangle(0, 0, bounds.width, bounds.height))
+            wi++;
+            var centerX = bg.x + bounds.width/2;
+            var maxDistance = Math.max(centerX, game.world.width - centerX);
+
+            bg.update = function() {
+                var distanceProp = game.camera.x / (game.world.width - game.camera.width);
+                distanceProp = Math.min(1, Math.max(0, distanceProp));
+                var nx = maxCrop * distanceProp;
+                if (Math.abs(nx - bg.cropRect.x) > 1) {
+                    bg.cropRect.x = nx;
+                    bg.updateCrop();
+                }
+
+            }
+
+        }
+    })
 }
 
 function prepareWallsForDrilling() {
@@ -500,7 +708,11 @@ function prepareWallsForDrilling() {
 var allowedOptions = [];
 var items = [];
 
+
+var optionsText;
+
 function update() {
+
     game.physics.arcade.collide(hero, wallsLayer, undefined, function(sprite, tile) {
         if (tile.index === 1 || tile.index === 2) { //vertical wall
             var tileCenterX = tile.x*16 + 8;
@@ -521,14 +733,36 @@ function update() {
     var nearBounds = new Phaser.Rectangle(hero.x-Math.abs(hero.width)/2, hero.y+4, Math.abs(hero.width), hero.height-8);
     allowedOptions = [];
     furnitureGroup.forEach(function(furniture) {
-
-
-        if (Phaser.Rectangle.intersects(nearBounds, furniture.data.opBounds)) {
+        if (furniture.data.opBounds && Phaser.Rectangle.intersects(nearBounds, furniture.data.opBounds)) {
             (furniture.data.operations || []).forEach(function(op) {
                 allowedOptions.push({operation: op, target: furniture});
             })
         }
     });
+    var elevatorHint = null;
+
+    elevatorsGroup.forEach(function(elevator) {
+        if (hero.inAction) return;
+        if (hero.overlap(elevator)) {
+            var lvl = elevator.data.level;
+            var directions = [];
+            if (levels.indexOf(lvl-1) != -1) {
+                directions.push("down");
+                if (cursors.down.isDown) {
+                    elevator.data.use(lvl-1);
+                }
+            }
+            if (levels.indexOf(lvl+1) != -1) {
+                directions.push("up");
+                if (cursors.up.isDown) {
+                    elevator.data.use(lvl+1);
+                }
+            }
+            elevatorHint = "use " + directions.join("/") + " to change floor";
+
+        }
+    });
+
     flyingFurnitureGroup.forEach(function(furniture) {
 
         furniture.x += furniture.data.velocityX;
@@ -548,12 +782,25 @@ function update() {
                     //todo: anim
                     //furniture.data.velocityX = 0;
                     //furniture.animations.stop();
-                    furniture.destroy();
+                    if (furniture.data.explosion) {
+                        furniture.data.explosion.impactPoint = {x: furniture.data.velocityX > 0 ? 1 : 0, y: 0.5};
+                        furniture.data.explosion.impactForce = {x: -1.5, y: 0};
+                        furniture.data.explosion.start();
+                    } else {
+                        furniture.destroy();
+                    }
                     break;
                 case 2:
                     //broken wall, break through
                     //todo: anim
                     map.removeTile(tileOnWay.x, tileOnWay.y, wallsLayer);
+                    var tempWall = game.add.sprite(tileOnWay.worldX + 8, tileOnWay.worldY, "things", 1);
+                    tempWall.anchor.x = 0.5;
+                    var brokenWallExplosion = new PixelsExplosion(tempWall);
+                    brokenWallExplosion.impactPoint = {x: furniture.data.velocityX > 0 ? 0 : 1, y: 0.5};
+                    brokenWallExplosion.impactForce = {x: 5, y: 2};
+                    brokenWallExplosion.start();
+
                     recalculateLights();
                     map.putTile(4, tileOnWay.x, tileOnWay.y, effectsLayer);
                     break;
@@ -566,7 +813,14 @@ function update() {
                 if (e.data.item) {
                     e.data.item.create(e);
                 }
-                e.destroy();
+                if (e.data.explosion) {
+                    e.data.explosion.impactPoint = {x: furniture.data.velocityX > 0 ? 0 : 1, y: 0.2};
+                    e.data.explosion.impactForce = {x: 1, y: Math.abs(furniture.data.velocityX)}
+                    e.data.explosion.start();
+                }
+                else {
+                    e.destroy();
+                }
 
             }
         });
@@ -596,6 +850,14 @@ function update() {
         }
     }
 
+    optionsText.text = elevatorHint || allowedOptions.map(function(opt) {
+        var title = opt.operation.title + " " + (words[opt.target.data.type] || opt.target.data.type);
+        if (opt.operation.available && !opt.operation.available()) {
+            title += "(" + opt.operation.unavailableTitle + ")";
+        }
+        return title;
+    }).join("\n").toLowerCase();
+
     if (space.justDown && allowedOptions.length > 0) {
         hero.animations.stop();
         hero.frame = 0;
@@ -611,37 +873,190 @@ var tempCanvas;
 //impactPoint - x:0-1, y:0-1
 //impactDirection - x:-1-1, y: -1-1
 //force = 5
-function producePixelParticles(spriteSource, impactPoint, impactDirection, force, singleColor) {
-    var partFar = game.add.bitmapData(spriteSource.width*5, spriteSource.height*3);
-    var partNear = game.add.bitmapData(spriteSource.width*5, spriteSource.height*3);
+
+function PixelsExplosion(spriteSource, singleColor, pixelsPercentage) {
+    if (spriteSource.anchor.x != 0.5) throw new Error("only middle-anchored sprites could explode, sorry");
+    this.impactPoint = {x: 0.5, y: 0.5};
+    this.impactForce = {x: 0.5, y: 0.5};
+    this.gravity = 0.05;
+    this.bounceBack = false;
     //todo: pixel reading could be cached!
+    if (pixelsPercentage === undefined) pixelsPercentage = 1;
+    this.pixelsPercentage = pixelsPercentage;
 
-    tempCanvas = tempCanvas || (game.add.bitmapData(48,48));
-    tempCanvas.copy(spriteSource, 0, 0);
-    var pixels = [];
-    tempCanvas.processPixel(function(color, x, y) {
-        if (color.alpha > 0) {
-            var pix = {
-                x: x,
-                y: y,
-                color: singleColor !== undefined ? singleColor : color,
-                far: Math.random() < 0.5
-            };
-            //todo: calculate initial velocity - (pix-impactPoint)*force*impactDirection
-            pixels.push(pix);
-        }
-    }, null, 0, 0, spriteSource.width, spriteSource.height);
+    this.spriteSource = spriteSource;
+    var width = Math.abs(spriteSource.width); //due to scale it could be negative
 
-    //todo: generate update fn which will recalculate pixel positions and redraw them
-    //todo: optimize - use 1 color (so less redraws), use less pixels
-    //todo: calculate most used color and use it automatically
+    this.partFar = game.add.bitmapData(width*3, spriteSource.height|0);
+    this.partNear = game.add.bitmapData(width*3, spriteSource.height|0);
+    
+    this.baseX = width;
+    this.baseY = 0;//spriteSource.height;
 
+    this.swidth = width;
+    this.sheight = spriteSource.height|0;
 
+    this.singleColor = singleColor;
+
+    this.started = false;
+    this.autoDestroy = true;
+    this.stoppedPixels = 0;
 }
+
+PixelsExplosion.prototype = {
+
+    preparePixels: function() {
+
+        tempCanvas = tempCanvas || (game.add.bitmapData(48,48));
+        tempCanvas.clear(0, 0, 48, 48);
+        //here offset shall be used
+        //tempCanvas.fill(0,255,0);
+        tempCanvas.draw(this.spriteSource, Math.abs(this.spriteSource.offsetX), this.spriteSource.offsetY, this.swidth, this.spriteSource.height|0);
+        var pixels = [];
+        //game.add.sprite(100,10, tempCanvas);
+        tempCanvas.update(0, 0, tempCanvas.width, this.spriteSource.height);
+        tempCanvas.processPixelRGB(function(color, x, y) {
+            if (color.a > 0 && Math.random() < this.pixelsPercentage) {
+                var pix = {
+                    x: x,
+                    y: y,
+                    color: this.singleColor !== undefined ? this.singleColor : color.rgba,
+                    far: Math.random() < 0.5,
+                    cycles: 0
+                };
+                //todo: calculate initial velocity - (pix-impactPoint)*force*impactDirection
+                pixels.push(pix);
+            }
+        }.bind(this), null, 0, 0, this.swidth, this.spriteSource.height|0);
+
+        this.pixels = pixels;
+    },
+
+    start: function() {
+        this.spriteFar = game.add.sprite(this.spriteSource.x - this.swidth/2 - this.baseX, this.spriteSource.top - this.baseY, this.partFar);
+        this.spriteNear = game.add.sprite(this.spriteSource.x - this.swidth/2 - this.baseX, this.spriteSource.top - this.baseY, this.partNear);
+        this.spriteFar.update = this.update.bind(this);
+        this.preparePixels();
+
+        particlesFar.add(this.spriteFar);
+        particlesNear.add(this.spriteNear);
+
+        if (this.autoDestroy) this.spriteSource.destroy();
+        this.started = true;
+        var impactPixel = {
+            x: this.swidth*this.impactPoint.x,
+            y: this.sheight*this.impactPoint.y
+        };
+        this.pixels.forEach(function(pix) {
+            var dist = Phaser.Math.distance(pix.x, pix.y, impactPixel.x, impactPixel.y);
+            pix.velocity = {
+                x: this.impactForce.x * (pix.x - impactPixel.x) / dist * (0.9 + Math.random()*0.2),
+                y: this.impactForce.y * (pix.y - impactPixel.y) / dist * (0.9 + Math.random()*0.2)
+            };
+
+            if (this.pixelOnWall(pix) == "wall" && this.bounceBack) {
+                //move outside wall
+                pix.velocity.x = -pix.velocity.x;
+                while (this.pixelOnWall(pix) == "wall") {
+                    pix.x += pix.velocity.x;
+                }
+            }
+
+        }.bind(this));
+    },
+
+    //false - none, "floor" - floor, "wall"
+    pixelOnWall: function(pix) {
+        //instead of tile method - better to use bitmap
+        var absX = this.spriteFar.x + this.baseX + pix.x;
+        var absY = this.spriteFar.y + this.baseY + pix.y;
+
+        var tileOnWay = wallsLayer.getTiles(absX, absY, 1, 4).filter(function(f) { return f && f.index > -1;})[0];
+        if (tileOnWay) {
+            switch (tileOnWay.index) {
+                case 1:
+                case 2:
+                    return absX >= tileOnWay.worldX + 6 && absX <= tileOnWay.worldX + 10 ? "wall" : false;
+                    //vertical
+                    break;
+                case 3:
+                case 5:
+                case 8:
+                    return absY > tileOnWay.worldY-Math.random() ? "floor": false;
+                    //horizontal
+                    break;
+            }
+        }
+    },
+    
+    update: function() {
+        if (this.started) {
+            this.pixels.forEach(function(pix) {
+                if (pix.stopped) return;
+                var velocitySteps = 1+Math.floor(Phaser.Math.distance(0,0,pix.velocity.x, pix.velocity.y));
+                var wasX = pix.x;
+                for (var step = 0; step < velocitySteps; step++) {
+                    pix.x += pix.velocity.x/velocitySteps;
+                    pix.y += pix.velocity.y/velocitySteps;
+                    var onWhat = this.pixelOnWall(pix);
+                    if (onWhat) {
+                        if (onWhat === "wall" && this.bounceBack) {
+                            pix.velocity.x = -pix.velocity.x;
+                            pix.velocity.y /= 2;
+                        } else {
+                            pix.stopped = true;
+                            this.stoppedPixels++;
+                            break;
+                        }
+                    }
+                }
+                pix.cycles++;
+                pix.velocity.y += this.gravity;
+
+
+            }.bind(this));
+
+            this.render();
+            if (this.stoppedPixels == this.pixels.length) {
+                this.started = false;
+                //console.log("all stopped");
+            }
+        }
+
+    },
+    
+    render: function() {
+        var farCtx = this.partFar.context;
+        var nearCtx = this.partNear.context;
+        nearCtx.clearRect(0, 0, this.partFar.width, this.partFar.height);
+        farCtx.clearRect(0, 0, this.partFar.width, this.partFar.height);
+        //ctx.fillStyle = "green";
+        //ctx.fillRect(0, 0, this.partFar.width, this.partFar.height);
+        if (this.singleColor) {
+            nearCtx.fillStyle = farCtx.fillStyle = this.singleColor;
+        }
+        this.pixels.forEach(function(pix) {
+            var ctx = pix.far ? farCtx : nearCtx;
+            if (!this.singleColor) {
+                ctx.fillStyle = pix.color;
+                ctx.fillRect(this.baseX + pix.x|0, this.baseY + pix.y|0, 1, 1);
+            } else {
+                ctx.rect(this.baseX + pix.x|0, this.baseY + pix.y|0, 1, 1);
+            }
+        }.bind(this));
+        if (this.singleColor) {
+            farCtx.fill();
+            nearCtx.fill();
+        };
+        this.partFar.dirty = true;
+        this.partNear.dirty = true;
+    }
+};
+
 
 function debugRender1() {
     game.debug.reset();
-    //game.debug.text(game.time.fps, 32,32);
+    //game.debug.text(game.time.fps, game.camera.width/2,game.camera.height-10);
     //game.debug.geom(new Phaser.Rectangle(hero.x-Math.abs(hero.width)/2, hero.top+4, Math.abs(hero.width), hero.height-8));
     //furnitureGroup.forEach(function(f) { game.debug.geom(f.data.opBounds)})
     //enemiesGroup.forEach(function(e) { game.debug.geom(new Phaser.Rectangle(e.x-Math.abs(e.width)/2, e.top, Math.abs(e.width), e.height), "rgba(255,0,0,0.2)")})
@@ -658,11 +1073,11 @@ function debugRender1() {
             ,"rgba(255,255,0,0.2)" )
         })
     })*/
-    allowedOptions.forEach(function(opt, i) {
+    /*allowedOptions.forEach(function(opt, i) {
         var title = opt.operation.title + " " + opt.target.data.type;
         if (opt.operation.available && !opt.operation.available()) {
             title += "(" + opt.operation.unavailableTitle + ")";
         }
         game.debug.text(title, 2, 16+16*i);
-    });
+    });*/
 }
