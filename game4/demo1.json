@@ -12,7 +12,7 @@
          "y":0
         }, 
         {
-         "data":[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 16, 11, 11, 11, 11, 11, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 15, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 10, 10, 10, 10, 10, 10, 10, 9, 10],
+         "data":[16, 11, 11, 11, 11, 11, 17, 0, 0, 0, 0, 0, 16, 11, 11, 11, 11, 11, 17, 0, 14, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 15, 0, 0, 0, 0, 0, 7, 0, 15, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 9, 10, 10, 10, 10, 10, 9, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 9, 10],
          "height":4,
          "name":"effects",
          "opacity":1,
@@ -94,10 +94,12 @@
                  "name":"",
                  "properties":
                     {
+                     "color":"#fffffff0",
                      "id":1
                     },
                  "propertytypes":
                     {
+                     "color":"color",
                      "id":"int"
                     },
                  "rotation":0,
@@ -105,6 +107,46 @@
                  "visible":true,
                  "width":16,
                  "x":240,
+                 "y":16
+                }, 
+                {
+                 "gid":12,
+                 "height":16,
+                 "id":23,
+                 "name":"",
+                 "properties":
+                    {
+                     "color":"#ffd87666"
+                    },
+                 "propertytypes":
+                    {
+                     "color":"color"
+                    },
+                 "rotation":0,
+                 "type":"lamp",
+                 "visible":true,
+                 "width":16,
+                 "x":32,
+                 "y":16
+                }, 
+                {
+                 "gid":12,
+                 "height":16,
+                 "id":24,
+                 "name":"",
+                 "properties":
+                    {
+                     "color":"#ff25ca1a"
+                    },
+                 "propertytypes":
+                    {
+                     "color":"color"
+                    },
+                 "rotation":0,
+                 "type":"lamp",
+                 "visible":true,
+                 "width":16,
+                 "x":64,
                  "y":16
                 }],
          "opacity":1,
@@ -170,7 +212,7 @@
          "x":0,
          "y":0
         }],
- "nextobjectid":23,
+ "nextobjectid":25,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tileheight":16,

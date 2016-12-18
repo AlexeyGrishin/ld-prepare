@@ -120,6 +120,7 @@ function kickOpExecute(furniture) {
             furniture.animations.play("fly");
             if (furniture.data.fakeInvisibleWall) {
                 map.removeTile(furniture.data.fakeInvisibleWall.x, furniture.data.fakeInvisibleWall.y, wallsLayer);
+                recalculateLights();
             }
             hero.animations.play("kick-stop").onComplete.addOnce(function() {
                 hero.data.inAction = false;
@@ -182,7 +183,7 @@ function makeKickable(obj, type, speed, animRange1, animRange2) {
 }
 
 function createAudio(o) {
-    //add 3 sprites near
+    //todo: make methods like "play", "stop", "bass" - to control animations
     var pos = pos24To16(o);
     var audio = game.add.sprite(pos.x, pos.y, "audio");
     audio.anchor.x = 0.5;
@@ -200,7 +201,6 @@ function createAudio(o) {
     game.add.tween(speaker1.scale).to({x: 1.1, y: 0.9}, 500, Phaser.Easing.Sinusoidal.In, true, 0, -1, true);
     game.add.tween(speaker2.scale).to({y: 0.9}, 500, Phaser.Easing.Sinusoidal.Out, true, 0, -1, true);
 
-    //todo: move out
     makeKickable(speaker1, 'speaker', 5, 3, 21);
     makeKickable(speaker2, 'speaker', 5, 0, 19);
     makeKickable(audio, 'audio', 5, 0, 19);
@@ -209,8 +209,63 @@ function createAudio(o) {
     furnitureGroup.add(speaker2);
 }
 
-var furnitureGroup, enemiesGroup, particlesFar, particlesNear, flyingFurnitureGroup, doorsGroup;
-var lamps;
+var LAMP_RADIUS = 320;
+var LAMP_HALF_ANGLE = Math.PI/2*0.8;
+
+function createLamp(o) {
+    var lampItself = game.add.sprite(o.x, o.y-16, "things", 11);    //11 - on, 12 - off
+    lampItself.data = {
+        type: 'lamp',
+        on: true
+    };
+    lampItself.update = function() {
+        this.frame = this.data.on ? 11 : 12;
+    };
+    lamps.add(lampItself);
+
+    //so inspect the room to know limits and possible break-throughts
+    var tileX = o.x/16, tileY = o.y/16;
+    var room = {left: tileX, right: tileX, top: tileY, bottom: tileY};
+    for (var x = tileX; x < map.width; x++) {
+        if (map.getTile(x, tileY, wallsLayer)) {
+            room.right = x*16 + 8; break;
+        }
+    }
+    for (var x = tileX; x >=0; x--) {
+        if (map.getTile(x, tileY, wallsLayer)) {
+            room.left = x*16 + 8; break;
+        }
+    }
+    for (var y = tileY; y < map.height; y++) {
+        if (map.getTile(tileX, y, wallsLayer)) {
+            room.bottom = y*16;
+        }
+    }
+    room.top = tileY*16 - 13;
+    //no need for top - lamp always under ceiling
+
+    room.extensions = [];
+    var possibleBT = [
+        {x: room.left, y: room.bottom-16, tileX: (room.left-8)/16, tileY: (room.bottom/16)-1},
+        {x: room.right, y: room.bottom-16, tileX: (room.right-8)/16, tileY: (room.bottom/16)-1}
+    ];
+    possibleBT.forEach(function(bt) {
+        if (Phaser.Math.distance(lampItself.x, bt.x, lampItself.y, bt.y) > LAMP_RADIUS) return;
+        //var angle = Phaser.Math.atan2(bt.x - lamp.x, bt.y - lamp.y)
+        //todo: check angle?
+        var p1 = {x: bt.x, y: bt.y};
+        var p2 = {x: bt.x, y: room.bottom};
+        var p3 = {y: room.bottom, x: bt.x + (bt.x-lampItself.x)*16/(bt.y - lampItself.y - 16)};
+        room.extensions.push({p1: p1, p2: p2, p3: p3, tileX: bt.tileX, tileY: bt.tileY});
+    });
+
+    lampItself.data.room = room;
+    lampItself.data.color = o.properties.color;
+
+}
+
+var furnitureGroup, enemiesGroup, particlesFar, particlesNear, flyingFurnitureGroup;
+var lamps, lightBitmap;
 
 var PerObject = {
     hero: createHero,
@@ -219,7 +274,9 @@ var PerObject = {
     girl: createGirl,
     door: createDoor,
     garderob: createGarderob,
-    audio: createAudio
+    audio: createAudio,
+
+    lamp: createLamp
 };
 
 function create() {
@@ -239,13 +296,15 @@ function create() {
     enemiesGroup = game.add.group();
     particlesNear = game.add.group();
     flyingFurnitureGroup = game.add.group();
+    lamps = game.add.group();
     map.setCollisionByExclusion([], true, wallsLayer);
     //map.setCollisionByExclusion([], true, objectsLayer);
 
     wallsLayer.resizeWorld();
 
     map.objects.rooms.forEach(function(o) {
-        //lamps
+        (PerObject[o.type] || function() {})(o);
+
         console.log(o);
     });
     map.objects.people.forEach(function(o) {
@@ -263,6 +322,46 @@ function create() {
     space = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
 
     prepareWallsForDrilling();
+    lightBitmap = game.add.bitmapData(game.world.width, game.world.height);
+    var lightHover = game.add.sprite(0,0, lightBitmap);
+    recalculateLights();
+}
+
+function recalculateLights() {
+    var ctx = lightBitmap.context;
+    ctx.clearRect(0, 0, lightBitmap.width, lightBitmap.height);
+    ctx.fillStyle = "rgba(0,0,0,0.2)";
+    ctx.fillRect(0, 0, lightBitmap.width, lightBitmap.height);
+    //ctx.globalCompositeOperation = "copy";
+    lamps.forEach(function(lamp) {
+        var clr = Phaser.Color.hexToColor("#" + lamp.data.color.substring(3));
+        console.log(clr);
+        ctx.fillStyle = "rgba(" + clr.r + "," + clr.g + "," + clr.b + ",0.2)";
+        //draw room
+        ctx.beginPath();
+        ctx.moveTo(lamp.centerX, lamp.centerY);
+        var angleRight = Math.PI/2 + LAMP_HALF_ANGLE;
+        var angleLeft = Math.PI/2 - LAMP_HALF_ANGLE;
+        //console.log(angleRight, Math.tan(angleRight), (lamp.data.room.right - lamp.centerX));
+        ctx.lineTo(lamp.data.room.right, lamp.centerY - Math.tan(angleRight) * (lamp.data.room.right - lamp.centerX));
+        ctx.lineTo(lamp.data.room.right, lamp.data.room.bottom);
+        ctx.lineTo(lamp.data.room.left, lamp.data.room.bottom);
+        ctx.lineTo(lamp.data.room.left, lamp.centerY - Math.tan(angleLeft) * (lamp.data.room.left - lamp.centerX));
+        ctx.lineTo(lamp.centerX, lamp.centerY);
+        ctx.fill();
+
+        lamp.data.room.extensions.forEach(function(ext) {
+            if (!map.getTile(ext.tileX|0, ext.tileY|0, wallsLayer))  {
+                ctx.beginPath();
+                ctx.moveTo(ext.p1.x, ext.p1.y);
+                ctx.lineTo(ext.p2.x, ext.p2.y);
+                ctx.lineTo(ext.p3.x, ext.p3.y);
+                ctx.fill();
+            }
+        });
+        //console.log(lamp.data.room);
+    });
+    lightBitmap.dirty = true;
 }
 
 function prepareWallsForDrilling() {
@@ -364,6 +463,7 @@ function update() {
                     //broken wall, break through
                     //todo: anim
                     map.removeTile(tileOnWay.x, tileOnWay.y, wallsLayer);
+                    recalculateLights();
                     map.putTile(4, tileOnWay.x, tileOnWay.y, effectsLayer);
                     break;
             }
@@ -423,6 +523,18 @@ function debugRender1() {
     //furnitureGroup.forEach(function(f) { game.debug.geom(f.data.opBounds)})
     //enemiesGroup.forEach(function(e) { game.debug.geom(new Phaser.Rectangle(e.x-Math.abs(e.width)/2, e.top, Math.abs(e.width), e.height), "rgba(255,0,0,0.2)")})
     //flyingFurnitureGroup.forEach(function(f) { game.debug.geom(f.data._debugGeom)})
+    /*lamps.forEach(function(lamp) {
+        game.debug.geom(
+            new Phaser.Rectangle(lamp.data.room.left, lamp.data.room.top,
+            lamp.data.room.right-lamp.data.room.left, lamp.data.room.bottom-lamp.data.room.top),
+            "rgba(255,255,0,0.2)"
+        );
+        lamp.data.room.extensions.forEach(function(ex) {
+            game.debug.geom(
+                new Phaser.Polygon(ex.p1, ex.p2, ex.p3)
+            ,"rgba(255,255,0,0.2)" )
+        })
+    })*/
     allowedOptions.forEach(function(opt, i) {
         var title = opt.operation.title + " " + opt.target.data.type;
         if (opt.operation.available && !opt.operation.available()) {
