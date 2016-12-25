@@ -7,7 +7,8 @@ var Performance = {
     ShadowsStepsCount: 128,
     UseShadowBitmask: false,
 
-    Map3dScale: 2
+    Map3dScale: 1,
+    Blur: true
 };
 
 function preload() {
@@ -205,6 +206,10 @@ function create1() {
         var bx = game.add.filter("BlurX");
         var by = game.add.filter("BlurY");
         soSprite.filters = soSprite.filters.concat([rb, bx, by]);
+    } else if (Performance.Blur) {
+        var bx = game.add.filter("BlurX");
+        var by = game.add.filter("BlurY");
+        soSprite.filters = soSprite.filters.concat([bx, by]);
     }
 
     //heightsSprite.x = heightsSprite.y = 0; //for debug
@@ -340,7 +345,7 @@ function update1() {
     });
 
     var lights = [
-        {x: lightHero.x+4, y: lightHero.y+8, z:heroHeight, distance: 200, radius: 40, strength: 2* Performance.Map3dScale},
+        {x: lightHero.x+4, y: lightHero.y+8, z:heroHeight, distance: 200, radius: 40, strength: 1},
 
         //{x: lightHero.x+10, y: lightHero.y+8, z:heroHeight, distance: distance, radius: 16},
         //{x: lightHero.x+16, y: lightHero.y+8, z:heroHeight, distance: distance, radius: 16}

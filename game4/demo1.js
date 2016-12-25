@@ -350,6 +350,7 @@ function createAudio(o) {
                                     speaker1.data.explosion.start();
                                     speaker2.data.explosion.start();
                                     audioDestroyed = true;
+                                    pseudoFurniture.destroy();
                                 }
                             });
                         });
@@ -853,7 +854,7 @@ function update() {
     optionsText.text = elevatorHint || allowedOptions.map(function(opt) {
         var title = opt.operation.title + " " + (words[opt.target.data.type] || opt.target.data.type);
         if (opt.operation.available && !opt.operation.available()) {
-            title += "(" + opt.operation.unavailableTitle + ")";
+            title += " (" + opt.operation.unavailableTitle + ")";
         }
         return title;
     }).join("\n").toLowerCase();

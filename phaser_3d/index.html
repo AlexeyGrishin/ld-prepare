@@ -1,0 +1,31 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Demo 3d</title>
+    <script src="../game4/phaser.js"></script>
+    <script src="../tr2/three.js"></script>
+    <script src="../tr2/loader.js"></script>
+    <script src="../tr2/mtloader.js"></script>
+</head>
+<body>
+<div id="container"></div>
+
+<script src="plugin.js"></script>
+<script src="index.js"></script>
+<script>
+    var game = new Phaser.Game({
+        width: 320,
+        height: 320,
+        renderer: Phaser.AUTO,
+        parent: 'container',
+        antialias: false,
+        state: {preload: preload,
+            create: create,
+            update: update,
+            render: debugRender1 }
+    });
+
+</script>
+</body>
+</html>

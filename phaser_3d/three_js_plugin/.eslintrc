@@ -1,0 +1,36 @@
+{
+  "parserOptions": {
+    "sourceType": "module"
+  },
+  "env": {
+    "browser": true,
+    "commonjs": true,
+    "es6": true,
+    "node": true
+  },
+  "globals": {
+    "THREE": true,
+    "Phaser" : true,
+    "PIXI": true
+  },
+  "rules": {
+    "no-const-assign": "error",
+    "no-this-before-super": "error",
+    "no-undef": "error",
+    "no-unreachable": "error",
+    "no-unused-vars": "error",
+    "constructor-super": "error",
+    "valid-typeof": "error",
+
+    "no-cond-assign": "error",
+    "no-constant-condition": "error",
+    "no-dupe-args": "error",
+    "no-dupe-keys": "error",
+    "no-duplicate-case": "error",
+    "array-callback-return": "warn",
+    "consistent-return": "error",
+    "no-fallthrough": "error",
+    "no-sequences": "error"
+
+  }
+}

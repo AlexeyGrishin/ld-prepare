@@ -5,6 +5,7 @@ var game = new Phaser.Game(960, 600, Phaser.WEBGL, 'container', {
     render: debugRender });
 
 function preload() {
+    game.init3d();
     game.time.advancedTiming = true;
 
     game.load.tilemap('level1', 'l1.json', null, Phaser.Tilemap.TILED_JSON);
@@ -19,6 +20,8 @@ function preload() {
     game.load.script('lights_round', 'lights_round.js');
     game.load.script('lights_line', 'lights_line.js');
     game.load.image('watches', 'watches.png');
+
+    game.load.obj3d("dalek", {insteadOf: ["sprites", 18]})
 
 }
 
@@ -157,7 +160,7 @@ var Doctor = {
                         this.state.phase = 3;
                         this.state.nextPhase = game.time.now + 1000;
                         if (this.killedBy) {
-                            this.killedBy.kill();
+                            this.killedBy.destroy();
                         }
                     }
                     break;
@@ -306,7 +309,16 @@ function create() {
     useWatches = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
 
 
-    daleks = game.add.group(undefined, "daleks");
+    daleks = game.p3d.addGroup3d();// game.add.group(undefined, "daleks");
+    daleks.render = false;
+    daleks.shadows = true;
+    //daleks.add(game.p3d.createAmbientLight(0xffffff, 0.5));
+    //daleks.add(game.p3d.createDirectionalLight(0xffeeee, 1, {x: game.world.width, y: game.world.height-100, z: 20}, {x: game.world.width-100, y: game.world.height-100, z: 0}));
+    /*daleks.add(game.p3d.createSpotLight(0xffeeee, 2, 200,
+        undefined, undefined,
+        {x: game.world.width/2+350, y: game.world.height-500, z: 40},
+        {x: game.world.width/2+350, y: game.world.height-500, z: 20}));*/
+    //daleks.add(game.p3d.createDirectionalLight(0xffffff, 4, {x: game.world.width/2, y:  game.world.height-400, z: 50}, {x: game.world.width, y: game.world.height, z: 0}));
     clocks = game.add.group(undefined, "clocks");
     watches = game.add.group(undefined, "watches");
 
@@ -319,16 +331,29 @@ function create() {
 
     function addDalek(x, y) {
         //todo: random color
-        var dalek = game.add.sprite(x, y - 32, 'sprites', 18);
+        var dalek = game.add.sprite(x, y-32, 'sprites', 18);
+        //dalek.anchor.y = 0;
         dalek.animations.add('left', [18,19,20], 10, true);
         dalek.animations.add('right', [18+12,19+12,20+12], 10, true);
 
         game.physics.enable(dalek, Phaser.Physics.ARCADE);
         dalek.body.collideWorldBounds = true;
         dalek.animations.play('left');
-        dalek.body.velocity.x = -100;
-
+        dalek.body.velocity.x =  -100;
         daleks.add(dalek);
+
+        dalek.p3d.mesh.position.y = -13;
+        dalek.p3d.z = 0;
+        daleks.add(game.p3d.createSpotLight(0xffeeee, 3, 1000, Math.PI/8, undefined,
+            {x: game.width/2, y: dalek.y, z: 100},
+            {x: dalek.x, y: dalek.y, z: 10}
+        ))
+        //dalek.p3d.mesh.children[0].geometry.computeBoundingBox();
+        //console.log(dalek.p3d.mesh.children[0].geometry.boundingBox);
+        /*dalek.p3d.mesh.traverse(function(no) {
+            if (no instanceof THREE.Mesh) no.material = new THREE.MeshPhongMaterial({color: 0xff0000});
+
+        })*/
 
         dalek.visLine = new Phaser.Line();
     }
@@ -374,6 +399,8 @@ function create() {
     UI.status = game.add.text(0, game.camera.height - 32, '', {backgroundColor: '#ccc', font: '24px'});
     UI.status.fixedToCamera = true;
     //UI.status.height = 32;
+
+    //console.log(daleks._3d);
 }
 //todo: this.targets.setAll('body.allowGravity', false); <-- to apply same code to all sprites in group!
 
@@ -449,11 +476,20 @@ function update() {
         }
 
         var tile = map.getTileWorldXY(dalek.body.x + dalek.body.velocity.x / 10, dalek.body.y + dalek.body.height + 5);
+        if (dalek.isAnimating) return;
         if (!tile || dalek.body.blocked.left || dalek.body.blocked.right) {
-            dalek.body.velocity.x = -dalek.body.velocity.x;
-            if (dalek.body.blocked.left) dalek.body.velocity.x = 100;
-            if (dalek.body.blocked.right) dalek.body.velocity.x = -100;
-            dalek.animations.play(dalek.body.velocity.x > 0 ? 'right' : 'left');
+            dalek.isAnimating = true;
+            var velocity = -dalek.body.velocity.x;
+            if (dalek.body.blocked.left) velocity = 100;
+            if (dalek.body.blocked.right) velocity = -100;
+            dalek.body.velocity.x = 0;
+            game.add.tween(dalek.p3d.rotation).to({y: dalek.p3d.rotation.y + Math.PI}, 500, null, true).onComplete.addOnce(function() {
+               dalek.isAnimating = false;
+                dalek.body.velocity.x = velocity;
+
+                dalek.animations.play(dalek.body.velocity.x > 0 ? 'right' : 'left');
+            });
+
         }
         var moveRight = dalek.body.velocity.x > 0;
         dalek.visLine.start.x = dalek.body.x + (moveRight ? dalek.width : 0);

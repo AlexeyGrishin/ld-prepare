@@ -5,17 +5,25 @@ let {Buffer} = require("buffer");
 function blitProjectionSymmetry(img, out, idx, x, y, config, startCol = 0) {
     let col = startCol;
     for (let row = config.size-1; row >= 0; row--) {
-        let width = 0;
-        img.scan(x, y+row, config.size, 1, function(x1, y1, idx1) {
-            if (this.bitmap.data[idx1+3] > 0) width++;
-        });
-        let hw = width / 2;
-        out.scan(col*config.size, idx*config.size, config.size, config.size, function(x1, y1, idx1) {
-            if (Math.hypot(x1-col*config.size-config.size/2, y1-idx*config.size-config.size/2) <= hw) {
-                this.bitmap.data[idx1] = 0;
-                this.bitmap.data[idx1+1] = 0;
-                this.bitmap.data[idx1+2] = 0;
-                this.bitmap.data[idx1+3] = 255;
+        let cx = config.size / 2;
+        img.scan(x, y+row, config.size/2, 1, function(x1, y1, idx1) {
+            if (this.bitmap.data[idx1+3] > 0) {
+                let width = Math.abs(x1-x-cx);
+                let color = config.keepColors ? [
+                    this.bitmap.data[idx1],
+                    this.bitmap.data[idx1+1],
+                    this.bitmap.data[idx1+2],
+                    this.bitmap.data[idx1+3]
+                ] : [0,0,0,255];
+                //draw 'circle'
+                out.scan(col*config.size, idx*config.size, config.size, config.size, function(x2, y2, idx2) {
+                    if (Math.hypot(x2-col*config.size-config.size/2, y2-idx*config.size-config.size/2) <= width) {
+                        this.bitmap.data[idx2] = color[0];
+                        this.bitmap.data[idx2+1] = color[1];
+                        this.bitmap.data[idx2+2] = color[2];
+                        this.bitmap.data[idx2+3] = color[3];
+                    }
+                });
             }
         });
         col++;
@@ -27,8 +35,14 @@ function blitProjectionFlatX(img, out, idx, x, y, config, startCol = 0, {project
     for (let row = config.size-1; row >= 0; row--) {
         img.scan(x, y+row, config.size, 1, function(x1, y1, idx1) {
             if (this.bitmap.data[idx1+3] > 0) {
+                let color = config.keepColors ? Jimp.rgbaToInt(
+                    this.bitmap.data[idx1],
+                    this.bitmap.data[idx1+1],
+                    this.bitmap.data[idx1+2],
+                    this.bitmap.data[idx1+3]
+                ) : 0x000000FF;
                 for (var w = 0; w < (projectionWidth || 1); w++) {
-                    out.setPixelColor(0x000000FF, col * config.size + x1 - x, idx * config.size + projectionCoord + w);
+                    out.setPixelColor(color, col * config.size + x1 - x, idx * config.size + projectionCoord + w);
                 }
             }
         });
@@ -43,9 +57,15 @@ function blitProjectionFlatY(img, out, idx, x, y, config, startCol = 0, {project
     let col = startCol;
     for (let row = config.size-1; row >= 0; row--) {
         img.scan(x, y+row, config.size, 1, function(x1, y1, idx1) {
+            let color = config.keepColors ? Jimp.rgbaToInt(
+                this.bitmap.data[idx1],
+                this.bitmap.data[idx1+1],
+                this.bitmap.data[idx1+2],
+                this.bitmap.data[idx1+3]
+            ) : 0x000000FF;
             if (this.bitmap.data[idx1+3] > 0) {
                 for (var w = 0; w < (projectionWidth || 1); w++) {
-                    out.setPixelColor(0x000000FF, col * config.size + projectionCoord + w, idx * config.size + (x1 - x));
+                    out.setPixelColor(color, col * config.size + projectionCoord + w, idx * config.size + (x1 - x));
                 }
             }
         });
@@ -235,9 +255,7 @@ module.exports.map3dToVex = function(inputPath, outputPath, config, cb) {
         if (err) return cb(err);
         let spritesCount = img.bitmap.height / config.size;
         let maxHeight = img.bitmap.width / config.size;
-        let hCount = Math.floor(maxHeight / 16);
-
-        let sprites = [];
+        let palette = [];
 
         for (var i = 0; i < spritesCount; i++) {
             let sprite = {
@@ -247,8 +265,12 @@ module.exports.map3dToVex = function(inputPath, outputPath, config, cb) {
             for (var x = 0; x < config.size; x++) {
                 for (var y = 0; y < config.size; y++) {
                     for (var z = 0; z < maxHeight; z++) {
-                        if ((img.getPixelColor(z*config.size + x, i*config.size + y) & 0xFF) > 0) {
-                            sprite.voxels.push([x,y,z,0]);
+                        let color = img.getPixelColor(z*config.size + x, i*config.size + y);
+                        if ((color & 0xFF) > 0) {
+                            if (palette.indexOf(color) == -1) {
+                                palette.push(color);
+                            }
+                            sprite.voxels.push([x,y,z,palette.indexOf(color)]);
                         }
                     }
                 }
@@ -271,6 +293,11 @@ module.exports.map3dToVex = function(inputPath, outputPath, config, cb) {
                     id: 'XYZI',
                     content: [sprite.voxels.length].concat(sprite.voxels),
                     contentSize: 4 + sprite.voxels.length*4,
+                    childrenSize: 0
+                }, {
+                    id: 'RGBA',
+                    content: palette,
+                    contentSize: 4*palette.length,
                     childrenSize: 0
                 }]
             };
@@ -301,6 +328,15 @@ module.exports.map3dToVex = function(inputPath, outputPath, config, cb) {
                             offset = buffer.writeInt32LE(n, offset);
                         });
                         break;
+                    case 'RGBA':
+                        chunk.content.forEach(function(color) {
+                            let rgba = Jimp.intToRGBA(color);
+                            offset = buffer.writeUInt8(rgba.r, offset);
+                            offset = buffer.writeUInt8(rgba.g, offset);
+                            offset = buffer.writeUInt8(rgba.b, offset);
+                            offset = buffer.writeUInt8(rgba.a, offset);
+                        });
+                        break;
                     case 'XYZI':
                         offset = buffer.writeInt32LE(chunk.content[0], offset);
                         chunk.content.slice(1).forEach(function(n) {
@@ -314,7 +350,8 @@ module.exports.map3dToVex = function(inputPath, outputPath, config, cb) {
                 (chunk.children || []).forEach(write);
             }
             write(mainChunk);
-            fs.writeFileSync(outputPath + "-" + i + ".vox", buffer);
+            let idx = config.tiles[i].tileNr;
+            fs.writeFileSync(outputPath + "-" + idx + ".vox", buffer);
         }
         cb();
 

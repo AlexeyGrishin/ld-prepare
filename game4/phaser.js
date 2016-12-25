@@ -74426,6 +74426,10 @@ Phaser.Loader.prototype = {
         //  Image or Data?
         switch (file.type)
         {
+            //TODO: added by grishin
+            case 'custom':
+                file.load(this.fileComplete.bind(this));
+                break;
             case 'packfile':
                 this.xhrLoad(file, this.transformUrl(file.url, file), 'text', this.fileComplete);
                 break;

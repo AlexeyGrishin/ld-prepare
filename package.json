@@ -4,11 +4,20 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "compile": "browserify -t [ babelify --presets [ es2015 ] ] -o ./phaser_3d/three_js_plugin/three_js_plugin.js  ./phaser_3d/three_js_plugin/plugin.js "
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "babel": "^6.5.2",
+    "babelify": "^7.3.0",
     "jimp": "^0.2.27"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.18.0",
+    "babel-preset-es2015": "^6.18.0",
+    "browserify": "*",
+    "babelify": "*"
   }
 }

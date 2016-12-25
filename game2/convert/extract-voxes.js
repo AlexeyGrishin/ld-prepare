@@ -1,4 +1,8 @@
-let {map3dToVex} = require('./convertors');
+let {map3dToVex, extractTileShadows} = require('./convertors');
 let config = require("./config.json");
 
-map3dToVex("../roguelikeSheet_shadows.png", "./roguelike", config, (err) => console.error(err));
+extractTileShadows("../roguelikeSheet_transparent.png", "../roguelikeSheet_pre_3d.png", config, (err) => {
+    if (err) return console.error(err);
+
+    map3dToVex("../roguelikeSheet_pre_3d.png", "./out/tile", config, (err) => console.error(err));
+});

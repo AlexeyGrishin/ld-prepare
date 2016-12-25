@@ -1,0 +1,25 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Dark world</title>
+    <script src="phaser.js"></script>
+    <script src="../tr2/three.js"></script>
+    <script src="../tr2/loader.js"></script>
+    <script src="../tr2/mtloader.js"></script>
+    <script src="../phaser_3d/three_js_plugin/three_js_plugin.js"></script>
+
+</head>
+<body>
+<div id="container"></div>
+
+<script src="game7.js"></script>
+<script>
+    var game = new Phaser.Game(640, 640, Phaser.AUTO, 'container', {
+        preload: preload,
+        create: create1,
+        update: update1,
+        render: debugRender1 });
+</script>
+</body>
+</html>

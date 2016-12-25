@@ -1,0 +1,92 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Doctor Who</title>
+    <script src="../game4/phaser.js"></script>
+</head>
+<body>
+<div id="container"></div>
+<script src="../tr2/three.js"></script>
+<script src="../tr2/loader.js"></script>
+<script src="../tr2/mtloader.js"></script>
+<script src="../phaser_3d/plugin.js"></script>
+
+<script>
+    var mtlLoader = new THREE.MTLLoader();
+    mtlLoader.setPath('../game1/');
+    //mtlLoader.setBaseUrl('models/');
+
+    function loadModel(name, cb) {
+        mtlLoader.load(name + '.mtl', function(materials) {
+            materials.preload();
+            var objLoader = new THREE.OBJLoader();
+            objLoader.setPath('../game1/');
+            objLoader.setMaterials(materials);
+            objLoader.load(name + '.obj', function(obj) {
+                cb(obj);
+            });
+        });
+    }
+
+    scene = new THREE.Scene();
+    camera = new THREE.OrthographicCamera( 0, 320, 320, 0, 1, 100 );
+    camera.position.z = 100;
+    camera.position.x = 0;
+    camera.position.y = 0;
+
+    renderer = new THREE.WebGLRenderer({ alpha: true, preserveDrawingBuffer: true });
+    renderer.setClearColor( 0x000000, 0.2 );
+    renderer.setSize( 320, 320);
+    renderer.shadowMap.enabled = true;
+
+    document.body.appendChild( renderer.domElement );
+
+    //var ambient = new THREE.AmbientLight(0xffffff, 0.5);
+    //scene.add(ambient);
+
+    var light1 = new THREE.SpotLight(0xffffff, 2.0, 1000);
+    //var light1 = new THREE.PointLight(0xffffff, 1.0, 3000);
+    light1.position.set(0,160, 100);
+    light1.target.position.set(320, 160, 0);
+    light1.target.updateMatrixWorld();
+    scene.add(light1, light1.target);
+    light1.castShadow = true;
+
+    //scene.add(new THREE.DirectionalLightHelper(light1, 10));
+    scene.add(new THREE.CameraHelper(light1.shadow.camera));
+
+    console.log(light1.shadow);
+    light1.shadow.camera.radius = 10;
+    /*light1.shadow.camera.left = 0;
+    light1.shadow.camera.right = 320;
+    light1.shadow.camera.near = 0;
+    light1.shadow.camera.far = 100;
+    light1.shadow.camera.top = 320;
+    light1.shadow.camera.bottom = 0;
+    light1.shadow.camera.updateProjectionMatrix();
+*/
+    var object;
+
+
+    loadModel("dalek", function(obj) {
+        obj.position.set(250, 160, 10);
+        scene.add(obj);
+        obj.children[0].castShadow = true;
+        obj.children[0].receiveShadow = true;
+        object = obj;
+        obj.rotation.x = -0.1;
+    });
+
+
+    function render() {
+        renderer.render(scene, camera);
+        requestAnimationFrame(render);
+        if (object) object.position.x -= 0.5;
+        //if (object) object.rotation.y -= 0.01;
+    }
+    render();
+</script>
+
+</body>
+</html>

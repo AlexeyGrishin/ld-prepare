@@ -1,6 +1,7 @@
 {
   "size": 16,
   "pad": 1,
+  "keepColors": true,
   "tiles": [
     {"tileNr": 530, "hotspotOffsetY": 4},
     {"tileNr": 644, "tileTopNr": 587, "hotspotOffsetY": 4},
