@@ -80,12 +80,19 @@ function create1() {
         return sp;
     });
 
+    var rotatedThree = game.add.sprite(30, 60, "roguelikeSheet_transparent", 530);
+    rotatedThree.rotation = Math.PI/8;
+    scene2.addSprite(rotatedThree);
+    //console.log(rotatedThree.rotation, rotatedThree.three2.rotation);
     scene2.forEach(function(sp) {
         sp.three2.rotation.x = -Math.PI/2;
         //var y = sp.three2.y;
         //sp.three2.y = sp.three2.z + BASE_Y;
         //sp.three2.z = y;
     });
+    //rotatedThree.three2.rotation.y = Math.PI/8;
+    //console.log(rotatedThree.rotation, rotatedThree.three2.rotation);
+
 
     //
     scene.sprite.x = game.world.width;  //move outside

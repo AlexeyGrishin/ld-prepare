@@ -20,7 +20,8 @@ export class ThreeLinkedObject {
         this.parent = scene;
         this.sprite = sprite;
         this.mainMesh = mainMesh;
-        this._rotation = new Proxy3d(mainMesh.rotation);
+        this._rotation = new Proxy3d(mainMesh.rotation, () => this.sprite.rotation = this._rotation.y);
+        this.update();
     }
 
     get x() { return this.sprite.x; }
@@ -34,8 +35,8 @@ export class ThreeLinkedObject {
 
     get rotation() { return this._rotation; }
 
-    applyRendering(rendering) {}
-    applyShadows(shadows) {}
+    applyRendering(_rendering) {}
+    applyShadows(_shadows) {}
 
     update() {
         this.updateCoords();
@@ -44,5 +45,6 @@ export class ThreeLinkedObject {
     updateCoords() {
         this.x = this.sprite.x;
         this.y = this.sprite.y;
+        this.rotation.y = this.sprite.rotation;
     }
 }

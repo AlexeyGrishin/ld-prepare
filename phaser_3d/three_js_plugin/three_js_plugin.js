@@ -50,20 +50,25 @@ var Proxy3d = exports.Proxy3d = function () {
 
 var ThreeLinkedObject = exports.ThreeLinkedObject = function () {
     function ThreeLinkedObject(scene, sprite, mainMesh) {
+        var _this = this;
+
         _classCallCheck(this, ThreeLinkedObject);
 
         this.parent = scene;
         this.sprite = sprite;
         this.mainMesh = mainMesh;
-        this._rotation = new Proxy3d(mainMesh.rotation);
+        this._rotation = new Proxy3d(mainMesh.rotation, function () {
+            return _this.sprite.rotation = _this._rotation.y;
+        });
+        this.update();
     }
 
     _createClass(ThreeLinkedObject, [{
         key: "applyRendering",
-        value: function applyRendering(rendering) {}
+        value: function applyRendering(_rendering) {}
     }, {
         key: "applyShadows",
-        value: function applyShadows(shadows) {}
+        value: function applyShadows(_shadows) {}
     }, {
         key: "update",
         value: function update() {
@@ -74,6 +79,7 @@ var ThreeLinkedObject = exports.ThreeLinkedObject = function () {
         value: function updateCoords() {
             this.x = this.sprite.x;
             this.y = this.sprite.y;
+            this.rotation.y = this.sprite.rotation;
         }
     }, {
         key: "x",
