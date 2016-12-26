@@ -7,7 +7,7 @@ var Performance = {
     ShadowsStepsCount: 128,
     UseShadowBitmask: false,
 
-    Map3dScale: 2,
+    Map3dScale: 1,
     Blur: false
 };
 
