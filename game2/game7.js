@@ -50,7 +50,7 @@ function create1() {
         //lights: [{color: 0xffffff, intensity: 0.5}],
         shadows: true,
         render: ThreePlugin.RenderNothing,
-        floor: 0xcccccc,
+        floor: 0xffffff,
         ignore: [621,588],
         //debugCanvas: true
     });
@@ -75,7 +75,7 @@ function create1() {
     lightForHero = scene.addLight(ThreePlugin.PointLight, {intensity: 1, distance: 200});
     scene2.addExisting(lightForHero, "three");
     fireLights = [0].map(function() {
-        let sp = scene.addLight(ThreePlugin.PointLight, {intensity: 1, distance: 200});
+        let sp = scene.addLight(ThreePlugin.PointLight, {intensity: 1, distance: 300});
         scene2.addExisting(sp, "three");
         return sp;
     });
@@ -157,7 +157,7 @@ function update1() {
     //lightForHero.three2.z = lightHero.y;
     //lightForHero.three2.y = heroHeight + BASE_Y;
 
-    var fireDistance = 400;
+    var fireDistance = 300;
 
     fireParticles.forEach(function(fp, fi) {
         if (game.rnd.integerInRange(0, 100) < 10) {

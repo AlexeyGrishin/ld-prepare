@@ -7,8 +7,8 @@ var Performance = {
     ShadowsStepsCount: 128,
     UseShadowBitmask: false,
 
-    Map3dScale: 1,
-    Blur: true
+    Map3dScale: 2,
+    Blur: false
 };
 
 function preload() {
@@ -147,7 +147,7 @@ function create1() {
 
     bgLayer.resizeWorld();
 
-    lightHero = game.add.sprite(120, 30, "sprites", 0);
+    lightHero = game.add.sprite(100, 90, "sprites", 0);
 
     game.physics.enable(lightHero, Phaser.Physics.ARCADE);
 
@@ -203,10 +203,8 @@ function create1() {
 
     if (Performance.Map3dScale > 1) {
         var rb = game.add.filter("ResizeBack");
-        var bx = game.add.filter("BlurX");
-        var by = game.add.filter("BlurY");
-        soSprite.filters = soSprite.filters.concat([rb, bx, by]);
-    } else if (Performance.Blur) {
+        soSprite.filters = soSprite.filters.concat([rb]);
+    } if (Performance.Blur) {
         var bx = game.add.filter("BlurX");
         var by = game.add.filter("BlurY");
         soSprite.filters = soSprite.filters.concat([bx, by]);
@@ -335,7 +333,7 @@ function update1() {
     if (buttons.down.justDown) heroHeight-=5;
     //lightHero.height = heroHeight;
 
-    var fireDistance = 300;
+    var fireDistance = 200;
 
     fireParticles.forEach(function(fp) {
         if (game.rnd.integerInRange(0, 100) < 10) {
