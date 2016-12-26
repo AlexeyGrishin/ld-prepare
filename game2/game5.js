@@ -4,11 +4,11 @@ var Performance = {
     LightsAmount: 4,
     Debug: false,
     ShadowStep: 1,
-    ShadowsStepsCount: 128,
+    ShadowsStepsCount: 64,
     UseShadowBitmask: false,
 
-    Map3dScale: 1,
-    Blur: false
+    Map3dScale: 2,
+    Blur: true
 };
 
 function preload() {
