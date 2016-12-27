@@ -11,12 +11,16 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 var Proxy3d = exports.Proxy3d = function () {
     function Proxy3d(target) {
-        var postSetFn = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : function () {};
+        var reverseY = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : function (y) {
+            return y;
+        };
+        var postSetFn = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : function () {};
 
         _classCallCheck(this, Proxy3d);
 
         this.target = target;
         this.postSetFn = postSetFn;
+        this.reverseY = reverseY;
     }
 
     _createClass(Proxy3d, [{
@@ -30,10 +34,10 @@ var Proxy3d = exports.Proxy3d = function () {
     }, {
         key: "y",
         get: function get() {
-            return this.target.y;
+            return this.reverseY(this.target.y);
         },
         set: function set(val) {
-            this.target.y = val;this.postSetFn();
+            this.target.y = this.reverseY(val);this.postSetFn();
         }
     }, {
         key: "z",
@@ -52,14 +56,25 @@ var ThreeLinkedObject = exports.ThreeLinkedObject = function () {
     function ThreeLinkedObject(scene, sprite, mainMesh) {
         var _this = this;
 
+        var rotationAxis = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : "y";
+
         _classCallCheck(this, ThreeLinkedObject);
 
         this.parent = scene;
         this.sprite = sprite;
         this.mainMesh = mainMesh;
-        this._rotation = new Proxy3d(mainMesh.rotation, function () {
-            return _this.sprite.rotation = _this._rotation.y;
+        this.rotationAxis = rotationAxis;
+        this.rotationDirection = 1;
+        if (this.rotationAxis[0] === "-") {
+            this.rotationAxis = this.rotationAxis[1];
+            this.rotationDirection = -1;
+        }
+        this._rotation = new Proxy3d(mainMesh.rotation, function (y) {
+            return y;
+        }, function () {
+            return _this.sprite.rotation = _this.rotationDirection * _this._rotation[_this.rotationAxis];
         });
+        this._scale = new Proxy3d(mainMesh.scale);
         this.update();
     }
 
@@ -70,6 +85,9 @@ var ThreeLinkedObject = exports.ThreeLinkedObject = function () {
         key: "applyShadows",
         value: function applyShadows(_shadows) {}
     }, {
+        key: "applyDebug",
+        value: function applyDebug(_debug) {}
+    }, {
         key: "update",
         value: function update() {
             this.updateCoords();
@@ -79,7 +97,37 @@ var ThreeLinkedObject = exports.ThreeLinkedObject = function () {
         value: function updateCoords() {
             this.x = this.sprite.x;
             this.y = this.sprite.y;
-            this.rotation.y = this.sprite.rotation;
+            this.rotation[this.rotationAxis] = this.rotationDirection * this.sprite.rotation;
+            this.scale.x = this.sprite.scale.x;
+            this.scale.y = this.sprite.scale.y;
+        }
+    }, {
+        key: "insertTo",
+        value: function insertTo(scene) {
+            scene.add(this.mainMesh);
+        }
+    }, {
+        key: "removeFrom",
+        value: function removeFrom(scene) {
+            scene.remove(this.mainMesh);
+        }
+    }, {
+        key: "attachTo",
+        value: function attachTo(anotherSprite) {
+            var _this2 = this;
+
+            var updateFn = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : function () {};
+
+            var oldUpdate = anotherSprite.update;
+            anotherSprite.update = function () {
+                oldUpdate.call(anotherSprite);
+                _this2.x = anotherSprite.x;
+                _this2.y = anotherSprite.y;
+                updateFn(_this2, anotherSprite);
+            };
+            anotherSprite.events.onDestroy.addOnce(function () {
+                return _this2.sprite.destroy();
+            });
         }
     }, {
         key: "x",
@@ -110,6 +158,11 @@ var ThreeLinkedObject = exports.ThreeLinkedObject = function () {
         get: function get() {
             return this._rotation;
         }
+    }, {
+        key: "scale",
+        get: function get() {
+            return this._scale;
+        }
     }]);
 
     return ThreeLinkedObject;
@@ -122,17 +175,39 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 exports.default = {
-    AmbientLight: { factory: function factory(_ref) {
+    AmbientLight: {
+        factory: function factory(_ref) {
             var color = _ref.color,
                 intensity = _ref.intensity;
             return new THREE.AmbientLight(color, intensity);
-        }, helperClass: undefined, shadows: false, target: false },
-    DirectionalLight: { factory: function factory(_ref2) {
+        },
+        helperClass: undefined,
+        shadows: false,
+        target: false
+    },
+    DirectionalLight: {
+        factory: function factory(_ref2) {
             var color = _ref2.color,
-                intensity = _ref2.intensity;
-            return new THREE.DirectionalLight(color, intensity);
-        }, helperClass: THREE.DirectionalLightHelper, shadows: true, target: true },
-    SpotLight: { factory: function factory(_ref3) {
+                intensity = _ref2.intensity,
+                _ref2$distance = _ref2.distance,
+                distance = _ref2$distance === undefined ? 100 : _ref2$distance;
+
+            var light = new THREE.DirectionalLight(color, intensity);
+            light.shadow.camera.top = distance;
+            light.shadow.camera.bottom = -distance / 2;
+            light.shadow.camera.left = -distance / 2;
+            light.shadow.camera.right = distance / 2;
+            light.shadow.camera.near = 0;
+            light.shadow.camera.far = distance;
+            light.shadow.camera.updateProjectionMatrix();
+            return light;
+        },
+        helperClass: THREE.DirectionalLightHelper,
+        shadows: true,
+        target: true
+    },
+    SpotLight: {
+        factory: function factory(_ref3) {
             var color = _ref3.color,
                 intensity = _ref3.intensity,
                 distance = _ref3.distance,
@@ -140,14 +215,23 @@ exports.default = {
                 penumbra = _ref3.penumbra,
                 decay = _ref3.decay;
             return new THREE.SpotLight(color, intensity, distance, angle, penumbra, decay);
-        }, helperClass: THREE.SpotLightHelper, shadows: true, target: true },
-    PointLight: { factory: function factory(_ref4) {
+        },
+        helperClass: THREE.SpotLightHelper,
+        shadows: true,
+        target: true
+    },
+    PointLight: {
+        factory: function factory(_ref4) {
             var color = _ref4.color,
                 intensity = _ref4.intensity,
                 distance = _ref4.distance,
                 decay = _ref4.decay;
             return new THREE.PointLight(color, intensity, distance, decay);
-        }, helperClass: THREE.PointLightHelper, shadows: true, target: false },
+        },
+        helperClass: THREE.PointLightHelper,
+        shadows: true,
+        target: false
+    },
 
     RenderSprites: 1,
     RenderModels: 2,
@@ -162,6 +246,8 @@ exports.default = {
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
+
+var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
@@ -186,22 +272,65 @@ var ThreeLight = function (_ThreeLinkedObject) {
         _this.light = light;
         _this.typeConfig = typeConfig;
         _this.config = config;
-        if (typeConfig.target) {
-            _this.target = new _base.Proxy3d(light.target.position, function () {
-                return light.target.updateMatrixWorld();
-            });
-        }
-        if (config && config.floor !== undefined && config.distance !== undefined) {
-            var material = scene.parent.createMaterial(config.floor);
-            var floor = new THREE.Mesh(new THREE.CircleGeometry(config.distance, 32), material);
-            floor.receiveShadow = true;
-            floor.position.set(0, 0, 0);
-            _this.floor = floor;
-        }
+        _this.applyConfig(typeConfig, config);
         return _this;
     }
 
     _createClass(ThreeLight, [{
+        key: 'applyConfig',
+        value: function applyConfig(typeConfig, config) {
+            var _this2 = this;
+
+            if (config.position) {
+                this.x = config.position.x;
+                this.y = config.position.y;
+                this.z = config.position.z;
+            }
+            if (typeConfig.target) {
+                this.target = new _base.Proxy3d(this.light.target.position, this.parent.reverseY.bind(this.parent), function () {
+                    return _this2.light.target.updateMatrixWorld();
+                });
+                if (config.target) {
+                    this.target.x = config.target.x;
+                    this.target.y = config.target.y;
+                    this.target.z = config.target.z;
+                }
+            }
+            if (config && config.floor !== undefined && config.distance !== undefined) {
+                var material = this.parent.parent.createMaterial(config.floor);
+                var floor = new THREE.Mesh(new THREE.CircleGeometry(config.distance, 32), material);
+                floor.receiveShadow = true;
+                floor.position.set(0, 0, 0);
+                this.floor = floor;
+            } else if (this.floor) {
+                this.parent.scene.remove(this.floor);
+                delete this.floor;
+            }
+            this.color = config.color;
+            this.intensity = config.intensity;
+            this.distance = config.distance;
+            this.angle = config.angle;
+            if (config.attachTo) {
+                var _ref = Array.isArray(config.attachTo) ? config.attachTo : [config.attachTo],
+                    _ref2 = _slicedToArray(_ref, 2),
+                    anotherSprite = _ref2[0],
+                    updateFn = _ref2[1];
+
+                this.attachTo(anotherSprite, updateFn);
+            }
+        }
+
+        //todo: move helper creation here, inside updateDebug
+
+    }, {
+        key: 'removeFrom',
+        value: function removeFrom(scene) {
+            this.parent.removeLight(this.light, this.config);
+            if (this.floor) {
+                scene.remove(this.floor);
+            }
+        }
+    }, {
         key: 'applyShadows',
         value: function applyShadows(shadows) {
             if (this.typeConfig.shadows) {
@@ -246,6 +375,14 @@ var ThreeLight = function (_ThreeLinkedObject) {
         },
         set: function set(val) {
             this.light.distance = val;
+        }
+    }, {
+        key: 'angle',
+        get: function get() {
+            return this.light.angle;
+        },
+        set: function set(val) {
+            this.light.angle = val;
         }
     }, {
         key: 'renderOneByOne',
@@ -327,6 +464,62 @@ var ThreeLoader = function () {
 exports.default = ThreeLoader;
 
 },{}],5:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var ObjectCache = function () {
+    function ObjectCache(scene, factoryFn) {
+        var count = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+
+        _classCallCheck(this, ObjectCache);
+
+        this.parent = scene;
+        this.game = scene.game;
+        this.factoryFn = factoryFn;
+        this._autoAdd = true;
+        this.count = count || 1;
+        this._freeObjects = [];
+        this._expand(count);
+    }
+
+    _createClass(ObjectCache, [{
+        key: "_expand",
+        value: function _expand() {
+            var exactCount = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : this.count;
+
+            for (var i = 0; i < exactCount; i++) {
+                var obj = this.factoryFn();
+                if (this._autoAdd) this.parent.scene.add(obj);
+                this._freeObjects.push(obj);
+            }
+        }
+    }, {
+        key: "allocate",
+        value: function allocate() {
+            if (this._freeObjects.length == 0) this._expand();
+            return this._freeObjects.pop();
+        }
+    }, {
+        key: "free",
+        value: function free(obj) {
+            this._freeObjects.push(obj);
+            obj.position.z = -100; //todo: maybe better set alpha & remove shadows
+        }
+    }]);
+
+    return ObjectCache;
+}();
+
+exports.default = ObjectCache;
+
+},{}],6:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -387,21 +580,31 @@ var ThreePlugin = function (_Phaser$Plugin) {
         key: 'createObject',
         value: function createObject(obj) {
             var mesh = obj.obj.clone();
-            mesh.position.set(0, 0, 0);
+            mesh.threePluginProperties = obj;
             if (obj.rotate) {
-                mesh.rotateX(obj.rotate.x || 0);
-                mesh.rotateY(obj.rotate.y || 0);
-                mesh.rotateZ(obj.rotate.z || 0);
+                mesh.children[0].geometry.applyMatrix(new THREE.Matrix4().makeRotationX(obj.rotate.x || 0));
+                mesh.children[0].geometry.applyMatrix(new THREE.Matrix4().makeRotationY(obj.rotate.y || 0));
+                mesh.children[0].geometry.applyMatrix(new THREE.Matrix4().makeRotationZ(obj.rotate.z || 0));
             }
+
+            var _mesh$children$0$geom = mesh.children[0].geometry.center(),
+                z = _mesh$children$0$geom.z;
+
+            mesh.position.set(0, 0, -z); // so bottom of figure shall have z = 0
             return mesh;
         }
     }, {
         key: 'createMaterial',
         value: function createMaterial(material) {
+            var opacity = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 1;
+
             if (material === undefined || material === true) {
                 material = _consts2.default.ShadowMaterial;
             } else if (typeof material === "number") {
                 material = new THREE.MeshPhongMaterial({ color: material });
+                material.opacity = opacity;
+            } else if (Array.isArray(material)) {
+                return this.createMaterial(material[0], material[1]);
             }
             return material;
         }
@@ -520,7 +723,7 @@ if (window !== undefined) {
     window.ThreePlugin = ThreePlugin;
 }
 
-},{"./consts":2,"./loader":4,"./scene":6}],6:[function(require,module,exports){
+},{"./consts":2,"./loader":4,"./scene":7}],7:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -549,6 +752,10 @@ var _scene_renderer = require('./scene_renderer');
 
 var _scene_renderer2 = _interopRequireDefault(_scene_renderer);
 
+var _obj_cache = require('./obj_cache');
+
+var _obj_cache2 = _interopRequireDefault(_obj_cache);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -573,10 +780,13 @@ var ThreeScene = function () {
         this._ignore = function () {
             return false;
         };
+        this._debug = false;
+        this._caches = {};
         this._scene = new THREE.Scene();
 
         if (config) {
             if (config.key !== undefined) this._key = config.key;
+            if (config.debug !== undefined) this._debug = config.debug;
             if (config.render !== undefined) this._render = config.render;
             if (config.shadows !== undefined) this._shadows = config.shadows;
             if (config.floor !== undefined) {
@@ -595,6 +805,11 @@ var ThreeScene = function () {
                 };
             } else if (config.ignore) {
                 this._ignore = config.ignore;
+            }
+            if (config.caches) {
+                for (var key in config.caches) {
+                    this.prepareCache(key, config.caches[key]);
+                }
             }
             if (config.debugCanvas) this._debugCanvas = true;
             this.update();
@@ -726,6 +941,15 @@ var ThreeScene = function () {
             return cell;
         }
     }, {
+        key: 'removeLight',
+        value: function removeLight(light, config) {
+            if (config.cache) {
+                this._caches[config.cache].free(light);
+            } else {
+                this._scene.remove(light);
+            }
+        }
+    }, {
         key: '_pushSprite',
         value: function _pushSprite(sprite) {
             var _this3 = this;
@@ -733,9 +957,9 @@ var ThreeScene = function () {
             var events = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : sprite.events;
 
             this._sprites.push(sprite);
-            this._scene.add(sprite[this._key].mainMesh);
+            sprite[this._key].insertTo(this._scene);
             events.onDestroy.addOnce(function () {
-                _this3._scene.remove(sprite[_this3._key].mainMesh);
+                sprite[_this3._key].removeFrom(_this3._scene);
                 var si = _this3._sprites.indexOf(sprite);
                 if (si !== -1) {
                     _this3._sprites.splice(si, 1);
@@ -752,15 +976,65 @@ var ThreeScene = function () {
             }
             return sprite;
         }
+        /*
+              .prepareCache("c1", ThreePlugin.DirectionalLight, 10)
+             .addLight("c1", {..config..})
+           */
+
+    }, {
+        key: 'prepareCache',
+        value: function prepareCache(name, constructorProvider) {
+            var count = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+
+            if (this._caches[name]) throw new Error('Cache with name "' + name + '" already defined');
+            var constructorFn = void 0;
+            if (typeof constructorProvider === "function") {
+                constructorFn = function constructorFn() {
+                    return new constructorProvider();
+                };
+            } else if (typeof constructorProvider.factory === "function") {
+                constructorFn = function constructorFn() {
+                    return constructorProvider.factory({});
+                };
+            } else {
+                throw new Error("Please specify a way to construct object in cache");
+            }
+            this._caches[name] = new _obj_cache2.default(this, constructorFn, count);
+            return this._caches[name];
+        }
+    }, {
+        key: '_createCachedLight',
+        value: function _createCachedLight(type, config) {
+            if (!config.cache) {
+                return type.factory(config);
+            } else {
+                var cache = this._caches[config.cache];
+                if (!cache) {
+                    cache = this.prepareCache(config.cache, type);
+                }
+                return cache.allocate();
+            }
+        }
     }, {
         key: 'addLight',
         value: function addLight(type, config) {
-            //create sprite
+            var _this4 = this;
+
             var sprite = this.game.make.sprite();
-            var light = type.factory(config);
+
+            var light = this._createCachedLight(type, config);
             sprite[this._key] = new _light2.default(this, sprite, light, type, config);
             this._pushSprite(sprite);
-            //return sprite
+            if ((config.debug || this._debug) && type.helperClass) {
+                (function () {
+                    var helper = new type.helperClass(light);
+                    var sHelper = new THREE.CameraHelper(light.shadow.camera);
+                    _this4._scene.add(helper, sHelper);
+                    sprite.events.onDestroy.addOnce(function () {
+                        return _this4._scene.remove(helper, sHelper);
+                    });
+                })();
+            }
             return sprite;
         }
     }, {
@@ -790,6 +1064,7 @@ var ThreeScene = function () {
             }
             sp[this._key].applyRendering(this._render);
             sp[this._key].applyShadows(this._shadows);
+            sp[this._key].applyDebug(this._debug);
             //iterate over all sprites and groups, apply shadows/renderable
         }
     }, {
@@ -842,7 +1117,7 @@ var ThreeScene = function () {
 
 exports.default = ThreeScene;
 
-},{"./consts":2,"./light":3,"./scene_renderer":7,"./sprite":8,"./tile":9}],7:[function(require,module,exports){
+},{"./consts":2,"./light":3,"./obj_cache":5,"./scene_renderer":8,"./sprite":9,"./tile":10}],8:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -931,15 +1206,14 @@ var ThreeSceneRenderer = function () {
             this.sprite.renderable = true;
             this.renderer.shadowMap.enabled = this.parent.shadows;
             camera.left = this.game.camera.x;
-            camera.top = this.game.world.height - this.game.camera.y; // + this.game.camera.height;
-            //camera.top = this.game.camera.height - this.game.camera.y;
+            camera.top = this.game.world.height - this.game.camera.y;
             camera.right = this.game.camera.x + this.game.camera.width;
             camera.bottom = this.game.world.height - this.game.camera.y - this.game.camera.height;
-            //camera.bottom = -this.game.camera.y;
-            //console.log("ar", (camera.top-camera.bottom)/(camera.right-camera.left));
+            this.parent.update(); //move loop inside
             this.parent.forEach(function (sprite) {
-                if (sprite[_this3._key] && sprite[_this3._key].update) {
-                    sprite[_this3._key].update();
+                //todo: i do not like all these this.parent._key
+                if (sprite[_this3.parent._key] && sprite[_this3.parent._key].update) {
+                    sprite[_this3.parent._key].update();
                 }
             });
             camera.updateProjectionMatrix();
@@ -953,7 +1227,7 @@ var ThreeSceneRenderer = function () {
 
 exports.default = ThreeSceneRenderer;
 
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -982,7 +1256,7 @@ var ThreeSprite = function (_ThreeLinkedObject) {
     function ThreeSprite(scene, sprite, mesh, container) {
         _classCallCheck(this, ThreeSprite);
 
-        var _this = _possibleConstructorReturn(this, (ThreeSprite.__proto__ || Object.getPrototypeOf(ThreeSprite)).call(this, scene, sprite, container));
+        var _this = _possibleConstructorReturn(this, (ThreeSprite.__proto__ || Object.getPrototypeOf(ThreeSprite)).call(this, scene, sprite, container, mesh.threePluginProperties ? mesh.threePluginProperties.spriteRotation : undefined));
 
         _this.mesh = mesh;
         _this.container = container;
@@ -998,6 +1272,26 @@ var ThreeSprite = function (_ThreeLinkedObject) {
                     no.receiveShadow = shadows;
                 }
             });
+        }
+    }, {
+        key: 'applyDebug',
+        value: function applyDebug(debug) {
+            var _this2 = this;
+
+            if (debug) {
+                (function () {
+                    var box1 = new THREE.BoxHelper(_this2.container, 0x00ff00);
+                    var box2 = new THREE.BoxHelper(_this2.mesh, 0xff0000);
+                    _this2.parent.scene.add(box1, box2);
+                    _this2.sprite.update = function () {
+                        box1.update(_this2.container);
+                        box2.update(_this2.mesh);
+                    };
+                    _this2.sprite.events.onDestroy.addOnce(function () {
+                        return _this2.parent.scene.remove(box1, box2);
+                    });
+                })();
+            }
         }
     }, {
         key: 'applyRenderingForSprite',
@@ -1041,7 +1335,7 @@ var ThreeSprite = function (_ThreeLinkedObject) {
 
 exports.default = ThreeSprite;
 
-},{"./base":1,"./consts":2}],9:[function(require,module,exports){
+},{"./base":1,"./consts":2}],10:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -1122,4 +1416,4 @@ var ThreeTile = function (_ThreeSprite) {
 
 exports.default = ThreeTile;
 
-},{"./consts":2,"./sprite":8}]},{},[5]);
+},{"./consts":2,"./sprite":9}]},{},[6]);

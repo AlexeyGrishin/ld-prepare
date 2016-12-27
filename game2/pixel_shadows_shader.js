@@ -33,12 +33,7 @@ Phaser.Filter.Shadow2 = function(game) {
         "void main(void) {",
             "vec3 coords = vec3(gl_FragCoord.x, wSize.y-gl_FragCoord.y, 0);",
             "gl_FragColor = texture2D(uSampler, vTextureCoord);",
-            //"if (coords.x < 128.0 && coords.y < 128.0) {",
-                //"gl_FragColor = (gl_FragColor + vec4(0.0, 0.0, 0.5, 0.0))*0.8;",
-                //"gl_FragColor *= vec4(1.0, 0.4, 1.0, 0.4);",
-                //"gl_FragColor *= 0.8;",
-                //"return;",
-            //"}",
+
             "vec4 conversion = vec4(1,1,1,1);",
             "vec4 colorChange = vec4(0,0,0,0);",
             "float lightness = 0.0;",
@@ -47,20 +42,15 @@ Phaser.Filter.Shadow2 = function(game) {
                 "if (i >= lightsCount) break;",
                 "vec3 light = lightCoords[i];",
                 "float dist = distance(light, coords);",
-                "//conversion = vec4(1,1,1,1)*(1.-dist / lightSize[i].x);",
                 "vec3 point = coords;",
                 "vec4 ownHeight = texture2D(iChannel2, point.xy / tSize);",
                 "float dy = ownHeight.y > 0. ? (ownHeight.y * 255.0 - 128.0 + 1.) : 0.0;",
                 "point.y += dy;",
-                "//point.xy += ownHeight.xy * 255.0;",
-                "//if (ownHeight.y > 0.) point.y -= 1.;", //todo:
                 "point.z = ceil(ownHeight.z*255.0);",
                 "vec3 toLight = light - point;",
-                "vec3 ntl = 2. * toLight / length(toLight);",
+                "vec3 ntl = toLight / length(toLight);",
                 "point+=ntl;",
                 "int maxSteps = int(length(toLight))-1;",
-
-        "//vec4 ownHotspot = texture2D(iChannel0, point.xy / tSize);",
 
                 "float lightPass = 1.0;",
                 "float lt = (lightSize[i].x < 0. ? 1.0 : smoothstep(1.0, 0.0, (distance(coords, light) - lightSize[i].y)/lightSize[i].x));",
@@ -81,12 +71,9 @@ Phaser.Filter.Shadow2 = function(game) {
                     "if (point.z > 32. && ntl.z < 0.) break;", // no need to go further, there is nothing up than 32px
                     "if (point.x < 0. || point.x > wSize.x || point.y < 0. || point.y > wSize.y || point.z < 0.) break;",
                 "}",
-                //"if (ownHeight.z > 0.0) lightPass = 1.0;",
-                "lightness += (0.5 + 0.5 * lightPass * lt)/float(lightsCount);",  //distance = -1 for infinite distance
+                "lightness += (0.3 + 0.7 * lightPass * lt * 2.)/float(lightsCount);",  //distance = -1 for infinite distance
             "}",
-            "gl_FragColor = (gl_FragColor + colorChange) * min(1.0, max(0.5, lightness));",
-            //"vec4 hotspot = texture2D(iChannel0, coords / vec2(512., 512.));",
-            //"if (hotspot.r == 1.0) gl_FragColor.r = 1.0;",
+            "gl_FragColor = (gl_FragColor + colorChange) * min(1.0, max(0., lightness));",
         "}"
     ];   
 };

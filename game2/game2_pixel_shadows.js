@@ -9,7 +9,7 @@ function preload() {
     game.load.script('shadow2', 'pixel_shadows_shader.js');
     game.load.script('normal', 'normal_test.js');
     
-    game.load.image("shadows", "roguelikeSheet_shadows2.png");
+    game.load.image("shadows", "roguelikeSheet_shadows.png");
     game.load.spritesheet("hotspots", "roguelikeSheet_hotspots.png", 16, 16);
     game.load.spritesheet("heights", "roguelikeSheet_heights.png", 16, 32);
 
@@ -222,7 +222,7 @@ function update1() {
     if (buttons.down.justDown) heroHeight-=5;
     //lightHero.height = heroHeight;
 
-    var fireDistance = 300;
+    var fireDistance = 200;
 
     fireParticles.forEach(function(fp) {
        if (game.rnd.integerInRange(0, 100) < 10) {

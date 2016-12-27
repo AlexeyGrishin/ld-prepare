@@ -3,7 +3,7 @@ import Consts from './consts';
 
 export default class ThreeSprite extends ThreeLinkedObject {
     constructor(scene, sprite, mesh, container) {
-        super(scene, sprite, container);
+        super(scene, sprite, container, mesh.threePluginProperties ? mesh.threePluginProperties.spriteRotation : undefined);
         this.mesh = mesh;
         this.container = container;
     }
@@ -17,6 +17,19 @@ export default class ThreeSprite extends ThreeLinkedObject {
                 no.receiveShadow = shadows;
             }
         });
+    }
+
+    applyDebug(debug) {
+        if (debug) {
+            let box1 = new THREE.BoxHelper(this.container, 0x00ff00);
+            let box2 = new THREE.BoxHelper(this.mesh, 0xff0000);
+            this.parent.scene.add(box1, box2);
+            this.sprite.update = () => {
+                box1.update(this.container);
+                box2.update(this.mesh);
+            }
+            this.sprite.events.onDestroy.addOnce(() => this.parent.scene.remove(box1, box2));
+        }
     }
 
     applyRenderingForSprite(rendering) {

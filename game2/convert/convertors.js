@@ -189,7 +189,7 @@ module.exports.extractHeightMaps = function(inputPath, outputPath, config, cb) {
                         //so in shader we'll have y0 = (31-z), and we need to get y instead
                         //dy = y - 31 + z;
                         //  for tree top dy = 0. for tree bottom dy = radius, I think, or at least 0.
-                        let dy = config.tiles[i].hotspotOffsetY + y - (config.size-1-z);
+                        let dy = (config.tiles[i].hotspotOffsetY || 0) + y - (config.size-1-z);
                         //console.log(z, y,  config.tiles[i].hotspotOffsetY + y - (config.size-1-z));
                         out.setPixelColor(
                             ((0) << 24) | ((dy + 128) << 16) | (z << 8) | 0xff,

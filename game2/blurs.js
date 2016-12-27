@@ -5,7 +5,7 @@ Phaser.Filter.BlurX = function (game) {
 
     Phaser.Filter.call(this, game);
 
-    this.uniforms.blur = { type: '1f', value: 1 / 512 };
+    this.uniforms.blur = { type: '1f', value: 1 / 1024 };
 
     this.fragmentSrc = [
 
@@ -60,7 +60,7 @@ Phaser.Filter.BlurY = function (game) {
 
     Phaser.Filter.call(this, game);
 
-    this.uniforms.blur = { type: '1f', value: 1 / 512 };
+    this.uniforms.blur = { type: '1f', value: 1 / 1024 };
 
     this.fragmentSrc = [
 

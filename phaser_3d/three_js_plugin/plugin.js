@@ -25,20 +25,31 @@ export default class ThreePlugin extends Phaser.Plugin {
 
     createObject(obj) {
         let mesh = obj.obj.clone();
-        mesh.position.set(0, 0, 0);
+        mesh.threePluginProperties = obj;
         if (obj.rotate) {
-            mesh.rotateX(obj.rotate.x || 0);
-            mesh.rotateY(obj.rotate.y || 0);
-            mesh.rotateZ(obj.rotate.z || 0);
+            mesh.children[0].geometry.applyMatrix(
+                new THREE.Matrix4().makeRotationX(obj.rotate.x || 0)
+            );
+            mesh.children[0].geometry.applyMatrix(
+                new THREE.Matrix4().makeRotationY(obj.rotate.y || 0)
+            );
+            mesh.children[0].geometry.applyMatrix(
+                new THREE.Matrix4().makeRotationZ(obj.rotate.z || 0)
+            );
         }
+        let {z} = mesh.children[0].geometry.center();
+        mesh.position.set(0, 0, -z); // so bottom of figure shall have z = 0
         return mesh;
     }
 
-    createMaterial(material) {
+    createMaterial(material, opacity = 1) {
         if (material === undefined || material === true) {
             material = Consts.ShadowMaterial;
         } else if (typeof material === "number") {
             material = new THREE.MeshPhongMaterial({color: material});
+            material.opacity = opacity;
+        } else if (Array.isArray(material)) {
+            return this.createMaterial(material[0], material[1])
         }
         return material;
     }

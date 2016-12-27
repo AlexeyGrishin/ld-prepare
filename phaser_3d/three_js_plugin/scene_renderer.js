@@ -59,15 +59,14 @@ export default class ThreeSceneRenderer {
         this.sprite.renderable = true;
         this.renderer.shadowMap.enabled = this.parent.shadows;
         camera.left = this.game.camera.x;
-        camera.top = this.game.world.height - (this.game.camera.y);// + this.game.camera.height;
-        //camera.top = this.game.camera.height - this.game.camera.y;
+        camera.top = this.game.world.height - (this.game.camera.y);
         camera.right = this.game.camera.x + this.game.camera.width;
         camera.bottom = this.game.world.height - this.game.camera.y - this.game.camera.height;
-        //camera.bottom = -this.game.camera.y;
-        //console.log("ar", (camera.top-camera.bottom)/(camera.right-camera.left));
+        this.parent.update();   //move loop inside
         this.parent.forEach((sprite) => {
-            if (sprite[this._key] && sprite[this._key].update) {
-                sprite[this._key].update();
+            //todo: i do not like all these this.parent._key
+            if (sprite[this.parent._key] && sprite[this.parent._key].update) {
+                sprite[this.parent._key].update();
             }
         });
         camera.updateProjectionMatrix();

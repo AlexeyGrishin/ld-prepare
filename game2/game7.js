@@ -11,6 +11,7 @@ function preload() {
     tilesToUse.forEach(function(idx) {
         game.load.obj3d("tile-" + idx, {insteadOf: ["roguelikeSheet_transparent", idx], rotate: {x: Math.PI/2}});
     });
+    //game.load.obj3d("tile-530-2",  {insteadOf: ["roguelikeSheet_transparent", 530], rotate: {x: Math.PI/2}});
 
     game.load.script("shadows7", "shadows7.js");
 
@@ -47,7 +48,6 @@ function create1() {
     fire.animations.play("idle");
 
     scene = game.three.createScene(treesLayer, {
-        //lights: [{color: 0xffffff, intensity: 0.5}],
         shadows: true,
         render: ThreePlugin.RenderNothing,
         floor: 0xffffff,
@@ -59,17 +59,6 @@ function create1() {
         shadows: true,
         render: ThreePlugin.RenderModels,
         ignore: [621,588],
-        //floor: true,
-        //debugCanvas: true,
-        oneByOne1: function copy(sprite, source, targetContext) {
-            targetContext.drawImage(source,
-                sprite.three2.x - game.camera.x - 8,
-                BASE_Y-24 - game.camera.y, 16, 32,
-                sprite.three2.x - game.camera.x,
-                sprite.three.y-8 - game.camera.y, 16, 32);
-
-        }
-        //lights: [{color: 0xffffff, intensity: 0.5}]
     });
 
     lightForHero = scene.addLight(ThreePlugin.PointLight, {intensity: 1, distance: 200});

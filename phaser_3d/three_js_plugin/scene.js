@@ -3,6 +3,7 @@ import ThreeSprite from './sprite';
 import ThreeTile from './tile';
 import ThreeLight from './light';
 import ThreeSceneRenderer from './scene_renderer';
+import ObjectCache from './obj_cache';
 
 export default class ThreeScene {
     constructor(plugin, config) {
@@ -18,10 +19,13 @@ export default class ThreeScene {
         this._sceneRenderer = null;
         this._copier = null;
         this._ignore = () => false;
+        this._debug = false;
+        this._caches = {};
         this._scene = new THREE.Scene();
 
         if (config) {
             if (config.key !== undefined) this._key = config.key;
+            if (config.debug !== undefined) this._debug = config.debug;
             if (config.render !== undefined) this._render = config.render;
             if (config.shadows !== undefined) this._shadows = config.shadows;
             if (config.floor !== undefined) {
@@ -34,6 +38,11 @@ export default class ThreeScene {
                 this._ignore = (tile_or_sprite) => config.ignore.indexOf(tile_or_sprite.index) != -1
             } else if (config.ignore) {
                 this._ignore = config.ignore;
+            }
+            if (config.caches) {
+                for (let key in config.caches) {
+                    this.prepareCache(key, config.caches[key]);
+                }
             }
             if (config.debugCanvas) this._debugCanvas = true;
             this.update();
@@ -96,11 +105,19 @@ export default class ThreeScene {
         return cell;
     }
 
+    removeLight(light, config) {
+        if (config.cache) {
+            this._caches[config.cache].free(light);
+        } else {
+            this._scene.remove(light);
+        }
+    }
+
     _pushSprite(sprite, events = sprite.events) {
         this._sprites.push(sprite);
-        this._scene.add(sprite[this._key].mainMesh);
+        sprite[this._key].insertTo(this._scene);
         events.onDestroy.addOnce(() => {
-            this._scene.remove(sprite[this._key].mainMesh);
+            sprite[this._key].removeFrom(this._scene);
             let si = this._sprites.indexOf(sprite);
             if (si !== -1) {
                 this._sprites.splice(si, 1);
@@ -116,14 +133,55 @@ export default class ThreeScene {
         }
         return sprite;
     }
+    /*
+
+
+        .prepareCache("c1", ThreePlugin.DirectionalLight, 10)
+
+        .addLight("c1", {..config..})
+
+
+     */
+    
+    prepareCache(name, constructorProvider, count = 0) {
+        if (this._caches[name]) throw new Error(`Cache with name "${name}" already defined`);
+        let constructorFn;
+        if (typeof constructorProvider === "function") {
+            constructorFn = () => new constructorProvider();
+        } else if (typeof constructorProvider.factory === "function") {
+            constructorFn = () => constructorProvider.factory({});
+        } else {
+            throw new Error("Please specify a way to construct object in cache");
+        }
+        this._caches[name] = new ObjectCache(this, constructorFn, count);
+        return this._caches[name]
+    }
+
+    _createCachedLight(type, config) {
+        if (!config.cache) {
+            return type.factory(config);
+        } else {
+            let cache = this._caches[config.cache];
+            if (!cache) {
+                cache = this.prepareCache(config.cache, type);
+            }
+            return cache.allocate();
+        }
+
+    }
 
     addLight(type, config) {
-        //create sprite
         let sprite = this.game.make.sprite();
-        let light = type.factory(config);
+        
+        let light = this._createCachedLight(type, config);
         sprite[this._key] = new ThreeLight(this, sprite, light, type, config);
         this._pushSprite(sprite);
-        //return sprite
+        if ((config.debug || this._debug) && type.helperClass) {
+            let helper = new type.helperClass(light);
+            let sHelper = new THREE.CameraHelper(light.shadow.camera);
+            this._scene.add(helper, sHelper);
+            sprite.events.onDestroy.addOnce(() => this._scene.remove(helper, sHelper));
+        }
         return sprite;
     }
 
@@ -150,6 +208,7 @@ export default class ThreeScene {
         }
         sp[this._key].applyRendering(this._render);
         sp[this._key].applyShadows(this._shadows);
+        sp[this._key].applyDebug(this._debug);
         //iterate over all sprites and groups, apply shadows/renderable
     }
 

@@ -1,0 +1,106 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Sea game demo</title>
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.9.0/styles/default.min.css">
+    <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.9.0/highlight.min.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+    <script src="../../game4/phaser.js"></script>
+    <script src="../../tr2/three.js"></script>
+    <script src="../../tr2/loader.js"></script>
+    <script src="../../tr2/mtloader.js"></script>
+    <style>
+        #buttons a {
+            margin: 0.5em 1em;
+        }
+        #main div {float: left; margin-right: 10px;}
+        #difference {
+            resize: none;
+            width: calc(100% - 660px);
+            height: 640px;
+            margin-left: 640px;
+
+        }
+    </style>
+</head>
+<body>
+<div id="buttons">
+    <a href="index.html?">2D</a>
+    <a href="index.html?3d">3D</a>
+</div>
+<div id="main">
+    <div id="container"></div>
+    <pre id="difference"><code class="javascript">///// in preload
+game.plugins.add(ThreePlugin);
+
+game.load.obj3d("ship", {insteadOf: ["ship", 0], rotate: {x: Math.PI/2}, spriteRotation: "-z"});
+game.load.obj3d("bomb", {insteadOf: ["bomb", 0], rotate: {x: Math.PI/2}, spriteRotation: "-z"});
+
+///// in create
+scene3d = game.three.createScene(ships, bombs, {
+    //ambient
+    lights: [{color: 0xffffff, intensity: 0.5}],
+    shadows: true,
+    //pane to receive shadows
+    floor: [0xcccccc, 0.6]
+});
+daylight = scene3d.addLight(ThreePlugin.DirectionalLight, {
+    color: 0xffffff,
+    intensity: 0.5,
+    distance: 1000,
+    position: {x: 0, y: -game.world.height/2, z: 500},
+    target: {x: game.world.width/2, y: game.world.height/2, z: 0}
+});
+
+//move "sun" from left to right
+game.add.tween(daylight.three).to({
+    intensity: 0,
+    x: game.world.width,
+    z: 50
+}, 30000, null, true).onUpdateCallback(function() {
+    var gb = (0xff*daylight.three.intensity*daylight.three.intensity)|0;
+    daylight.three.color = 0xff0000 | (gb << 8) | gb ;
+});
+
+//see below
+scene3d.prepareCache("bombs", ThreePlugin.PointLight, 3);
+
+//swinging ship
+hero.three.rotation.y = -Math.PI / 16;
+game.add.tween(hero.three.rotation).to({y: Math.PI / 16}, 2000, Phaser.Easing.Sinusoidal.InOut, true, 0, -1, true);
+
+///// on bomb create
+// cache allows to not spend time on adding/removing light source
+bomb.data.light = scene3d.addLight(ThreePlugin.PointLight, {
+    cache: "bombs",
+    intensity: 1,
+    distance: 150,
+    color: 0xff4400,
+    attachTo: [bomb, (three) => {
+        three.z = 100 + bomb.scale.x * 50;
+        bomb.three.mesh.rotation.y += Math.PI*game.time.elapsed/1000;
+    }]
+});
+    </code></pre>
+</div>
+
+
+<script src="../three_js_plugin/three_js_plugin.js"></script>
+<script src="index.js"></script>
+<script>
+    var game = new Phaser.Game({
+        width: 320,
+        height: 320,
+        renderer: Phaser.AUTO,
+        parent: 'container',
+        antialias: false,
+        state: {preload: preload,
+            create: create,
+            update: update,
+            render: debugRender1 }
+    });
+
+</script>
+</body>
+</html>

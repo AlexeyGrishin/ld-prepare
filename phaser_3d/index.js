@@ -5,7 +5,8 @@ function preload() {
     game.load.spritesheet("tiles", "../game2/roguelikeSheet_extracted.png", 16, 16);
     game.load.spritesheet("sprites", "../game2/sprites.png", 16, 16);
     
-    game.load.obj3d("roguelike-0", {rotate: {x: Math.PI/2}, insteadOf: ["tiles", 0]});
+    game.load.obj3d("tile-530-2", {rotate: {x: Math.PI/2}, insteadOf: ["tiles", 0]});
+    //game.load.obj3d("roguelike-0", {rotate: {x: Math.PI/2}, insteadOf: ["tiles", 0]});
     game.load.obj3d("roguelike-7", {rotate: {x: Math.PI/2}, insteadOf: ["tiles", 7]});
 
 }
