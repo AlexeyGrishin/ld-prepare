@@ -241,7 +241,7 @@ exports.default = {
 };
 
 },{}],3:[function(require,module,exports){
-'use strict';
+"use strict";
 
 Object.defineProperty(exports, "__esModule", {
     value: true
@@ -253,7 +253,7 @@ var _createClass = function () { function defineProperties(target, props) { for 
 
 var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
 
-var _base = require('./base');
+var _base = require("./base");
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -277,7 +277,7 @@ var ThreeLight = function (_ThreeLinkedObject) {
     }
 
     _createClass(ThreeLight, [{
-        key: 'applyConfig',
+        key: "applyConfig",
         value: function applyConfig(typeConfig, config) {
             var _this2 = this;
 
@@ -306,10 +306,9 @@ var ThreeLight = function (_ThreeLinkedObject) {
                 this.parent.scene.remove(this.floor);
                 delete this.floor;
             }
-            this.color = config.color;
-            this.intensity = config.intensity;
-            this.distance = config.distance;
-            this.angle = config.angle;
+            ["color", "intensity", "distance", "angle"].forEach(function (prop) {
+                if (config[prop] !== undefined) _this2[prop] = config[prop];
+            });
             if (config.attachTo) {
                 var _ref = Array.isArray(config.attachTo) ? config.attachTo : [config.attachTo],
                     _ref2 = _slicedToArray(_ref, 2),
@@ -323,7 +322,7 @@ var ThreeLight = function (_ThreeLinkedObject) {
         //todo: move helper creation here, inside updateDebug
 
     }, {
-        key: 'removeFrom',
+        key: "removeFrom",
         value: function removeFrom(scene) {
             this.parent.removeLight(this.light, this.config);
             if (this.floor) {
@@ -331,7 +330,7 @@ var ThreeLight = function (_ThreeLinkedObject) {
             }
         }
     }, {
-        key: 'applyShadows',
+        key: "applyShadows",
         value: function applyShadows(shadows) {
             if (this.typeConfig.shadows) {
                 this.light.castShadow = shadows;
@@ -340,20 +339,20 @@ var ThreeLight = function (_ThreeLinkedObject) {
             }
         }
     }, {
-        key: 'updateCoords',
+        key: "updateCoords",
         value: function updateCoords() {
-            _get(ThreeLight.prototype.__proto__ || Object.getPrototypeOf(ThreeLight.prototype), 'updateCoords', this).call(this);
+            _get(ThreeLight.prototype.__proto__ || Object.getPrototypeOf(ThreeLight.prototype), "updateCoords", this).call(this);
             if (this.floor) {
                 this.floor.position.set(this.light.position.x, this.light.position.y, 0);
             }
         }
     }, {
-        key: 'cloneInto',
+        key: "cloneInto",
         value: function cloneInto(newParent) {
             return new ThreeLight(newParent, this.sprite, this.light.clone(), this.typeConfig, this.config);
         }
     }, {
-        key: 'color',
+        key: "color",
         get: function get() {
             return this.light.color.getHex();
         },
@@ -361,7 +360,7 @@ var ThreeLight = function (_ThreeLinkedObject) {
             this.light.color.setHex(val);
         }
     }, {
-        key: 'intensity',
+        key: "intensity",
         get: function get() {
             return this.light.intensity;
         },
@@ -369,7 +368,7 @@ var ThreeLight = function (_ThreeLinkedObject) {
             this.light.intensity = val;
         }
     }, {
-        key: 'distance',
+        key: "distance",
         get: function get() {
             return this.light.distance;
         },
@@ -377,7 +376,7 @@ var ThreeLight = function (_ThreeLinkedObject) {
             this.light.distance = val;
         }
     }, {
-        key: 'angle',
+        key: "angle",
         get: function get() {
             return this.light.angle;
         },
@@ -385,7 +384,7 @@ var ThreeLight = function (_ThreeLinkedObject) {
             this.light.angle = val;
         }
     }, {
-        key: 'renderOneByOne',
+        key: "renderOneByOne",
         get: function get() {
             return false;
         }
@@ -580,11 +579,14 @@ var ThreePlugin = function (_Phaser$Plugin) {
         key: 'createObject',
         value: function createObject(obj) {
             var mesh = obj.obj.clone();
+            //todo: support more complex model than one mesh/geometry
+            mesh.children[0].geometry = mesh.children[0].geometry.clone();
             mesh.threePluginProperties = obj;
             if (obj.rotate) {
-                mesh.children[0].geometry.applyMatrix(new THREE.Matrix4().makeRotationX(obj.rotate.x || 0));
-                mesh.children[0].geometry.applyMatrix(new THREE.Matrix4().makeRotationY(obj.rotate.y || 0));
-                mesh.children[0].geometry.applyMatrix(new THREE.Matrix4().makeRotationZ(obj.rotate.z || 0));
+                var order = obj.order || "xyz";
+                order.split("").forEach(function (axis) {
+                    mesh.children[0].geometry.applyMatrix(new THREE.Matrix4()["makeRotation" + axis.toUpperCase()](obj.rotate[axis] || 0));
+                });
             }
 
             var _mesh$children$0$geom = mesh.children[0].geometry.center(),
@@ -976,11 +978,6 @@ var ThreeScene = function () {
             }
             return sprite;
         }
-        /*
-              .prepareCache("c1", ThreePlugin.DirectionalLight, 10)
-             .addLight("c1", {..config..})
-           */
-
     }, {
         key: 'prepareCache',
         value: function prepareCache(name, constructorProvider) {

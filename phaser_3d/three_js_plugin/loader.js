@@ -3,8 +3,7 @@ export default class ThreeLoader {
         if (!THREE) throw new Error("Please load three.js first");
         if (!THREE.OBJLoader) throw new Error("Cannot find OBJLoader class, please download it from three.js examples");
         if (!THREE.MTLLoader) throw new Error("Cannot find MTLLoader class, please download it from three.js examples");
-
-
+        
         this.objLoader = new THREE.OBJLoader();
         this.mtlLoader = new THREE.MTLLoader();
         this._assetsPath = '';

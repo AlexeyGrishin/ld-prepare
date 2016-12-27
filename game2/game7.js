@@ -48,6 +48,7 @@ function create1() {
     fire.animations.play("idle");
 
     scene = game.three.createScene(treesLayer, {
+        //lights: [{color: 0xffffff, intensity: 0.5}],
         shadows: true,
         render: ThreePlugin.RenderNothing,
         floor: 0xffffff,
@@ -63,7 +64,7 @@ function create1() {
 
     lightForHero = scene.addLight(ThreePlugin.PointLight, {intensity: 1, distance: 200});
     scene2.addExisting(lightForHero, "three");
-    fireLights = [0].map(function() {
+    fireLights = [0,1,2].map(function() {
         let sp = scene.addLight(ThreePlugin.PointLight, {intensity: 1, distance: 300});
         scene2.addExisting(sp, "three");
         return sp;

@@ -36,10 +36,9 @@ export default class ThreeLight extends ThreeLinkedObject {
             this.parent.scene.remove(this.floor);
             delete this.floor;
         }
-        this.color = config.color;
-        this.intensity = config.intensity;
-        this.distance = config.distance;
-        this.angle = config.angle;
+        ["color", "intensity", "distance", "angle"].forEach((prop) => {
+            if (config[prop] !== undefined) this[prop] = config[prop];
+        });
         if (config.attachTo) {
             let [anotherSprite, updateFn] = Array.isArray(config.attachTo) ? config.attachTo : [config.attachTo];
             this.attachTo(anotherSprite, updateFn);

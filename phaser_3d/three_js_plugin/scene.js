@@ -133,15 +133,7 @@ export default class ThreeScene {
         }
         return sprite;
     }
-    /*
 
-
-        .prepareCache("c1", ThreePlugin.DirectionalLight, 10)
-
-        .addLight("c1", {..config..})
-
-
-     */
     
     prepareCache(name, constructorProvider, count = 0) {
         if (this._caches[name]) throw new Error(`Cache with name "${name}" already defined`);

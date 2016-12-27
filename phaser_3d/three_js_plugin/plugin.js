@@ -25,17 +25,17 @@ export default class ThreePlugin extends Phaser.Plugin {
 
     createObject(obj) {
         let mesh = obj.obj.clone();
+        //todo: support more complex model than one mesh/geometry
+        mesh.children[0].geometry = mesh.children[0].geometry.clone();
         mesh.threePluginProperties = obj;
         if (obj.rotate) {
-            mesh.children[0].geometry.applyMatrix(
-                new THREE.Matrix4().makeRotationX(obj.rotate.x || 0)
-            );
-            mesh.children[0].geometry.applyMatrix(
-                new THREE.Matrix4().makeRotationY(obj.rotate.y || 0)
-            );
-            mesh.children[0].geometry.applyMatrix(
-                new THREE.Matrix4().makeRotationZ(obj.rotate.z || 0)
-            );
+            let order = obj.order || "xyz";
+            order.split("").forEach((axis) => {
+                mesh.children[0].geometry.applyMatrix(
+                    new THREE.Matrix4()["makeRotation" + axis.toUpperCase()](obj.rotate[axis] || 0)
+                );
+            });
+
         }
         let {z} = mesh.children[0].geometry.center();
         mesh.position.set(0, 0, -z); // so bottom of figure shall have z = 0
