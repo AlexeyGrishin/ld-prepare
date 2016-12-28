@@ -22,7 +22,7 @@ export default class ThreeSceneRenderer {
             this.texture = PIXI.Texture.fromCanvas(this.renderer.domElement);
             this.render = () => this.renderAll();
         }
-        this.sprite = this.game.add.sprite(0, 0, this.texture);
+        this.sprite = this.game.make.sprite(0, 0, this.texture);
         this.sprite.fixedToCamera = true;
         this.sprite.alive = true;
         this.sprite.update = () => this.update();
@@ -62,7 +62,10 @@ export default class ThreeSceneRenderer {
         camera.top = this.game.world.height - (this.game.camera.y);
         camera.right = this.game.camera.x + this.game.camera.width;
         camera.bottom = this.game.world.height - this.game.camera.y - this.game.camera.height;
-        this.parent.update();   //move loop inside
+        //todo(alexey): we do not need update here because we know that Phaser updates groups in reverse order
+        //              so when this update is called by sprite, all dependent groups will be alraedy updated
+        //              but it is very unobvious
+        //this.parent.update();   //move loop inside
         this.parent.forEach((sprite) => {
             //todo: i do not like all these this.parent._key
             if (sprite[this.parent._key] && sprite[this.parent._key].update) {

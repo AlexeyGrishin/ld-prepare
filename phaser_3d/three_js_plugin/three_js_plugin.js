@@ -437,8 +437,8 @@ var ThreeLoader = function () {
                         var replacementKey = props.insteadOf.key || props.insteadOf[0];
                         if (props.insteadOf.frame !== undefined || props.insteadOf[1] !== undefined) {
                             replacementKey += "_" + (props.insteadOf.frame === undefined ? props.insteadOf[1] : props.insteadOf.frame);
-                            _this._replacement[replacementKey] = props;
                         }
+                        _this._replacement[replacementKey] = props;
                     }
                     cb(obj);
                 });
@@ -835,32 +835,77 @@ var ThreeScene = function () {
     }, {
         key: 'addGroup',
         value: function addGroup(group) {
+            var _this2 = this;
+
             var firstGroup = this._groups.length == 0;
             if (firstGroup) {
                 this._sceneRenderer = new _scene_renderer2.default(this);
                 group.parent.addAt(this._sceneRenderer.sprite, group.parent.children.indexOf(group));
             }
+            var oldUpdate = group.update;
+            group.update = function () {
+                _this2._updateGroup(group);
+                oldUpdate.call(group);
+            };
             this._groups.push(group);
         }
     }, {
         key: 'update',
         value: function update() {
-            var _this2 = this;
+            var _this3 = this;
 
+            this._groups.forEach(function (group) {
+                return _this3._updateGroup(group);
+            });
+        }
+    }, {
+        key: '_updateGroup',
+        value: function _updateGroup(group) {
+            var _this4 = this;
+
+            if (group instanceof Phaser.TilemapLayer) {
+                this.updateTilemapLayer(group);
+            } else {
+                group.forEach(function (sprite) {
+                    return _this4.addSprite(sprite);
+                });
+            }
+        }
+    }, {
+        key: 'updateTilemapLayer',
+        value: function updateTilemapLayer(layer) {
             var _iteratorNormalCompletion = true;
             var _didIteratorError = false;
             var _iteratorError = undefined;
 
             try {
-                for (var _iterator = this._groups[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-                    var group = _step.value;
+                for (var _iterator = layer.layer.data[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                    var row = _step.value;
+                    var _iteratorNormalCompletion2 = true;
+                    var _didIteratorError2 = false;
+                    var _iteratorError2 = undefined;
 
-                    if (group instanceof Phaser.TilemapLayer) {
-                        this.updateTilemapLayer(group);
-                    } else {
-                        group.forEach(function (sprite) {
-                            return _this2.addSprite(sprite);
-                        });
+                    try {
+                        for (var _iterator2 = row[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+                            var cell = _step2.value;
+
+                            if (cell.index !== -1 && !cell[this._key]) {
+                                this.addTile(cell, layer);
+                            }
+                        }
+                    } catch (err) {
+                        _didIteratorError2 = true;
+                        _iteratorError2 = err;
+                    } finally {
+                        try {
+                            if (!_iteratorNormalCompletion2 && _iterator2.return) {
+                                _iterator2.return();
+                            }
+                        } finally {
+                            if (_didIteratorError2) {
+                                throw _iteratorError2;
+                            }
+                        }
                     }
                 }
             } catch (err) {
@@ -874,58 +919,6 @@ var ThreeScene = function () {
                 } finally {
                     if (_didIteratorError) {
                         throw _iteratorError;
-                    }
-                }
-            }
-        }
-    }, {
-        key: 'updateTilemapLayer',
-        value: function updateTilemapLayer(layer) {
-            var _iteratorNormalCompletion2 = true;
-            var _didIteratorError2 = false;
-            var _iteratorError2 = undefined;
-
-            try {
-                for (var _iterator2 = layer.layer.data[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-                    var row = _step2.value;
-                    var _iteratorNormalCompletion3 = true;
-                    var _didIteratorError3 = false;
-                    var _iteratorError3 = undefined;
-
-                    try {
-                        for (var _iterator3 = row[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-                            var cell = _step3.value;
-
-                            if (cell.index !== -1 && !cell[this._key]) {
-                                this.addTile(cell, layer);
-                            }
-                        }
-                    } catch (err) {
-                        _didIteratorError3 = true;
-                        _iteratorError3 = err;
-                    } finally {
-                        try {
-                            if (!_iteratorNormalCompletion3 && _iterator3.return) {
-                                _iterator3.return();
-                            }
-                        } finally {
-                            if (_didIteratorError3) {
-                                throw _iteratorError3;
-                            }
-                        }
-                    }
-                }
-            } catch (err) {
-                _didIteratorError2 = true;
-                _iteratorError2 = err;
-            } finally {
-                try {
-                    if (!_iteratorNormalCompletion2 && _iterator2.return) {
-                        _iterator2.return();
-                    }
-                } finally {
-                    if (_didIteratorError2) {
-                        throw _iteratorError2;
                     }
                 }
             }
@@ -954,17 +947,17 @@ var ThreeScene = function () {
     }, {
         key: '_pushSprite',
         value: function _pushSprite(sprite) {
-            var _this3 = this;
+            var _this5 = this;
 
             var events = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : sprite.events;
 
             this._sprites.push(sprite);
             sprite[this._key].insertTo(this._scene);
             events.onDestroy.addOnce(function () {
-                sprite[_this3._key].removeFrom(_this3._scene);
-                var si = _this3._sprites.indexOf(sprite);
+                sprite[_this5._key].removeFrom(_this5._scene);
+                var si = _this5._sprites.indexOf(sprite);
                 if (si !== -1) {
-                    _this3._sprites.splice(si, 1);
+                    _this5._sprites.splice(si, 1);
                 }
             });
             this.applyConfig(sprite);
@@ -1015,7 +1008,7 @@ var ThreeScene = function () {
     }, {
         key: 'addLight',
         value: function addLight(type, config) {
-            var _this4 = this;
+            var _this6 = this;
 
             var sprite = this.game.make.sprite();
 
@@ -1026,9 +1019,9 @@ var ThreeScene = function () {
                 (function () {
                     var helper = new type.helperClass(light);
                     var sHelper = new THREE.CameraHelper(light.shadow.camera);
-                    _this4._scene.add(helper, sHelper);
+                    _this6._scene.add(helper, sHelper);
                     sprite.events.onDestroy.addOnce(function () {
-                        return _this4._scene.remove(helper, sHelper);
+                        return _this6._scene.remove(helper, sHelper);
                     });
                 })();
             }
@@ -1157,7 +1150,7 @@ var ThreeSceneRenderer = function () {
                 return _this.renderAll();
             };
         }
-        this.sprite = this.game.add.sprite(0, 0, this.texture);
+        this.sprite = this.game.make.sprite(0, 0, this.texture);
         this.sprite.fixedToCamera = true;
         this.sprite.alive = true;
         this.sprite.update = function () {
@@ -1206,7 +1199,10 @@ var ThreeSceneRenderer = function () {
             camera.top = this.game.world.height - this.game.camera.y;
             camera.right = this.game.camera.x + this.game.camera.width;
             camera.bottom = this.game.world.height - this.game.camera.y - this.game.camera.height;
-            this.parent.update(); //move loop inside
+            //todo(alexey): we do not need update here because we know that Phaser updates groups in reverse order
+            //              so when this update is called by sprite, all dependent groups will be alraedy updated
+            //              but it is very unobvious
+            //this.parent.update();   //move loop inside
             this.parent.forEach(function (sprite) {
                 //todo: i do not like all these this.parent._key
                 if (sprite[_this3.parent._key] && sprite[_this3.parent._key].update) {

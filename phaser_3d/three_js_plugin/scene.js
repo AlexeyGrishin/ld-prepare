@@ -71,17 +71,24 @@ export default class ThreeScene {
             this._sceneRenderer = new ThreeSceneRenderer(this);
             group.parent.addAt(this._sceneRenderer.sprite, group.parent.children.indexOf(group));
         }
+        let oldUpdate = group.update;
+        group.update = () => {
+            this._updateGroup(group)
+            oldUpdate.call(group);
+        };
         this._groups.push(group);
     }
 
     update() {
-        for (let group of this._groups) {
-            if (group instanceof Phaser.TilemapLayer) {
-                this.updateTilemapLayer(group)
-            } else {
-                group.forEach((sprite) => this.addSprite(sprite));
-            }
-        }
+        this._groups.forEach((group) => this._updateGroup(group))
+    }
+    
+    _updateGroup(group) {
+        if (group instanceof Phaser.TilemapLayer) {
+            this.updateTilemapLayer(group)
+        } else {
+            group.forEach((sprite) => this.addSprite(sprite));
+        }   
     }
 
     updateTilemapLayer(layer) {

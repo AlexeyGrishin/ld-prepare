@@ -32,8 +32,8 @@ export default class ThreeLoader {
                     var replacementKey = props.insteadOf.key || props.insteadOf[0];
                     if (props.insteadOf.frame !== undefined || props.insteadOf[1] !== undefined) {
                         replacementKey += "_" + (props.insteadOf.frame  === undefined ? props.insteadOf[1] : props.insteadOf.frame);
-                        this._replacement[replacementKey] = props;
                     }
+                    this._replacement[replacementKey] = props;
                 }
                 cb(obj);
             });
