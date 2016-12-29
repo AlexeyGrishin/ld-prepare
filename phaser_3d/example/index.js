@@ -135,6 +135,7 @@ function create() {
 
     enablePhysics(hero);
     hero.checkWorldBounds = true;
+    hero.body.customSeparateX = true;
     hero.body.collideWorldBounds = true;
     hero.data.cannons = [
         {x: -6, y: -4, dx: -1, dy:0},
@@ -144,6 +145,15 @@ function create() {
     ];
     hero.data.fireCooldown = 0;
     hero.data.aim = createAim();
+    hero.data.collider = game.add.sprite(hero.x,hero.y-6);
+    hero.data.collider.anchor.set(0.5, 0.5);
+    hero.data.collider.width = 12;
+    hero.data.collider.height = 12;
+    hero.data.collider.checkWorldBounds = true;
+    enablePhysics(hero.data.collider);
+    hero.data.collider.body.collideWorldBounds = true;
+    //hero.data.collider.body.setCircle(6, 6, 6);
+    //hero.addChild(hero.data.collider);
 
     for (var i = 0; i < 20; i++) {
         createRock();
@@ -167,7 +177,8 @@ var SPEED = 15;
 function update() {
 
     predictBomb(hero);
-    game.physics.arcade.collide(hero, rocks);
+
+    game.physics.arcade.collide(hero.data.collider, rocks);
 
     if (cursors.left.isDown) {
         hero.body.angularVelocity = -45;
@@ -177,7 +188,7 @@ function update() {
         hero.body.angularVelocity = 0;
     }
 
-    var currentSpeed = hero.body.speed;
+    var currentSpeed = hero.data.collider.body.speed;
     var acceleration = 0.5;
 
     if (cursors.down.isDown) {
@@ -188,9 +199,9 @@ function update() {
 
     hero.body.angularVelocity *= (currentSpeed / SPEED);
 
-    hero.body.velocity = {
+    hero.data.collider.body.velocity = {
         x: currentSpeed * Math.cos(hero.rotation - Math.PI/2),
-        y: currentSpeed * Math.sin(hero.rotation - Math.PI/2),
+        y: currentSpeed * Math.sin(hero.rotation - Math.PI/2)
     };
 
     hero.data.fireCooldown -= game.time.elapsed;
@@ -198,6 +209,9 @@ function update() {
     if (cursors.space.isDown) {
         fireBomb(hero);
     }
+    hero.x = hero.data.collider.x - Math.cos(hero.rotation - Math.PI/2)*6;
+    hero.y = hero.data.collider.y - Math.sin(hero.rotation - Math.PI/2)*6;
+
 
 }
 var BOMB_SPEED = 30;
@@ -222,6 +236,7 @@ function fireBomb(ship) {
         predicted.y = ship.data.aim.y;
         predicted.tint = 0xff0000;
         ship.data.fireCooldown = 1000;
+        //todo: indicate that cannon is locked
         var currentCannon = ship.data.cannons.shift();
         ship.data.cannons.push(currentCannon);
         var bomb = game.add.sprite(ship.x + currentCannon.x, ship.y + currentCannon.y, "bomb", 0, bombs);
@@ -287,6 +302,7 @@ function debugRender1() {
     game.debug.text(game.time.fps, game.camera.width/2,game.camera.height-10);
 
     //game.debug.body(hero);
+    //game.debug.body(hero.data.collider);
     //rocks.forEach(function(r) { game.debug.body(r);});
     //bombs.forEachAlive(function(r) { game.debug.body(r);});
 }
