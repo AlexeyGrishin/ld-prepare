@@ -1,15 +1,11 @@
 var USE_THREE = location.search === "?3d";
 /*
 game itself:
-    * attack for field
     * p2 physics (to rotate body)
     * goal? (why to destroy all the islands?)
     *   maybe we need to destroy something else. islands just are on way, and they invinsible
     *   sharks!
-    * show aim
-    * randomly rotate islands
-    *
-    *
+
  */
 
 function initScene3d() {
@@ -85,7 +81,7 @@ function makeSharped() {
 function createRock() {
     var rock = game.add.sprite(game.world.randomX, game.world.randomY, "rock", game.rnd.integerInRange(0,1), rocks);
     enablePhysics(rock);
-    rock.anchor = {x:0.5, y: 0.5};
+    rock.anchor.set(0.5, 0.5);
     rock.rotation = Math.random() * Math.PI*2;
     rock.body.immovable = true;
     rock.body.setCircle(12, 6, 5);
@@ -105,7 +101,7 @@ function createAim(noAnimation) {
     });
 
     var aimSprite = game.add.sprite(0, 0, aim, undefined, ui);
-    aimSprite.anchor = {x: 0.5, y: 0.5};
+    aimSprite.anchor.set(0.5, 0.5);
     if (!noAnimation) {
         game.add.tween(aimSprite.scale).to({x: 1.2, y: 1.2}, 1000, Phaser.Easing.Sinusoidal.InOut, true, 0, -1, true);
         game.add.tween(aimSprite).to({rotation: Math.PI/2}, 2000, Phaser.Easing.Sinusoidal.InOut, true, 0, -1);
@@ -135,7 +131,7 @@ function create() {
     cursors.space = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
 
     hero = game.add.sprite(game.world.width/2, game.world.height/2, "ship", 0, ships);
-    hero.anchor = {x: 0.5, y: 0.5};
+    hero.anchor.set(0.5, 0.5);
 
     enablePhysics(hero);
     hero.checkWorldBounds = true;
