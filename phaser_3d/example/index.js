@@ -103,8 +103,10 @@ function createAim(noAnimation) {
     var aimSprite = game.add.sprite(0, 0, aim, undefined, ui);
     aimSprite.anchor.set(0.5, 0.5);
     if (!noAnimation) {
-        game.add.tween(aimSprite.scale).to({x: 1.2, y: 1.2}, 1000, Phaser.Easing.Sinusoidal.InOut, true, 0, -1, true);
-        game.add.tween(aimSprite).to({rotation: Math.PI/2}, 2000, Phaser.Easing.Sinusoidal.InOut, true, 0, -1);
+        aimSprite.data.tweens = [
+            game.add.tween(aimSprite.scale).to({x: 1.2, y: 1.2}, 1000, Phaser.Easing.Sinusoidal.InOut, true, 0, -1, true),
+            game.add.tween(aimSprite).to({rotation: Math.PI/2}, 2000, Phaser.Easing.Sinusoidal.InOut, true, 0, -1)
+        ]
     }
     return aimSprite;
 }
@@ -209,14 +211,21 @@ function update() {
     if (cursors.space.isDown) {
         fireBomb(hero);
     }
-    hero.x = hero.data.collider.x - Math.cos(hero.rotation - Math.PI/2)*6;
-    hero.y = hero.data.collider.y - Math.sin(hero.rotation - Math.PI/2)*6;
+    //we need to rotate ship around its center, not collider ones
+    //1. calculate hero position by prev rotation
+    //2. calculate new collider position with new rotation
 
+    hero.x = hero.data.collider.x - Math.cos(hero.previousRotation - Math.PI/2)*6;
+    hero.y = hero.data.collider.y - Math.sin(hero.previousRotation - Math.PI/2)*6;
+    if (hero.previousRotation !== hero.rotation) {
+        hero.data.collider.x = hero.x + Math.cos(hero.rotation - Math.PI/2)*6
+        hero.data.collider.y = hero.y + Math.sin(hero.rotation - Math.PI/2)*6
+    }
 
 }
 var BOMB_SPEED = 30;
 
-function predictBomb(ship) {
+function predictBombXY(ship) {
     var currentCannon = ship.data.cannons[0];
     var velocity = {
         x: ship.body.velocity.x + currentCannon.dx * BOMB_SPEED * -Math.sin(ship.rotation - Math.PI/2),
@@ -225,8 +234,13 @@ function predictBomb(ship) {
     var totalTime = 2000;   //3 frames/s + 2 frames
     var resultX = ship.x + currentCannon.x + velocity.x * totalTime/1000;
     var resultY = ship.y + currentCannon.y + velocity.y * totalTime/1000;
-    ship.data.aim.x = resultX;
-    ship.data.aim.y = resultY;
+    return {x: resultX, y: resultY};
+}
+function predictBomb(ship) {
+    if (ship.data.aim.data.isPaused) return;
+    var p = predictBombXY(ship);
+    ship.data.aim.x = p.x;
+    ship.data.aim.y = p.y;
 }
 
 function fireBomb(ship) {
@@ -235,10 +249,29 @@ function fireBomb(ship) {
         predicted.x = ship.data.aim.x;
         predicted.y = ship.data.aim.y;
         predicted.tint = 0xff0000;
-        ship.data.fireCooldown = 1000;
+
         //todo: indicate that cannon is locked
         var currentCannon = ship.data.cannons.shift();
         ship.data.cannons.push(currentCannon);
+        var newAimCoords = predictBombXY(ship);
+
+        ship.data.fireCooldown = 1000;
+        ship.data.aim.tint = 0xcccccc;
+        ship.data.aim.alpha = 0.5;
+        ship.data.aim.data.tweens.forEach(function(t) {t.pause()});
+        ship.data.aim.data.isPaused = true;
+        game.add.tween(ship.data.aim).to({x: newAimCoords.x, y: newAimCoords.y}, 100, null, true).onComplete.addOnce(function() {
+            ship.data.aim.data.isPaused = false;
+
+        });
+        game.time.events.add(ship.data.fireCooldown, function() {
+            ship.data.aim.alpha = 1;
+            ship.data.tint = 0xffffff;
+            ship.data.aim.data.tweens.forEach(function(t) {t.resume()});
+        });
+
+
+
         var bomb = game.add.sprite(ship.x + currentCannon.x, ship.y + currentCannon.y, "bomb", 0, bombs);
         bomb.animations.add("charging", [0,1,2,3,4,4], 3);
         bomb.anchor = {x:0.5, y: 0.5};
