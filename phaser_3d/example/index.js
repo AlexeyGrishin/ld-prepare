@@ -111,6 +111,52 @@ function createAim(noAnimation) {
     return aimSprite;
 }
 
+var trace;
+
+
+function updateTrace(ship) {
+    var tr = ship.data.trace;
+    if (!tr[0] || tr[0].x != ship.x || tr[0].y != ship.y) {
+        tr.unshift({
+            x: ship.x - 12*Math.cos(ship.rotation-Math.PI/2),
+            y: ship.y - 12*Math.sin(ship.rotation-Math.PI/2),
+            angle: ship.rotation,
+            speed: ship.data.collider.body.speed/1000/3,
+            ts: 0});
+    }
+    tr.forEach(function(t) {
+        t.ts += game.time.elapsed;
+    });
+    ship.data.trace = tr = tr.filter(function(t) { return t.ts < 3000;});
+    if (tr.length == 0) return;
+    trace.clear();
+    //left trace
+    var backWidth = 4;
+    var x = tr[0].x + (tr[0].speed*tr[0].ts + backWidth)*Math.cos(tr[0].angle);
+    var y = tr[0].y + (tr[0].speed*tr[0].ts + backWidth)*Math.sin(tr[0].angle);
+    tr.slice(1).forEach(function(t) {
+        trace.context.beginPath();
+        trace.context.moveTo(x, y);
+        trace.context.strokeStyle = "rgba(255,255,255," + (1-(t.ts/3000)).toFixed(2) + ")";
+        x = t.x + (t.speed*t.ts + backWidth)*Math.cos(t.angle);
+        y = t.y + (t.speed*t.ts + backWidth)*Math.sin(t.angle);
+        trace.context.lineTo(x, y);
+        trace.context.stroke();
+    });
+    //right trace
+    x = tr[0].x - (tr[0].speed*tr[0].ts + backWidth)*Math.cos(tr[0].angle);
+    y = tr[0].y - (tr[0].speed*tr[0].ts + backWidth)*Math.sin(tr[0].angle);
+    tr.slice(1).forEach(function(t) {
+        trace.context.beginPath();
+        trace.context.moveTo(x, y);
+        trace.context.strokeStyle = "rgba(255,255,255," + (1-(t.ts/3000)).toFixed(2) + ")";
+        x = t.x - (t.speed*t.ts + backWidth)*Math.cos(t.angle);
+        y = t.y - (t.speed*t.ts + backWidth)*Math.sin(t.angle);
+        trace.context.lineTo(x, y);
+        trace.context.stroke();
+    });
+}
+
 var ui;
 
 function create() {
@@ -118,8 +164,10 @@ function create() {
     game.world.resize(320, 320);
     makeSharped();
     ground = game.add.group();
-    ships = game.add.group();
     rocks = game.add.group();
+    trace = game.add.bitmapData(game.world.width, game.world.height);
+    var traceSprite = game.add.sprite(0, 0, trace, 0);
+    ships = game.add.group();
     bombs = game.add.group();
     ui = game.add.group();
 
@@ -127,7 +175,8 @@ function create() {
     bg.filters = [game.add.filter("WaterShader")];
     bg.update = function() {
         bg.filters[0].update();
-    }
+    };
+
 
     cursors = game.input.keyboard.createCursorKeys();
     cursors.space = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
@@ -147,6 +196,7 @@ function create() {
     ];
     hero.data.fireCooldown = 0;
     hero.data.aim = createAim();
+    hero.data.trace = [];
     hero.data.collider = game.add.sprite(hero.x,hero.y-6);
     hero.data.collider.anchor.set(0.5, 0.5);
     hero.data.collider.width = 12;
@@ -154,15 +204,14 @@ function create() {
     hero.data.collider.checkWorldBounds = true;
     enablePhysics(hero.data.collider);
     hero.data.collider.body.collideWorldBounds = true;
-    //hero.data.collider.body.setCircle(6, 6, 6);
-    //hero.addChild(hero.data.collider);
+    hero.data.cx = hero.data.collider.x - Math.cos(hero.rotation - Math.PI/2)*20;
+    hero.data.cy = hero.data.collider.y - Math.sin(hero.rotation - Math.PI/2)*20;
 
     for (var i = 0; i < 20; i++) {
         createRock();
     }
 
 
-    //hero.tint = 0xff0000;
     initScene3d();
 
 
@@ -179,6 +228,7 @@ var SPEED = 15;
 function update() {
 
     predictBomb(hero);
+    updateTrace(hero);
 
     game.physics.arcade.collide(hero.data.collider, rocks);
 
@@ -199,7 +249,7 @@ function update() {
         currentSpeed = Math.min(SPEED, currentSpeed + acceleration);
     }
 
-    hero.body.angularVelocity *= (currentSpeed / SPEED);
+    //hero.body.angularVelocity *= (currentSpeed / SPEED);
 
     hero.data.collider.body.velocity = {
         x: currentSpeed * Math.cos(hero.rotation - Math.PI/2),
@@ -215,12 +265,26 @@ function update() {
     //1. calculate hero position by prev rotation
     //2. calculate new collider position with new rotation
 
-    hero.x = hero.data.collider.x - Math.cos(hero.previousRotation - Math.PI/2)*6;
-    hero.y = hero.data.collider.y - Math.sin(hero.previousRotation - Math.PI/2)*6;
-    if (hero.previousRotation !== hero.rotation) {
-        hero.data.collider.x = hero.x + Math.cos(hero.rotation - Math.PI/2)*6
-        hero.data.collider.y = hero.y + Math.sin(hero.rotation - Math.PI/2)*6
+    var previousRotation = Phaser.Math.degToRad(hero.body.preRotation);
+    var rotation = Phaser.Math.degToRad(hero.body.rotation);
+
+    hero.x = hero.data.cx + Math.cos(previousRotation - Math.PI/2)*14;
+    hero.y = hero.data.cy + Math.sin(previousRotation - Math.PI/2)*14;
+    hero.data.cx = hero.data.collider.x - Math.cos(previousRotation - Math.PI / 2) * 20;
+    hero.data.cy = hero.data.collider.y - Math.sin(previousRotation - Math.PI / 2) * 20;
+
+    //hero.x = hero.data.collider.x - Math.cos(hero.previousRotation - Math.PI/2)*6;
+    //hero.y = hero.data.collider.y - Math.sin(hero.previousRotation - Math.PI/2)*6;
+    //console.log(hero.rotation, hero.previousRotation, hero.body.rotation, hero.body.preRotation, hero.body.previousRotation);
+    if (hero.body.rotation !== hero.body.preRotation) {
+        hero.data.collider.x = hero.data.cx + Math.cos(rotation - Math.PI/2)*20;
+        hero.data.collider.y = hero.data.cy + Math.sin(rotation - Math.PI/2)*20;
+    } else {
+
+        //    hero.data.cx = hero.data.collider.x - Math.cos(hero.rotation - Math.PI / 2) * 20;
+    //    hero.data.cy = hero.data.collider.y - Math.sin(hero.rotation - Math.PI / 2) * 20;
     }
+    //console.log(hero.data.cx, hero.data.cy);
 
 }
 var BOMB_SPEED = 30;
@@ -250,7 +314,6 @@ function fireBomb(ship) {
         predicted.y = ship.data.aim.y;
         predicted.tint = 0xff0000;
 
-        //todo: indicate that cannon is locked
         var currentCannon = ship.data.cannons.shift();
         ship.data.cannons.push(currentCannon);
         var newAimCoords = predictBombXY(ship);
