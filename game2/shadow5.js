@@ -35,8 +35,7 @@ Phaser.Filter.Shadow5 = function(game) {
     this.uniforms.light = {value: {x: 0, y: 0, z:0}, type: '3f'};
     this.uniforms.lightSize = {value: {x: 0, y: 0}, type: '2f'};
     this.uniforms.lightStrength = {value: 1.0, type: '1f'};
-    this.uniforms.shadowPrecision = {value: 1.0, type: '1f'};
-
+    
 
     var header = [
         "precision mediump float;",
@@ -54,7 +53,6 @@ Phaser.Filter.Shadow5 = function(game) {
         "uniform vec3 light;",
         "uniform vec2 lightSize;",
         "uniform float lightStrength;",
-        "uniform float shadowPrecision;",
         
         //"uniform float map3d"
 

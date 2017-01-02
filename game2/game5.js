@@ -1,15 +1,10 @@
 
-var Performance = {
-    ShadowsBitmask: 1,  //not used
-    LightsAmount: 4,
-    Debug: false,
-    ShadowStep: 1,
-    ShadowsStepsCount: 128,
-    UseShadowBitmask: false,
-
-    Map3dScale: 1,
-    Blur: true
-};
+var Performance = initOptions({
+    LightsAmount: ["int", 4],
+    ShadowsStepsCount: ["int", 128],
+    Map3dScale: ["int", 1],
+    Blur: ["boolean", true]
+});
 
 function preload() {
     game.time.advancedTiming = true;
@@ -127,8 +122,6 @@ function initHeightConfig() {
     }
 }
 
-var shadowMaskBitmaps;
-
 function create1() {
     game.physics.startSystem(Phaser.Physics.ARCADE);
     game.stage.backgroundColor = '#000000';
@@ -186,7 +179,6 @@ function create1() {
         f.uniforms.wSize.value = {x: game.world.width, y: game.world.height};
         f.uniforms.shSize.value = {x: game.world.width / Performance.Map3dScale, y: game.world.height/ Performance.Map3dScale};
         f.uniforms.tSize.value = {x: textureSize, y: textureSize};
-        f.uniforms.shadowPrecision.value = Performance.ShadowsBitmask;
         return f;
     });
 

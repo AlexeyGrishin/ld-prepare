@@ -1,3 +1,7 @@
+var Options = initOptions({
+   LightsAmount: ["int", 4]
+});
+
 function preload() {
     game.time.advancedTiming = true;
     game.load.tilemap('level1', 'l4.json', null, Phaser.Tilemap.TILED_JSON);
@@ -201,6 +205,9 @@ var fireParticles = [
     {dx: -2, dy: 0, ddistance: 10},
     {dx: 0, dy: 0, ddistance: 10},
     {dx: 2, dy: 0, ddistance: 10},
+    {dx: -2, dy: 0, ddistance: 10},
+    {dx: 0, dy: 0, ddistance: 10},
+    {dx: 2, dy: 0, ddistance: 10},
 ];
 
 function update1() {
@@ -239,7 +246,7 @@ function update1() {
 
     ].concat(fireParticles.map(function(fp) {
         return {x: fire.centerX + fp.dx, y: fire.centerY + fp.dy, z: 15, distance: fireDistance + fp.ddistance, radius: 3}
-    }));
+    })).slice(0, Options.LightsAmount);
 
     fireParticles.forEach(function(fp) {
         if (fp.dy < -4) {fp.dy = 0; fp.ddistance = 10;}

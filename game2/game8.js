@@ -1,3 +1,10 @@
+var Performance = initOptions({
+    LightsAmount: ["int", 4],
+    Blur: ["boolean", true],
+    UseShadowMaterial: ["boolean", false],
+    RotateModels: ["boolean", true]
+});
+
 function preload() {
     game.time.advancedTiming = true;
     game.plugins.add(ThreePlugin);
@@ -74,9 +81,8 @@ function create1() {
         //lights: [{color: 0xffffff, intensity: 0.5}],
         shadows: true,
         render: ThreePlugin.RenderNothing,
-        floor: 0xffffff,
-        ignore: [621,588],
-        //debugCanvas: true
+        floor: Performance.UseShadowMaterial ? true : 0xffffff,
+        ignore: [621,588]
     });
     scene2 = game.three.createScene(treesLayer, {
         lights: [{color: 0xcccccc, intensity: 0.5}],
@@ -88,51 +94,45 @@ function create1() {
 
     lightForHero = scene.addLight(ThreePlugin.PointLight, {intensity: 2, distance: 200});
     if (scene2) scene2.addExisting(lightForHero, "three");
-    fireLights = [0,1,2].map(function() {
+    fireLights = [];
+    for (var i = 0; i < Performance.LightsAmount-1;i++) {
         let sp = scene.addLight(ThreePlugin.PointLight, {intensity: 0.3, distance: 300});
         if (scene2) scene2.addExisting(sp, "three");
-        return sp;
-    });
+        fireLights.push(sp);
+    }
 
-    //var rotatedThree = game.add.sprite(30, 60, "roguelikeSheet_transparent", 530);
-    //rotatedThree.rotation = Math.PI/8;
-    //scene2.addSprite(rotatedThree);
-    //console.log(rotatedThree.rotation, rotatedThree.three2.rotation);
-    if (scene2) scene2.forEach(function(sp) {
-        if (!sp.three2.mesh) return;
-        //sp.three2.rotation.x = -Math.PI/2;
-        //var y = sp.three2.y;
-        //sp.three2.y = sp.three2.z + BASE_Y;
-        //sp.three2.z = y;
-        //sp.alpha = 0.5;
-        sp.three2.mesh.children[0].material = createRotatedMaterialFrom(sp.three2.mesh.children[0].material, game.world.width/2);
-        //console.log(sp.three2.mesh.children[0].material.map.image.width);
-
-    });
-    //rotatedThree.three2.rotation.y = Math.PI/8;
-    //console.log(rotatedThree.rotation, rotatedThree.three2.rotation);
-
+    if (Performance.RotateModels) {
+        if (scene2) scene2.forEach(function (sp) {
+            if (!sp.three2.mesh) return;
+            sp.three2.mesh.children[0].material = createRotatedMaterialFrom(sp.three2.mesh.children[0].material, game.world.width / 2);
+        });
+    }
 
     //
-    scene.sprite.x = game.world.width;  //move outside
-    scene.sprite.fixedToCamera = false;
-    var shadowsOverlay = game.add.bitmapData(game.world.width, game.world.height);
-    shadowsOverlay.context.fillStyle = "rgba(0,0,0,0.5);";
-    shadowsOverlay.context.fillRect(0,0,shadowsOverlay.width, shadowsOverlay.height);
-
-    var amb = game.add.filter("AmbientColor7");
-    shadow7 = [0,1,2,3].map(function(_, i) {
-        var f = game.add.filter("Shadow7");
-        f.uniforms.iChannel0.value = scene.sprite.texture;
-        f.uniforms.iChannel0.textureData = {nearest: true};
-        f.uniforms.wSize.value = {x: game.world.width, y: game.world.height};
-        return f;
-    });
-
     game.world.bringToTop(treesLayer);
-    var soSprite = game.add.sprite(0,0,shadowsOverlay);
-    soSprite.filters = [amb].concat(shadow7).concat([game.add.filter("BlurX"), game.add.filter("BlurY")]);
 
+    if (!Performance.UseShadowMaterial) {
+        scene.sprite.x = game.world.width;  //move outside
+        scene.sprite.fixedToCamera = false;
+
+        var shadowsOverlay = game.add.bitmapData(game.world.width, game.world.height);
+        shadowsOverlay.context.fillStyle = "rgba(0,0,0,0.5);";
+        shadowsOverlay.context.fillRect(0, 0, shadowsOverlay.width, shadowsOverlay.height);
+
+        var amb = game.add.filter("AmbientColor7");
+        shadow7 = [0, 1, 2, 3].map(function (_, i) {
+            var f = game.add.filter("Shadow7");
+            f.uniforms.iChannel0.value = scene.sprite.texture;
+            f.uniforms.iChannel0.textureData = {nearest: true};
+            f.uniforms.wSize.value = {x: game.world.width, y: game.world.height};
+            return f;
+        });
+
+        var soSprite = game.add.sprite(0, 0, shadowsOverlay);
+        soSprite.filters = [amb]
+            .concat(shadow7)
+            .concat(Performance.Blur ? [game.add.filter("BlurX"), game.add.filter("BlurY")] : []);
+    }
     if (scene2) game.world.bringToTop(scene2.sprite);
 }
 
@@ -143,6 +143,9 @@ var SPEED = 100;
 var heroHeight = 40;
 
 var fireParticles = [
+    {dx: -2, dy: 0, ddistance: 10},
+    {dx: 0, dy: 0, ddistance: 10},
+    {dx: 2, dy: 0, ddistance: 10},
     {dx: -2, dy: 0, ddistance: 10},
     {dx: 0, dy: 0, ddistance: 10},
     {dx: 2, dy: 0, ddistance: 10},
@@ -175,8 +178,6 @@ function update1() {
         lightForHero.three2.y = lightHero.y;
         lightForHero.three2.z = heroHeight;
     }
-    //lightForHero.three2.z = lightHero.y;
-    //lightForHero.three2.y = heroHeight + BASE_Y;
 
     var fireDistance = 300;
 
@@ -205,23 +206,20 @@ function update1() {
     });
 
 
-    var lights = [
-        {x: lightHero.x+4, y: lightHero.y+8, z:heroHeight, distance: 400, radius: 40, strength: 1},
+    if (!Performance.UseShadowMaterial) {
+        var lights = [
+            {x: lightHero.x+4, y: lightHero.y+8, z:heroHeight, distance: 400, radius: 40, strength: 1},
+        ].concat(fireParticles.map(function(fp) {
+            return {x: fire.centerX + fp.dx, y: fire.centerY + fp.dy, z: 15, distance: fireDistance + fp.ddistance, radius: 3, strength: 0.3}
+        }));
 
-        //{x: lightHero.x+10, y: lightHero.y+8, z:heroHeight, distance: distance, radius: 16},
-        //{x: lightHero.x+16, y: lightHero.y+8, z:heroHeight, distance: distance, radius: 16}
-
-    ].concat(fireParticles.map(function(fp) {
-        return {x: fire.centerX + fp.dx, y: fire.centerY + fp.dy, z: 15, distance: fireDistance + fp.ddistance, radius: 3, strength: 0.3}
-    }));
-
-    lights.forEach(function(light, li) {
-        //prepareShadowMask(shadowMaskBitmaps[li], tiles, [light]);
-        shadow7[li].uniforms.light.value = {x: light.x, y : light.y, z: light.z};
-        shadow7[li].uniforms.lightSize.value = {x: light.distance , y: light.radius };
-        shadow7[li].uniforms.lightStrength.value = light.strength;
-        shadow7[li].update();
-    });
+        lights.slice(0, shadow7.length).forEach(function (light, li) {
+            shadow7[li].uniforms.light.value = {x: light.x, y: light.y, z: light.z};
+            shadow7[li].uniforms.lightSize.value = {x: light.distance, y: light.radius};
+            shadow7[li].uniforms.lightStrength.value = light.strength;
+            shadow7[li].update();
+        });
+    }
 
     fireParticles.forEach(function(fp) {
         if (fp.dy < -4) {fp.dy = 0; fp.ddistance = 10;}
