@@ -319,5 +319,8 @@ function update1() {
 
 function debugRender1() {
     game.debug.text(game.time.fps, 32,32);
+    if (window.performance && window.performance.memory && window.performance.memory.usedJSHeapSize) {
+        game.debug.text((window.performance.memory.usedJSHeapSize / 1000 / 1000).toFixed(1) + " MB", 32, 64);
+    }
     game.debug.text("height=" + heroHeight, 32, game.world.height-32);
 }
