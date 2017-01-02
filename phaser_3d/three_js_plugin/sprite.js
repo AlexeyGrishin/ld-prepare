@@ -33,13 +33,13 @@ export default class ThreeSprite extends ThreeLinkedObject {
     }
 
     applyRenderingForSprite(rendering) {
-        this.sprite.renderable = rendering === Consts.RenderSprites;
+        this.sprite.renderable = rendering === Consts.RenderSprites || rendering === Consts.RenderBoth;
     }
 
     applyRenderingForMesh(rendering) {
         this.mesh.traverse(function(no) {
             if (no instanceof THREE.Mesh) {
-                if (rendering === Consts.RenderModels) {
+                if (rendering === Consts.RenderModels || rendering === Consts.RenderBoth) {
                     if (no.material === Consts.ShadowMaterial) no.material = no._material;
                 } else {
                     no._material = no.material;

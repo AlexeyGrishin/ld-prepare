@@ -37,6 +37,7 @@ export default {
     RenderSprites: 1,
     RenderModels: 2,
     RenderNothing: 3,
+    RenderBoth: 4,
     
     ShadowMaterial: new THREE.ShadowMaterial()
 };

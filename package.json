@@ -5,14 +5,16 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "compile": "browserify -t [ babelify --presets [ es2015 ] ] -o ./phaser_3d/three_js_plugin/three_js_plugin.js  ./phaser_3d/three_js_plugin/plugin.js "
+    "compile": "watchify ./phaser_3d/three_js_plugin/plugin.js -t [ babelify --presets [ es2015 ] ] -o ./phaser_3d/three_js_plugin/three_js_plugin.js --poll=100 -v ",
+    "compile_converts": "watchify  ./converts/src/browser.js -t [ babelify --presets [ es2015 ] ] -o ./converts/index.js --poll=100 -v "
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "babel": "^6.5.2",
     "babelify": "^7.3.0",
-    "jimp": "^0.2.27"
+    "jimp": "^0.2.27",
+    "watchify": "^3.8.0"
   },
   "devDependencies": {
     "babel-cli": "^6.18.0",

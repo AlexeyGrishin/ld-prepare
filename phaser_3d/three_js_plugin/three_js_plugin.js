@@ -236,6 +236,7 @@ exports.default = {
     RenderSprites: 1,
     RenderModels: 2,
     RenderNothing: 3,
+    RenderBoth: 4,
 
     ShadowMaterial: new THREE.ShadowMaterial()
 };
@@ -563,6 +564,15 @@ var ThreePlugin = function (_Phaser$Plugin) {
     }
 
     _createClass(ThreePlugin, [{
+        key: 'autoCreate',
+        value: function autoCreate() {
+            if (this._autoCreator) {
+                var res = this._autoCreator.apply(this, arguments);
+                return Object.assign({}, res.config, { obj: res.geometry });
+            }
+            return null;
+        }
+    }, {
         key: 'createObjectFromTile',
         value: function createObjectFromTile(tile, layer) {
             var index = tile.index;
@@ -571,13 +581,18 @@ var ThreePlugin = function (_Phaser$Plugin) {
             var searchKey = tileset.name + "_" + (index - tileset.firstgid);
             var obj = this.loader._replacement[searchKey];
             if (!obj) {
+                obj = this.autoCreate(tile, layer);
+            }
+            if (!obj) {
                 throw new Error("Cannot find 3d obj for tile " + tileset.name + "/" + index);
             }
-            return this.createObject(obj);
+            return this.createObject(obj, { nocenter: true });
         }
     }, {
         key: 'createObject',
         value: function createObject(obj) {
+            var opts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
             var mesh = obj.obj.clone();
             //todo: support more complex model than one mesh/geometry
             mesh.children[0].geometry = mesh.children[0].geometry.clone();
@@ -588,12 +603,21 @@ var ThreePlugin = function (_Phaser$Plugin) {
                     mesh.children[0].geometry.applyMatrix(new THREE.Matrix4()["makeRotation" + axis.toUpperCase()](obj.rotate[axis] || 0));
                 });
             }
+            if (obj.translate) {
+                mesh.children[0].geometry.applyMatrix(new THREE.Matrix4().makeTranslation(obj.translate.x || 0, -obj.translate.y || 0, obj.translate.z || 0));
+            }
+            if (!opts.nocenter) {
+                var _mesh$children$0$geom = mesh.children[0].geometry.center(),
+                    z = _mesh$children$0$geom.z;
 
-            var _mesh$children$0$geom = mesh.children[0].geometry.center(),
-                z = _mesh$children$0$geom.z;
-
-            mesh.position.set(0, 0, -z); // so bottom of figure shall have z = 0
+                mesh.position.set(0, 0, -z); // so bottom of figure shall have z = 0
+            }
             return mesh;
+        }
+    }, {
+        key: 'autoConvertSpritesUsing',
+        value: function autoConvertSpritesUsing(autoCreator) {
+            this._autoCreator = autoCreator;
         }
     }, {
         key: 'createMaterial',
@@ -623,7 +647,12 @@ var ThreePlugin = function (_Phaser$Plugin) {
                 }).filter(function (a) {
                     return a;
                 })[0];
-                if (!obj) throw new Error("You did not specify 3d model name, also I cannot find replacement 3d model for key/frame pair");
+                if (!obj) {
+                    obj = this.autoCreate(sprite);
+                }
+                if (!obj) {
+                    throw new Error("You did not specify 3d model name, also I cannot find replacement 3d model for key/frame pair");
+                }
             } else {
                 obj = this.loader._objects[obj3dName];
                 if (!obj) throw new Error("Cannot find 3d model with name '" + obj3dName + "'. Probably it is not loaded");
@@ -718,6 +747,7 @@ ThreePlugin.PointLight = _consts2.default.PointLight;
 ThreePlugin.RenderSprites = _consts2.default.RenderSprites;
 ThreePlugin.RenderModels = _consts2.default.RenderModels;
 ThreePlugin.RenderNothing = _consts2.default.RenderNothing;
+ThreePlugin.RenderBoth = _consts2.default.RenderBoth;
 
 ThreePlugin.ShadowMaterial = _consts2.default.ShadowMaterial;
 
@@ -928,7 +958,8 @@ var ThreeScene = function () {
         value: function addTile(cell, layer) {
             if (cell[this._key] || this._ignore(cell)) return cell;
             var container = new THREE.Group();
-            container.position.set(cell.worldX + cell.width / 2, this.reverseY(cell.worldY + cell.height / 2), 0);
+            //todo: tile objects are not centered. need to make it more clear, or get common solution for tiles and sprites
+            container.position.set(cell.worldX, this.reverseY(cell.worldY + cell.height), 0);
             var mesh = this.parent.createObjectFromTile(cell, layer);
             container.add(mesh);
             cell[this._key] = new _tile2.default(this, cell, mesh, container, layer);
@@ -1289,14 +1320,14 @@ var ThreeSprite = function (_ThreeLinkedObject) {
     }, {
         key: 'applyRenderingForSprite',
         value: function applyRenderingForSprite(rendering) {
-            this.sprite.renderable = rendering === _consts2.default.RenderSprites;
+            this.sprite.renderable = rendering === _consts2.default.RenderSprites || rendering === _consts2.default.RenderBoth;
         }
     }, {
         key: 'applyRenderingForMesh',
         value: function applyRenderingForMesh(rendering) {
             this.mesh.traverse(function (no) {
                 if (no instanceof THREE.Mesh) {
-                    if (rendering === _consts2.default.RenderModels) {
+                    if (rendering === _consts2.default.RenderModels || rendering === _consts2.default.RenderBoth) {
                         if (no.material === _consts2.default.ShadowMaterial) no.material = no._material;
                     } else {
                         no._material = no.material;
@@ -1368,7 +1399,7 @@ var ThreeTile = function (_ThreeSprite) {
     _createClass(ThreeTile, [{
         key: 'applyRenderingForSprite',
         value: function applyRenderingForSprite(rendering) {
-            this.layer.renderable = rendering === _consts2.default.RenderSprites;
+            this.layer.renderable = rendering === _consts2.default.RenderSprites || rendering === _consts2.default.RenderBoth;
         }
     }, {
         key: 'updateCoords',

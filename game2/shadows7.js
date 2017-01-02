@@ -53,7 +53,7 @@ Phaser.Filter.Shadow7.prototype.constructor = Phaser.Filter.Shadow7;
 Phaser.Filter.AmbientColor7 = function(game) {
     Phaser.Filter.call(this, game);
 
-    this.uniforms.ambientColor = {value: {x:0,y:0,z:0,w:0.8}, type: '4f'};
+    this.uniforms.ambientColor = {value: {x:0,y:0,z:0,w:0.6}, type: '4f'};
 
     this.fragmentSrc = [
         "precision mediump float;",

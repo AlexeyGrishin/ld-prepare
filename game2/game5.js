@@ -267,6 +267,12 @@ var heroHeight = 40;
 var fireParticles = [
     {dx: -2, dy: 0, ddistance: 10},
     {dx: 0, dy: 0, ddistance: 10},
+    {dx: 2, dy: 0, ddistance: 10},
+    {dx: -2, dy: 0, ddistance: 10},
+    {dx: 0, dy: 0, ddistance: 10},
+    {dx: 2, dy: 0, ddistance: 10},
+    {dx: -2, dy: 0, ddistance: 10},
+    {dx: 0, dy: 0, ddistance: 10},
     {dx: 2, dy: 0, ddistance: 10}
 ];
 

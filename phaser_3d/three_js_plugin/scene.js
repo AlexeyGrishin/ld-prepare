@@ -104,7 +104,8 @@ export default class ThreeScene {
     addTile(cell, layer) {
         if (cell[this._key] || this._ignore(cell)) return cell;
         var container = new THREE.Group();
-        container.position.set(cell.worldX + cell.width/2, this.reverseY(cell.worldY + cell.height/2), 0);
+        //todo: tile objects are not centered. need to make it more clear, or get common solution for tiles and sprites
+        container.position.set(cell.worldX, this.reverseY(cell.worldY + cell.height), 0);
         var mesh = this.parent.createObjectFromTile(cell, layer);
         container.add(mesh);
         cell[this._key] = new ThreeTile(this, cell, mesh, container, layer);

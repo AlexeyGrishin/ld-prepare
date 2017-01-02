@@ -5,7 +5,7 @@ function preload() {
     game.load.spritesheet("tiles", "../game2/roguelikeSheet_extracted.png", 16, 16);
     game.load.spritesheet("sprites", "../game2/sprites.png", 16, 16);
     
-    game.load.obj3d("tile-530-2", {rotate: {x: Math.PI/2}, insteadOf: ["tiles", 0]});
+    game.load.obj3d("tile-530", {rotate: {x: Math.PI/2}, insteadOf: ["tiles", 0]});
     //game.load.obj3d("roguelike-0", {rotate: {x: Math.PI/2}, insteadOf: ["tiles", 0]});
     game.load.obj3d("roguelike-7", {rotate: {x: Math.PI/2}, insteadOf: ["tiles", 7]});
 
@@ -15,11 +15,12 @@ var ground, trees, men;
 var hero, light, light2;
 var cursors;
 
-var trees2;
+//var trees2;
 
 function enablePhysics(sprite) {
     game.physics.enable(sprite, Phaser.Physics.ARCADE);
 }
+
 
 function create() {
     game.physics.startSystem(Phaser.Physics.ARCADE);
@@ -27,17 +28,18 @@ function create() {
 
     ground = game.add.group();
     trees = game.p3d.addGroup3d();
-    trees.shadows = "only";
+    trees.shadows = true;//"only";
     trees.render = false;
+    trees._3d.scene.remove(trees._floor);
 
-    trees2 = game.p3d.addGroup3d(function(sprite, canvasSrc, canvasTarget) {
+    /*trees2 = game.p3d.addGroup3d(function(sprite, canvasSrc, canvasTarget) {
         //so our sprite is rendered at (sprite.x, 160, 16, 16)
         //move it to (sprite.x, sprite.y, 16, 16)
         canvasTarget.context.drawImage(canvasSrc, sprite.x - game.camera.x, 160-8 - game.camera.y, 16, 16, sprite.x - game.camera.x, sprite.p3d.z-8 - game.camera.y, 16, 16);
     });
     trees2.shadows = true;
     trees2.render = false;
-    trees2._3d.scene.remove(trees2._floor);
+    trees2._3d.scene.remove(trees2._floor);*/
 
 
     men = game.add.group();
@@ -53,12 +55,17 @@ function create() {
 
     var treePos = [{x:300,y:100},{x:280,y:120}, {x:180, y: 50}];
 
+
     treePos.forEach(function(t) {
-        game.add.sprite(t.x,t.y,"tiles",0,trees);
-        var t2 = game.add.sprite(t.x, t.y, "tiles", 0, trees2);
-        t2.p3d.rotation.x = -Math.PI/2;
-        t2.p3d.y = 160;
-        t2.p3d.z = t.y;
+        var t = game.add.sprite(t.x,t.y,"tiles",0,trees);
+        //specialMaterial.map = t.p3d.mesh.children[0].material.map;
+        //specialMaterial.uniforms.map.value = t.p3d.mesh.children[0].material.map;
+        //specialMaterial.needsUpdate = true;
+        t.p3d.mesh.children[0].material = createRotatedMaterialFrom(t.p3d.mesh.children[0].material);// specialMaterial;
+        //var t2 = game.add.sprite(t.x, t.y, "tiles", 0, trees2);
+        //t2.p3d.rotation.x = -Math.PI/2;
+        //t2.p3d.y = 160;
+        //t2.p3d.z = t.y;
     });
     //game.add.sprite(300,100,"tiles",0,trees);
     //game.add.sprite(280,100,"tiles",0,trees);
@@ -78,10 +85,10 @@ function create() {
     light.p3d.z = 50;
     trees.add(light);
 
-    light2 = game.p3d.createPointLight(0xff0000, 1, 600, 0);
+    /*light2 = game.p3d.createPointLight(0xff0000, 1, 600, 0);
     light2.p3d.y = 160-50;
     trees2.add(light2);
-
+*/
     hero = game.add.sprite(100,100,"sprites", 0, men);
     //hero.addChild(light);
     //trees2.add(game.p3d.createAmbientLight(0xffffff, 0.5));
@@ -121,8 +128,8 @@ function update() {
     
     light.x = hero.x;
     light.y = hero.y;
-    light2.p3d.x = hero.x;
-    light2.p3d.z = hero.y;
+    //light2.p3d.x = hero.x;
+    //light2.p3d.z = hero.y;
 }
 
 function debugRender1() {

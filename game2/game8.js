@@ -4,14 +4,37 @@ function preload() {
     game.three.assets = "convert/obj";
     game.load.tilemap('level1', 'l4.json', null, Phaser.Tilemap.TILED_JSON);
 
+    game.load.script('blur', 'blurs.js');
+
     game.load.spritesheet('roguelikeSheet_transparent', 'roguelikeSheet_transparent.png', 16, 16, -1, 0, 1);
     game.load.spritesheet('sprites', 'sprites.png', 16, 16);
+    
+    game.three.autoConvertSpritesUsing(Threedify({
+        "roguelikeSheet_transparent": {
+            530: {projection: Threedify.Sym, data: {translate: {y: 4}}},
+            1411: {projection: Threedify.Sym},
+            1136: {projection: Threedify.Sym},
+            1410: {projection: Threedify.Sym},
+            1409: {projection: Threedify.Sym},
+            644: {projection: Threedify.Sym, top: 587},
+            1358: {projection: Threedify.X, offset: 0, width: 2},
+            1250: {projection: Threedify.X, offset: 0, width: 2},
+            1361: {projection: Threedify.Y, base: 1358,  offset: 0, width: 2},
+            1359: {projection: Threedify.X, offset: 0, width: 2},
+            1363: {projection: Threedify.X, offset: 0, width: 2},
+            1364: {projection: Threedify.X, offset: 0, width: 2},
+            849: {projection: Threedify.X, offset: 0, width: 1},
+            850: {projection: Threedify.X, offset: 0, width: 1},
+            792: {projection: Threedify.X, offset: 0, width: 1},
+            793: {projection: Threedify.X, offset: 0, width: 1},
+            522: {projection: Threedify.X, offset: 0, width: 1},
+            680: {projection: Threedify.X, offset: 0, width: 1},
+            677: {projection: Threedify.X, top: 620, offset: 0, width: 1},
+            1362: {projection: Threedify.Y, base: 1364,  offset: 0, width: 2},
+            default: {projection: Threedify.X}
+        }
 
-    var tilesToUse = [530,644,677,680,792,793,849,850,1136,1250,1358,1359,1362,1363,1364,1409,1410,1411];
-    tilesToUse.forEach(function(idx) {
-        game.load.obj3d("tile-" + idx, {insteadOf: ["roguelikeSheet_transparent", idx], rotate: {x: Math.PI/2}});
-    });
-    //game.load.obj3d("tile-530-2",  {insteadOf: ["roguelikeSheet_transparent", 530], rotate: {x: Math.PI/2}});
+    }).fromSpriteToGeometry);
 
     game.load.script("shadows7", "shadows7.js");
 
@@ -56,17 +79,18 @@ function create1() {
         //debugCanvas: true
     });
     scene2 = game.three.createScene(treesLayer, {
+        lights: [{color: 0xcccccc, intensity: 0.5}],
         key: "three2",
         shadows: true,
         render: ThreePlugin.RenderModels,
         ignore: [621,588],
     });
 
-    lightForHero = scene.addLight(ThreePlugin.PointLight, {intensity: 1, distance: 200});
-    scene2.addExisting(lightForHero, "three");
-    fireLights = [0,1,2].slice(3).map(function() {
-        let sp = scene.addLight(ThreePlugin.PointLight, {intensity: 1, distance: 300});
-        scene2.addExisting(sp, "three");
+    lightForHero = scene.addLight(ThreePlugin.PointLight, {intensity: 2, distance: 200});
+    if (scene2) scene2.addExisting(lightForHero, "three");
+    fireLights = [0,1,2].map(function() {
+        let sp = scene.addLight(ThreePlugin.PointLight, {intensity: 0.3, distance: 300});
+        if (scene2) scene2.addExisting(sp, "three");
         return sp;
     });
 
@@ -74,13 +98,15 @@ function create1() {
     //rotatedThree.rotation = Math.PI/8;
     //scene2.addSprite(rotatedThree);
     //console.log(rotatedThree.rotation, rotatedThree.three2.rotation);
-    scene2.forEach(function(sp) {
+    if (scene2) scene2.forEach(function(sp) {
+        if (!sp.three2.mesh) return;
         //sp.three2.rotation.x = -Math.PI/2;
         //var y = sp.three2.y;
         //sp.three2.y = sp.three2.z + BASE_Y;
         //sp.three2.z = y;
-        if (!sp.three2.mesh) return;
+        //sp.alpha = 0.5;
         sp.three2.mesh.children[0].material = createRotatedMaterialFrom(sp.three2.mesh.children[0].material, game.world.width/2);
+        //console.log(sp.three2.mesh.children[0].material.map.image.width);
 
     });
     //rotatedThree.three2.rotation.y = Math.PI/8;
@@ -105,9 +131,9 @@ function create1() {
 
     game.world.bringToTop(treesLayer);
     var soSprite = game.add.sprite(0,0,shadowsOverlay);
-    soSprite.filters = [amb].concat(shadow7);
+    soSprite.filters = [amb].concat(shadow7).concat([game.add.filter("BlurX"), game.add.filter("BlurY")]);
 
-    game.world.bringToTop(scene2.sprite);
+    if (scene2) game.world.bringToTop(scene2.sprite);
 }
 
 
@@ -144,9 +170,11 @@ function update1() {
     lightForHero.three.x = lightHero.x;
     lightForHero.three.y = lightHero.y;
     lightForHero.three.z = heroHeight;
-    lightForHero.three2.x = lightHero.x;
-    lightForHero.three2.y = lightHero.y;
-    lightForHero.three2.z = heroHeight;
+    if (scene2) {
+        lightForHero.three2.x = lightHero.x;
+        lightForHero.three2.y = lightHero.y;
+        lightForHero.three2.z = heroHeight;
+    }
     //lightForHero.three2.z = lightHero.y;
     //lightForHero.three2.y = heroHeight + BASE_Y;
 
@@ -158,16 +186,19 @@ function update1() {
             fp.ddistance += game.rnd.integerInRange(-5, +5);
         }
         if ( fireLights && fireLights[fi]) {
-            ["three", "three2"].forEach(function(t) {
-                fireLights[fi][t].color = 0xffcc00;
-                fireLights[fi][t].distance = fireDistance + fp.ddistance;
-                fireLights[fi][t].x = fire.centerX + fp.dx;
-
-            });
+            fireLights[fi].three.color = 0xffcc00;
+            fireLights[fi].three.distance = fireDistance + fp.ddistance;
+            fireLights[fi].three.x = fire.centerX + fp.dx;
             fireLights[fi].three.y = fire.centerY + fp.dy;
             fireLights[fi].three.z = 15;
-            fireLights[fi].three2.y = fire.centerY + fp.dy;
-            fireLights[fi].three2.z = 15;
+            if (scene2) {
+                fireLights[fi].three2.color = 0xffcc00;
+                fireLights[fi].three2.distance = fireDistance + fp.ddistance;
+                fireLights[fi].three2.x = fire.centerX + fp.dx;
+                fireLights[fi].three2.y = fire.centerY + fp.dy;
+                fireLights[fi].three2.z = 15;
+
+            }
             //fireLights[fi].three2.z = fire.centerY + fp.dy;
             //fireLights[fi].three2.y = 15 + BASE_Y;
         }

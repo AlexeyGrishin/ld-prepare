@@ -1,6 +1,6 @@
 //https://www.shadertoy.com/view/Mt2SzR#, bit modified
 //https://www.shadertoy.com/view/XdXGR7# too
-Phaser.Filter.WaterShader = function(game) {
+Phaser.Filter.WaterShader = function(game, alphaDependent) {
     Phaser.Filter.call(this, game);
 
 
@@ -11,6 +11,7 @@ Phaser.Filter.WaterShader = function(game) {
         "uniform float time;"
     ];
 
+    var checkAlpha = "uv2 = uv2 * (1. - vec4(texture2D(uSampler, uv + uv2)).a);";
 
 
     var main = [
@@ -127,6 +128,7 @@ void main()
 	float wave = scene(len); 
 
 	vec2 uv2 = -pos2n * wave/(1.0 + 5.0 * len);
+	${alphaDependent ? checkAlpha + checkAlpha + checkAlpha + checkAlpha + checkAlpha + checkAlpha : ""}
 
 	gl_FragColor = vec4(texture2D(uSampler, uv + uv2));
 }

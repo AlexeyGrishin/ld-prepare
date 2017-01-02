@@ -1,0 +1,110 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Buffer Geometry</title>
+</head>
+<body>
+<div id="container"></div>
+<script src="../tr2/three.js"></script>
+<script src="../tr2/loader.js"></script>
+<script src="../tr2/mtloader.js"></script>
+<script src="../converts/index.js"></script>
+
+<script>
+    function printCubemap(cubemap) {
+        function printEdge(edge) {
+            console.log("  (" + edge.start.x + " " + edge.start.y + " " + edge.start.z + ")" + (edge.start === edge.end ? ""
+                            : "(" + (edge.end.x - edge.start.x + 1) + " " + (edge.end.y - edge.start.y + 1) + " " + (edge.end.z - edge.start.z + 1) + ")"));
+        }
+        console.log("x:0");
+        cubemap[0][0].forEach(printEdge);
+        console.log("x:1");
+        cubemap[0][1].forEach(printEdge);
+        console.log("y:0");
+        cubemap[1][0].forEach(printEdge);
+        console.log("y:1");
+        cubemap[1][1].forEach(printEdge);
+        console.log("z:0");
+        cubemap[2][0].forEach(printEdge);
+        console.log("z:1");
+        cubemap[2][1].forEach(printEdge);
+    }
+
+    var vox = new VoxelModel(16,16,16);
+    //vox.setVoxel(3,3,3,0xff0000);
+    for (var x = 3; x < 15; x++) {
+        for (var y = 3; y < 15; y++) {
+            for (var z = 3; z < 15; z++) {
+                //if (x == 3 && y == 10 && z == 10) continue;
+                vox.setVoxel(x,y,z, (z === 14 && x === 10) ? 0xff0000 : 0x00ff00);
+            }
+        }
+    }
+    printCubemap(vox.toCubemap());
+    var colors = new ColorModel();
+    var vert = new VerticesModel(colors);
+    vert.addVoxelModel(vox);
+    console.log(colors);
+    console.log(vert.vertices, vert.normals, vert.uvs);
+
+    var te = new ThreeExport();
+    var geom1 = te.saveGeometry(vert);
+    var tex1 = te.saveTexture(colors);
+</script>
+<script>
+
+
+    scene = new THREE.Scene();
+    camera = new THREE.OrthographicCamera( 0, 320, 320, 0, 1, 1000 );
+    camera.position.z = 100;
+    camera.position.x = 0;
+    camera.position.y = 0;
+
+    renderer = new THREE.WebGLRenderer({ alpha: true, preserveDrawingBuffer: true });
+    renderer.setClearColor( 0x000000, 0.2 );
+    renderer.setSize( 320, 320);
+    renderer.shadowMap.enabled = true;
+
+    document.body.appendChild( renderer.domElement );
+
+    var ambient = new THREE.AmbientLight(0xffffff, 0.5);
+    scene.add(ambient);
+
+    var direct = new THREE.PointLight(0xffffff, 1, 600);
+    direct.position.set(220, 140, 40);
+    direct.castShadow = true;
+    scene.add(direct, new THREE.PointLightHelper(direct));
+
+
+
+    var floor = new THREE.Mesh(new THREE.BoxGeometry(320, 320, 1), new THREE.ShadowMaterial({color: 0xcccccc}));
+    floor.position.set(160, 160, 0);
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+
+    var mesh = new THREE.Mesh(geom1, new THREE.MeshPhongMaterial({
+        map: tex1,
+        //color: 0xff0000
+    }));
+    mesh.position.set(160,160,0);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    scene.add(mesh);
+
+
+
+    function render() {
+        renderer.render(scene, camera);
+        mesh.rotateZ(0.01);
+        //mesh.rotateY(0.01);
+        //mesh.rotateX(-0.01);
+        //mesh2.rotateZ(0.01);
+        requestAnimationFrame(render);
+    }
+    render();
+</script>
+
+</body>
+</html>

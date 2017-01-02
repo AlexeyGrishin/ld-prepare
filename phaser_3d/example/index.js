@@ -167,6 +167,10 @@ function create() {
     rocks = game.add.group();
     trace = game.add.bitmapData(game.world.width, game.world.height);
     var traceSprite = game.add.sprite(0, 0, trace, 0);
+    traceSprite.filters = [new Phaser.Filter.WaterShader(game, true)];
+    traceSprite.update = function() {
+        bg.filters[0].update();
+    };
     ships = game.add.group();
     bombs = game.add.group();
     ui = game.add.group();

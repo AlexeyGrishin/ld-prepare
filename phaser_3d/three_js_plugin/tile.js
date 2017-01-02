@@ -18,7 +18,7 @@ export default class ThreeTile extends ThreeSprite {
 
 
     applyRenderingForSprite(rendering) {
-        this.layer.renderable = rendering === Consts.RenderSprites;
+        this.layer.renderable = rendering === Consts.RenderSprites || rendering === Consts.RenderBoth;
     }
 
     updateCoords() {}

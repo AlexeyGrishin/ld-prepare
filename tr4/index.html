@@ -1,0 +1,194 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Buffer Geometry</title>
+</head>
+<body>
+<div id="container"></div>
+<script src="../tr2/three.js"></script>
+<script src="../tr2/loader.js"></script>
+<script src="../tr2/mtloader.js"></script>
+<script src="rotated_material.js"></script>
+
+<script>
+
+    function boxEdge(x0, y0, x1, y1, ccw) {
+        return ccw ? [
+                [x0, y0],
+                [x1, y1],
+                [x1, y0],
+
+                [x0, y0],
+                [x0, y1],
+                [x1, y1]
+        ] : [
+                [x0, y0],
+                [x1, y0],
+                [x1, y1],
+
+                [x0, y0],
+                [x1, y1],
+                [x0, y1]
+        ]
+    }
+
+    function withConst(axis, val, edge) {
+        switch (axis) {
+            case "x":
+                return edge.map(function(ed) { return [val, ed[0], ed[1]] });
+            case "y":
+                return edge.map(function(ed) { return [ed[1], val, ed[0]] });
+            case "z":
+                return edge.map(function(ed) { return [ed[0], ed[1], val] });
+        }
+    }
+
+    function concatAll() {
+        return function (a, b) { return (a || []).concat(b)};
+    }
+
+    function createBufferGeometry() {
+        var size = 20;
+        var g = new THREE.BufferGeometry();
+        var edgeCw = boxEdge(0, 0, size, size, false);
+        var edgeCcw = boxEdge(0, 0, size, size, true);
+        var vertices =
+                ["x", "y", "z"].map(function(axis) {
+                    return withConst(axis, 0, edgeCcw).concat(withConst(axis, size, edgeCw))
+                }).reduce(concatAll()).reduce(concatAll());
+        var normals = ["x", "y", "z"].map(function(axis) {
+            switch (axis) {
+                case "x": return [[-1, 0, 0], [1, 0, 0]];
+                case "y": return [[0, -1, 0], [0, 1, 0]];
+                case "z": return [[0, 0, -1], [0, 0, 1]];
+            }
+        }).map(function(norm) {
+            return [norm[0], norm[0], norm[0], norm[0], norm[0], norm[0], norm[1], norm[1], norm[1], norm[1], norm[1], norm[1]]
+        }).reduce(concatAll()).reduce(concatAll());
+        var colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0x00ffff, 0xff00ff].map(function(clr) {
+            var c = [clr >> 16, (clr >> 8)& 0xff, clr & 0xff];
+            return [].concat(c).concat(c).concat(c).concat(c).concat(c).concat(c);
+        }).reduce(concatAll());
+        var uv = [0, 0, 1, 1, 2, 2].map(function(u) {
+            return [
+                    u/3, 0.5,
+                    u/3, 0.5,
+                    u/3, 0.5,
+                    u/3, 0.5,
+                    u/3, 0.5,
+                    u/3, 0.5
+            ]
+        }).reduce(concatAll());
+        //console.log(vertices, normals);
+        g.addAttribute("position", new THREE.BufferAttribute( new Float32Array( vertices), 3));
+        g.addAttribute("normal", new THREE.BufferAttribute( new Float32Array( normals), 3));
+        //g.addAttribute("color", new THREE.BufferAttribute( new Float32Array( colors), 3));
+        g.addAttribute("uv", new THREE.BufferAttribute( new Float32Array( uv), 2));
+        return g;
+    }
+
+
+    var canvas = document.createElement('canvas');
+    canvas.setAttribute('width', 4);
+    canvas.setAttribute('height', 1);
+    var ctx = canvas.getContext('2d');
+    var im = ctx.getImageData(0, 0, 4, 1);
+    im.data[0 + 0*4] = 0xff;
+    im.data[3 + 0*4] = 0xff;
+    im.data[1 + 1*4] = 0xff;
+    im.data[3 + 1*4] = 0xff;
+    im.data[2 + 2*4] = 0xff;
+    im.data[3 + 2*4] = 0xff;
+    ctx.putImageData(im, 0, 0);
+
+    var loader = new THREE.TextureLoader(THREE.DefaultLoadingManager);
+    var texture = loader.load(canvas.toDataURL());
+    //console.log(texture);
+
+    scene = new THREE.Scene();
+    camera = new THREE.OrthographicCamera( 0, 320, 320, 0, 1, 1000 );
+    camera.position.z = 100;
+    camera.position.x = 0;
+    camera.position.y = 0;
+
+    renderer = new THREE.WebGLRenderer({ alpha: true, preserveDrawingBuffer: true });
+    renderer.setClearColor( 0x000000, 0.2 );
+    renderer.setSize( 320, 320);
+    renderer.shadowMap.enabled = true;
+
+    document.body.appendChild( renderer.domElement );
+
+    var ambient = new THREE.AmbientLight(0xffffff, 0.5);
+    scene.add(ambient);
+
+    var direct = new THREE.PointLight(0xffffff, 1, 600);
+    direct.position.set(220, 140, 10);
+    direct.castShadow = true;
+    scene.add(direct, new THREE.PointLightHelper(direct));
+
+
+
+    var floor = new THREE.Mesh(new THREE.BoxGeometry(320, 320, 1), new THREE.ShadowMaterial({color: 0xcccccc}));
+    floor.position.set(160, 160, 0);
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    var geometry2 = new THREE.BoxGeometry(20, 20, 40);
+    geometry = createBufferGeometry();
+    //var material = new THREE.MeshPhongMaterial({map: texture, shininess: 0});
+    //var material = new THREE.MeshPhongMaterial({color: 0xff0000});
+    //var material = new THREE.MeshPhongMaterial({color: 0xff0000, vertexColors: THREE.VertexColors});
+    //material = new THREE.MeshBasicMaterial({color: 0x00ff00});
+    //console.log(THREE.ShaderLib);
+    var material = createRotatedMaterialFrom(new THREE.MeshPhongMaterial({map: texture, shininess: 0}));/* new THREE.ShaderMaterial({
+        lights: true,
+        uniforms: THREE.ShaderLib.phong.uniforms,
+        vertexShader:
+        //attribute vec3 position
+        //do not see where is something like resolution.
+                inject(THREE.ShaderLib.phong.vertexShader, -2,
+                        //""
+                        "vec4 oldPos = gl_Position; gl_Position.z = gl_Position.y; gl_Position.y += -position.y/160. + position.z/160. - 40./160.;"
+                        //"gl_Position.x = gl_Position.x*cos(3.14/4.);gl_Position.y = gl_Position.y*sin(3.14/4.);"
+                ),
+        fragmentShader: THREE.ShaderLib.phong.fragmentShader
+    });*/
+
+    //console.log();
+    material.map = texture;
+    //material.mapEncoding = true;
+    material.uniforms.map.value = texture;
+    //material.uniforms.diffuse.value = new THREE.Color(0xff00ff);
+    //material.uniforms.specular.value = new THREE.Color(0x111111);
+    //material.uniforms.shininess.value = 30;
+    material.needsUpdate = true;
+
+    var mesh = new THREE.Mesh(geometry, material);
+    mesh.position.set(160,160,0);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    //mesh.rotation.set(0,Math.PI/2,0);
+    //mesh.rotation.set(0,0,Math.PI/4); //todo: so let it looks like rotated on math.pi/4 by z, but shadow as there is no rotation
+    scene.add(mesh);
+
+    var mesh2 = new THREE.Mesh(geometry2, new THREE.MeshPhongMaterial({color: 0xffffff}));
+    mesh2.position.set(200,160,10);
+    mesh2.rotation.set(0, 0, Math.PI/4);
+    mesh2.castShadow = true;
+    scene.add(mesh2);
+
+
+    function render() {
+        renderer.render(scene, camera);
+        //mesh.rotateZ(0.01);
+        //mesh.rotateY(0.01);
+        //mesh.rotateX(-0.01);
+        mesh2.rotateZ(0.01);
+        requestAnimationFrame(render);
+    }
+    render();
+</script>
+
+</body>
+</html>
