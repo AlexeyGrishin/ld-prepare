@@ -1,4 +1,4 @@
-export default class ColorModel {
+class ColorModel {
     constructor() {
         this._colors = [];
         this._colorsMap = {};
@@ -35,3 +35,5 @@ export default class ColorModel {
         return colorIndexes.map((ci) => ci / (count-1));
     }
 }
+
+module.exports = ColorModel;

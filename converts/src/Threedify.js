@@ -21,7 +21,7 @@ export default function Threedify(configs = {}) {
             config.projection(imageData, voxModel, config);
             //converts to vertices
             let vertModel = new VerticesModel();
-            vertModel.addVoxelModel(voxModel);
+            vertModel.addVoxelModel(voxModel, true);
             //converts to geometry
             let exp = new ThreeExport();
             let geom = exp.saveGeometry(vertModel);
@@ -36,7 +36,7 @@ export default function Threedify(configs = {}) {
         },
 
         fromTileToGeometry(tile, layer) {
-
+            //console.time("threedify");
             let index = tile.index;
             let tileset = layer.resolveTileset(index);
             let finalKey = "phaser_sprite_" + tileset.name + "_" + (index - tileset.firstgid);
@@ -56,7 +56,9 @@ export default function Threedify(configs = {}) {
                 tileset.draw(ctx, 0, 0, tileset.firstgid + config.top);
             }
             let res = this.toGeometry(ctx.getImageData(0, 0, tile.width, height), finalKey);
-            
+
+            //console.timeEnd("threedify");
+            //console.log("vertices -> ", res.geometry.children[0].geometry.attributes.position.count)
             return res;
 
         },

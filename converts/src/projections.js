@@ -40,8 +40,8 @@ function projectSymmetric(imageData, voxelModel) {
     forEach(imageData, nonTransparent, (x, y, color) => {
         if (x > cx) return; //it is symetric, we need to analyze only half of image
         let radius = Math.abs(cx - x);
-        for (let nx = x; nx <= cx+imageData.width-x; nx++) {
-            for (let ny = x; ny <= cx+imageData.width-x; ny++) {
+        for (let nx = x; nx < imageData.width-x; nx++) {
+            for (let ny = x; ny < imageData.width-x; ny++) {
                 if (Math.hypot(nx-cx, ny-cx) <= radius) {
                     voxelModel.setVoxel(nx, ny, imageData.height - 1 -y, color);
                 }

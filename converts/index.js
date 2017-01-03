@@ -47,7 +47,7 @@ function Threedify() {
             config.projection(imageData, voxModel, config);
             //converts to vertices
             var vertModel = new _vertices_model2.default();
-            vertModel.addVoxelModel(voxModel);
+            vertModel.addVoxelModel(voxModel, true);
             //converts to geometry
             var exp = new _three_export2.default();
             var geom = exp.saveGeometry(vertModel);
@@ -61,7 +61,7 @@ function Threedify() {
             return { geometry: group, config: config.data };
         },
         fromTileToGeometry: function fromTileToGeometry(tile, layer) {
-
+            //console.time("threedify");
             var index = tile.index;
             var tileset = layer.resolveTileset(index);
             var finalKey = "phaser_sprite_" + tileset.name + "_" + (index - tileset.firstgid);
@@ -82,6 +82,8 @@ function Threedify() {
             }
             var res = this.toGeometry(ctx.getImageData(0, 0, tile.width, height), finalKey);
 
+            //console.timeEnd("threedify");
+            //console.log("vertices -> ", res.geometry.children[0].geometry.attributes.position.count)
             return res;
         },
         fromSpriteToGeometry: function fromSpriteToGeometry(phaserSprite, layer) {
@@ -147,10 +149,6 @@ window.Threedify = _Threedify2.default;
 },{"./Threedify":1,"./color_model":3,"./formats/three_export":4,"./vertices_model":6,"./voxel_model":7}],3:[function(require,module,exports){
 "use strict";
 
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
-
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -204,7 +202,7 @@ var ColorModel = function () {
     return ColorModel;
 }();
 
-exports.default = ColorModel;
+module.exports = ColorModel;
 
 },{}],4:[function(require,module,exports){
 'use strict';
@@ -315,8 +313,8 @@ function projectSymmetric(imageData, voxelModel) {
     forEach(imageData, nonTransparent, function (x, y, color) {
         if (x > cx) return; //it is symetric, we need to analyze only half of image
         var radius = Math.abs(cx - x);
-        for (var nx = x; nx <= cx + imageData.width - x; nx++) {
-            for (var ny = x; ny <= cx + imageData.width - x; ny++) {
+        for (var nx = x; nx < imageData.width - x; nx++) {
+            for (var ny = x; ny < imageData.width - x; ny++) {
                 if (Math.hypot(nx - cx, ny - cx) <= radius) {
                     voxelModel.setVoxel(nx, ny, imageData.height - 1 - y, color);
                 }
@@ -334,21 +332,13 @@ module.exports = {
 },{}],6:[function(require,module,exports){
 'use strict';
 
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
-
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
 
-var _color_model = require('./color_model');
-
-var _color_model2 = _interopRequireDefault(_color_model);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var ColorModel = require('./color_model');
 
 var Normals = [[-1, 0, 0], [1, 0, 0], //x-edges
 [0, -1, 0], [0, 1, 0], //y-edges
@@ -401,7 +391,7 @@ function getNormals(coords, axis, idx) {
 
 var CubicVerticesModel = function () {
     function CubicVerticesModel() {
-        var colorModel = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : new _color_model2.default();
+        var colorModel = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : new ColorModel();
 
         _classCallCheck(this, CubicVerticesModel);
 
@@ -415,29 +405,65 @@ var CubicVerticesModel = function () {
 
     _createClass(CubicVerticesModel, [{
         key: 'addVoxelModel',
-        value: function addVoxelModel(voxelModel) {
+        value: function addVoxelModel(voxelModel, ignoreEmptyness) {
             var _this = this;
 
-            var cubemaps = voxelModel.toCubemap();
+            var cubemaps = voxelModel.toCubemap(ignoreEmptyness);
+            //todo: for now - support only 1 voxel model
+            var edgesCount = 0;
             cubemaps.forEach(function (axis, ai) {
                 axis.forEach(function (edges, ei) {
-                    edges.forEach(function (edge) {
-                        var coords = [[edge.start.x, edge.end.x + 1], [edge.start.y, edge.end.y + 1], [edge.start.z, edge.end.z + 1]];
-                        var vertices = getEdge(coords, ai, ei);
-                        var normals = getNormals(coords, ai, ei);
-                        var color = edge.start.color;
-                        var ci = _this._colorModel.getColorIndex(color);
-
-                        _this._vertices = _this._vertices.concat(vertices.reduce(function (a, b) {
-                            return a.concat(b);
-                        }, []));
-                        for (var i = 0; i < 6; i++) {
-                            _this._normals = _this._normals.concat(normals);
-                            _this._ci.push(ci);
-                        }
-                    });
+                    edgesCount += edges.length;
                 });
             });
+            this._vertices = new Float32Array(edgesCount * 6 * 3);
+            this._normals = new Float32Array(edgesCount * 6 * 3);
+            this._ci = new Float32Array(edgesCount * 6);
+            var idx = 0;
+            cubemaps.forEach(function (axis, ai) {
+                axis.forEach(function (edges, ei) {
+                    var _iteratorNormalCompletion = true;
+                    var _didIteratorError = false;
+                    var _iteratorError = undefined;
+
+                    try {
+                        for (var _iterator = edges[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                            var edge = _step.value;
+
+                            var coords = [[edge.start.x, edge.end.x + 1], [edge.start.y, edge.end.y + 1], [edge.start.z, edge.end.z + 1]];
+                            var vertices = getEdge(coords, ai, ei);
+                            var normals = getNormals(coords, ai, ei);
+                            var color = edge.start.color;
+                            var ci = _this._colorModel.getColorIndex(color);
+                            var vidx = idx * 6 * 3;
+                            for (var i = 0; i < vertices.length; i++) {
+                                _this._vertices[vidx + i * 3 + 0] = vertices[i][0];
+                                _this._vertices[vidx + i * 3 + 1] = vertices[i][1];
+                                _this._vertices[vidx + i * 3 + 2] = vertices[i][2];
+                                _this._normals[vidx + i * 3 + 0] = normals[0];
+                                _this._normals[vidx + i * 3 + 1] = normals[1];
+                                _this._normals[vidx + i * 3 + 2] = normals[2];
+                                _this._ci[idx * 6 + i] = ci;
+                            }
+                            idx++;
+                        }
+                    } catch (err) {
+                        _didIteratorError = true;
+                        _iteratorError = err;
+                    } finally {
+                        try {
+                            if (!_iteratorNormalCompletion && _iterator.return) {
+                                _iterator.return();
+                            }
+                        } finally {
+                            if (_didIteratorError) {
+                                throw _iteratorError;
+                            }
+                        }
+                    }
+                });
+            });
+            return this;
         }
     }, {
         key: 'normalizeUv',
@@ -475,7 +501,7 @@ var CubicVerticesModel = function () {
     return CubicVerticesModel;
 }();
 
-exports.default = CubicVerticesModel;
+module.exports = CubicVerticesModel;
 
 },{"./color_model":3}],7:[function(require,module,exports){
 "use strict";
@@ -488,9 +514,148 @@ var _createClass = function () { function defineProperties(target, props) { for 
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
+//todo: shall support models more than 256*256*256
+
 function ckey(x, y, z) {
-    return [x, y, z].join("_");
+    return x * 65536 + y * 256 + z;
 }
+
+var Cube = function () {
+    function Cube(x0, y0, z0, size) {
+        var parent = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : null;
+
+        _classCallCheck(this, Cube);
+
+        this.x0 = x0;
+        this.y0 = y0;
+        this.z0 = z0;
+        this.size = size;
+        var p2 = Math.log(size) / Math.log(2);
+        if (p2 !== Math.abs(p2)) throw new Error("size shall be power of 2");
+        this.full = true;
+        this.children = [];
+        this.filled = false;
+        this.parent = parent;
+    }
+
+    _createClass(Cube, [{
+        key: "split",
+        value: function split() {
+            if (!this.full) return;
+            if (this.size === 1) throw new Error("cannot split cube with size 1");
+            this.full = false;
+            var x0 = this.x0,
+                y0 = this.y0,
+                z0 = this.z0,
+                size = this.size;
+
+            var half = size / 2;
+            this.children = [new Cube(x0, y0, z0, half, this), new Cube(x0, y0, z0 + half, half, this), new Cube(x0, y0 + half, z0, half, this), new Cube(x0 + half, y0, z0, half, this), new Cube(x0 + half, y0, z0 + half, half, this), new Cube(x0, y0 + half, z0 + half, half, this), new Cube(x0 + half, y0 + half, z0, half, this), new Cube(x0 + half, y0 + half, z0 + half, half, this)];
+        }
+    }, {
+        key: "fillSet",
+        value: function fillSet(aset) {
+            for (var x = this.x0; x < this.x0 + this.size; x++) {
+                for (var y = this.y0; y < this.y0 + this.size; y++) {
+                    for (var z = this.z0; z < this.z0 + this.size; z++) {
+                        aset.add(ckey(x, y, z));
+                    }
+                }
+            }
+        }
+    }, {
+        key: "contains",
+        value: function contains(x, y, z) {
+            return x >= this.x0 && x < this.x0 + this.size && y >= this.y0 && y < this.y0 + this.size && z >= this.z0 && z < this.z0 + this.size;
+        }
+    }, {
+        key: "findCube",
+        value: function findCube(x, y, z) {
+            if (this.contains(x, y, z)) {
+                if (this.full) return this;
+                var _iteratorNormalCompletion = true;
+                var _didIteratorError = false;
+                var _iteratorError = undefined;
+
+                try {
+                    for (var _iterator = this.children[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                        var cube = _step.value;
+
+                        var res = cube.findCube(x, y, z);
+                        if (res) return res;
+                    }
+                } catch (err) {
+                    _didIteratorError = true;
+                    _iteratorError = err;
+                } finally {
+                    try {
+                        if (!_iteratorNormalCompletion && _iterator.return) {
+                            _iterator.return();
+                        }
+                    } finally {
+                        if (_didIteratorError) {
+                            throw _iteratorError;
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+    }, {
+        key: "fill",
+        value: function fill(x, y, z) {
+            var c = this.findCube(x, y, z);
+            while (c && c.size > 1) {
+                c.split();
+                c = c.findCube(x, y, z);
+            }
+            if (c == null) debugger;
+            c.filled = true;
+        }
+    }, {
+        key: "unfill",
+        value: function unfill(x, y, z) {
+            var c = this.findCube(x, y, z);
+            c.filled = false;
+            if (c.parent) c.parent.tryCollapse();
+        }
+    }, {
+        key: "tryCollapse",
+        value: function tryCollapse() {
+            if (this.full) return;
+            if (this.children.every(function (c) {
+                return c.full && !c.filled;
+            })) {
+                this.full = true;
+                this.filled = false;
+                this.children = [];
+                if (this.parent) this.parent.tryCollapse();
+            }
+        }
+    }, {
+        key: "debug",
+        value: function debug() {
+            var indent = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : "";
+            var onlyFull = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+            var minSize = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+
+            if (this.size < minSize) return;
+            if (!onlyFull || this.full) {
+                console.log(indent, "cube", this.filled ? "*" : " ", [this.x0, this.y0, this.z0], "x", this.size);
+            }
+            if (!this.full) {
+                this.children.forEach(function (c) {
+                    return c.debug(indent + "  ", onlyFull, minSize);
+                });
+            }
+        }
+    }]);
+
+    return Cube;
+}();
+
+//todo: another way: do not calculate air. just check neighbors. in this case we may add vertices for inner volume, but
+//that could have less problems
 
 var VoxelModel = function () {
     function VoxelModel() {
@@ -504,7 +669,12 @@ var VoxelModel = function () {
         this._height = height;
         this._depth = depth;
         //todo: this is simplest for now. when performance problem appeared - we'll need to go with another solution
-        this._voxels = {};
+        this._voxels = new Map();
+        if (width !== 0 && height !== 0 && depth !== 0) {
+            var max = Math.max(width, height, depth);
+            var p2 = Math.pow(2, Math.ceil(Math.log(max) / Math.log(2)));
+            this._cube = new Cube(0, 0, 0, p2);
+        }
     }
 
     _createClass(VoxelModel, [{
@@ -519,7 +689,10 @@ var VoxelModel = function () {
         value: function setVoxel(x, y, z, color, props) {
             if (x < 0 || y < 0 || z < 0) throw new Error("xyz shall be >= 0");
             this.resizeUpTo(x, y, z);
-            this._voxels[ckey(x, y, z)] = { x: x, y: y, z: z, color: color, props: props || {} };
+            this._voxels.set(ckey(x, y, z), { x: x, y: y, z: z, color: color, props: props || {} });
+            if (this._cube) {
+                this._cube.fill(x, y, z);
+            }
         }
     }, {
         key: "getVoxelColor",
@@ -531,7 +704,7 @@ var VoxelModel = function () {
         value: function getVoxel(x, y, z) {
             var ifNull = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : undefined;
 
-            return this._voxels[ckey(x, y, z)] || ifNull;
+            return this._voxels.get(ckey(x, y, z)) || ifNull;
         }
     }, {
         key: "getVoxelProp",
@@ -541,7 +714,10 @@ var VoxelModel = function () {
     }, {
         key: "deleteVoxel",
         value: function deleteVoxel(x, y, z) {
-            delete this._voxels[ckey(x, y, z)];
+            this._voxels.delete(ckey(x, y, z));
+            if (this._cube) {
+                this._cube.unfill(x, y, z);
+            }
         }
     }, {
         key: "forEachIn",
@@ -587,19 +763,38 @@ var VoxelModel = function () {
                 for (y = ys; y <= ye; y++) {
                     for (z = zs; z <= ze; z++) {
                         currentKey = ckey(x, y, z);
-                        currentVoxel = this._voxels[currentKey];
+                        currentVoxel = this._voxels.get(currentKey);
                         fn(currentVoxel, x, y, z, changer);
                     }
                 }
             }
         }
     }, {
+        key: "getAirCube",
+        value: function getAirCube() {
+            var air = new Set();
+
+            function processCube(cube) {
+                if (cube.full) {
+                    if (!cube.filled) {
+                        cube.fillSet(air);
+                    }
+                } else {
+                    cube.children.forEach(processCube);
+                }
+            }
+
+            processCube(this._cube);
+            return air;
+        }
+    }, {
         key: "getAir",
         value: function getAir() {
             var _this2 = this;
 
-            var air = {};
-            var toSeeMap = { "0_0_0": true };
+            var air = new Set();
+            var toSeeSet = new Set();
+            toSeeSet.add(ckey(0, 0, 0));
             var toSee = [{ x: 0, y: 0, z: 0 }];
             while (toSee.length > 0) {
                 var _toSee$shift = toSee.shift(),
@@ -607,8 +802,9 @@ var VoxelModel = function () {
                     y = _toSee$shift.y,
                     z = _toSee$shift.z;
 
-                if (!this.getVoxel(x, y, z)) {
-                    air[ckey(x, y, z)] = true;
+                var key = ckey(x, y, z);
+                if (!this._voxels.has(key)) {
+                    air.add(key);
                     [[x - 1, y, z], [x + 1, y, z], [x, y - 1, z], [x, y + 1, z], [x, y, z - 1], [x, y, z + 1]].forEach(function (_ref) {
                         var _ref2 = _slicedToArray(_ref, 3),
                             nx = _ref2[0],
@@ -616,9 +812,9 @@ var VoxelModel = function () {
                             nz = _ref2[2];
 
                         var nkey = ckey(nx, ny, nz);
-                        if (nx >= 0 && ny >= 0 && nz >= 0 && nx <= _this2.maxX && ny <= _this2.maxY && nz <= _this2.maxZ && !air[nkey] && !toSeeMap[nkey]) {
+                        if (nx >= 0 && ny >= 0 && nz >= 0 && nx <= _this2.maxX && ny <= _this2.maxY && nz <= _this2.maxZ && !air.has(nkey) && !toSeeSet.has(nkey)) {
                             toSee.push({ x: nx, y: ny, z: nz });
-                            toSeeMap[nkey] = true;
+                            toSeeSet.add(nkey);
                         }
                     });
                 }
@@ -630,37 +826,70 @@ var VoxelModel = function () {
         value: function toCubemap() {
             var _this3 = this;
 
-            var cubemaps = [[{}, {}], //const-x edges
-            [{}, {}], //const-y edges
-            [{}, {}] //const-z edges
+            var ignoreEmptyness = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
+
+
+            var cubemaps = [[new Map(), new Map()], //const-x edges
+            [new Map(), new Map()], //const-y edges
+            [new Map(), new Map()] //const-z edges
             ];
-            var air = this.getAir();
+            var isAir = void 0;
+
+            if (ignoreEmptyness) {
+                isAir = function isAir(key) {
+                    return !_this3._voxels.has(key);
+                };
+            } else {
+                (function () {
+                    var air = _this3._cube ? _this3.getAirCube() : _this3.getAir();
+                    isAir = function isAir(key) {
+                        return air.has(key);
+                    };
+                })();
+            }
             //1. add only meaningful edges - which touch air
-            for (var vk in this._voxels) {
-                if (this._voxels.hasOwnProperty(vk)) {
-                    (function () {
-                        var voxel = _this3._voxels[vk];
-                        var x = voxel.x,
-                            y = voxel.y,
-                            z = voxel.z;
+            var _iteratorNormalCompletion2 = true;
+            var _didIteratorError2 = false;
+            var _iteratorError2 = undefined;
 
-                        var key = ckey(x, y, z);
-                        [[x - 1, y, z], [x + 1, y, z], [x, y - 1, z], [x, y + 1, z], [x, y, z - 1], [x, y, z + 1]].forEach(function (_ref3, idx) {
-                            var _ref4 = _slicedToArray(_ref3, 3),
-                                nx = _ref4[0],
-                                ny = _ref4[1],
-                                nz = _ref4[2];
+            try {
+                for (var _iterator2 = this._voxels.values()[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+                    var voxel = _step2.value;
+                    var x = voxel.x,
+                        y = voxel.y,
+                        z = voxel.z;
 
-                            var isAir = nx <= 0 || ny <= 0 || nz <= 0 || nx >= _this3.maxX + 1 || ny >= _this3.maxY + 1 || nz >= _this3.maxZ + 1 || air[ckey(nx, ny, nz)];
-                            if (isAir) {
-                                var cmi = idx / 2 | 0,
-                                    cmj = idx % 2;
-                                cubemaps[cmi][cmj][key] = { start: voxel, end: voxel };
-                            }
-                        });
-                    })();
+                    var key = ckey(x, y, z);
+                    var check = [[x - 1, y, z], [x + 1, y, z], [x, y - 1, z], [x, y + 1, z], [x, y, z - 1], [x, y, z + 1]];
+                    for (var idx = 0; idx < check.length; idx++) {
+                        var _check$idx = _slicedToArray(check[idx], 3),
+                            nx = _check$idx[0],
+                            ny = _check$idx[1],
+                            nz = _check$idx[2];
+
+                        var thisIsAir = nx <= 0 || ny <= 0 || nz <= 0 || nx >= this.maxX + 1 || ny >= this.maxY + 1 || nz >= this.maxZ + 1 || isAir(ckey(nx, ny, nz));
+                        if (thisIsAir) {
+                            var cmi = idx / 2 | 0,
+                                cmj = idx % 2;
+                            cubemaps[cmi][cmj].set(key, { start: voxel, end: voxel });
+                        }
+                    }
+                }
+            } catch (err) {
+                _didIteratorError2 = true;
+                _iteratorError2 = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion2 && _iterator2.return) {
+                        _iterator2.return();
+                    }
+                } finally {
+                    if (_didIteratorError2) {
+                        throw _iteratorError2;
+                    }
                 }
             }
+
             var axisCheck = [["y", "z", "x", function (c1, c2, cc) {
                 return ckey(cc, c1, c2);
             }], ["x", "z", "y", function (c1, c2, cc) {
@@ -687,12 +916,13 @@ var VoxelModel = function () {
 
                 coordMap.forEach(function (edgeMap, ei) {
 
-                    var toCheck = Object.keys(edgeMap);
+                    var toCheck = new Set(edgeMap.keys());
 
-                    while (toCheck.length) {
-                        var key = toCheck.shift();
+                    while (toCheck.size) {
+                        var key = toCheck.values().next().value;
+                        toCheck.delete(key);
                         //console.log("check ", key);
-                        var sq = edgeMap[key];
+                        var sq = edgeMap.get(key);
                         var voxel = sq.start;
                         //check first axis
                         var expanded = false;
@@ -703,11 +933,11 @@ var VoxelModel = function () {
                         var cc = voxel[ac];
                         do {
                             expanded = false;
-                            if (equal(voxel, edgeMap[ckey(c11 - 1, c21, cc)])) {
+                            if (equal(voxel, edgeMap.get(ckey(c11 - 1, c21, cc)))) {
                                 c11--;
                                 expanded = true;
                             }
-                            if (equal(voxel, edgeMap[ckey(c12 + 1, c21, cc)])) {
+                            if (equal(voxel, edgeMap.get(ckey(c12 + 1, c21, cc)))) {
                                 c12++;
                                 expanded = true;
                             }
@@ -717,7 +947,7 @@ var VoxelModel = function () {
                             expanded = false;
                             var allEqual = true;
                             for (var c1 = c11; c1 <= c12; c1++) {
-                                if (!equal(voxel, edgeMap[ckey(c1, c21 - 1, cc)])) {
+                                if (!equal(voxel, edgeMap.get(ckey(c1, c21 - 1, cc)))) {
                                     allEqual = false;
                                     break;
                                 }
@@ -728,7 +958,7 @@ var VoxelModel = function () {
                             }
                             allEqual = true;
                             for (var _c = c11; _c <= c12; _c++) {
-                                if (!equal(voxel, edgeMap[ckey(_c, c22 + 1, cc)])) {
+                                if (!equal(voxel, edgeMap.get(ckey(_c, c22 + 1, cc)))) {
                                     allEqual = false;
                                     break;
                                 }
@@ -740,38 +970,31 @@ var VoxelModel = function () {
                         } while (expanded);
                         var key1 = ckey(c11, c21, cc);
                         var key2 = ckey(c12, c22, cc);
-                        var newEdge = { start: edgeMap[key1].start, end: edgeMap[key2].start };
+                        var newEdge = { start: edgeMap.get(key1).start, end: edgeMap.get(key2).start };
 
                         for (var _c2 = c11; _c2 <= c12; _c2++) {
                             for (var c2 = c21; c2 <= c22; c2++) {
                                 var _key = ckey(_c2, c2, cc);
                                 //console.log("remove ", key);
-                                delete edgeMap[_key];
-                                var _ci = toCheck.indexOf(_key);
-                                if (_ci !== -1) toCheck.splice(_ci, 1);
+                                edgeMap.delete(_key);
+                                toCheck.delete(_key);
                             }
                         }
-                        edgeMap[key] = newEdge;
+                        edgeMap.set(key, newEdge);
                     }
                 });
             });
 
             return cubemaps.map(function (axisMap) {
                 return axisMap.map(function (edgeMap) {
-                    return Object.keys(edgeMap).map(function (k) {
-                        return edgeMap[k];
-                    });
+                    return Array.from(edgeMap.values());
                 });
             });
         }
     }, {
         key: "voxels",
         get: function get() {
-            var _this4 = this;
-
-            return Object.keys(this._voxels).map(function (k) {
-                return _this4._voxels[k];
-            });
+            return this._voxels.values();
         }
     }, {
         key: "maxX",

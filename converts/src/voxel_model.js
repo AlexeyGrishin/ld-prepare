@@ -1,6 +1,109 @@
+//todo: shall support models more than 256*256*256
+
 function ckey(x,y,z) {
-    return [x,y,z].join("_");
+    return x*65536 + y*256 + z;
 }
+
+class Cube {
+    constructor(x0, y0, z0, size, parent = null) {
+        this.x0 = x0;
+        this.y0 = y0;
+        this.z0 = z0;
+        this.size = size;
+        let p2 = Math.log(size) / Math.log(2);
+        if (p2 !== Math.abs(p2)) throw new Error("size shall be power of 2");
+        this.full = true;
+        this.children = [];
+        this.filled = false;
+        this.parent = parent;
+    }
+    
+    split() {
+        if (!this.full) return;
+        if (this.size === 1) throw new Error("cannot split cube with size 1");
+        this.full = false;
+        let {x0,y0,z0,size} = this;
+        let half = size/2;
+        this.children = [
+            new Cube(x0,      y0,      z0,      half, this),
+            new Cube(x0,      y0,      z0+half, half, this),
+            new Cube(x0,      y0+half, z0,      half, this),
+            new Cube(x0+half, y0,      z0,      half, this),
+            new Cube(x0+half, y0,      z0+half, half, this),
+            new Cube(x0,      y0+half, z0+half, half, this),
+            new Cube(x0+half, y0+half, z0,      half, this),
+            new Cube(x0+half, y0+half, z0+half, half, this)
+        ]
+    }
+    
+    fillSet(aset) {
+        for (let x = this.x0; x < this.x0 + this.size; x++) {
+            for (let y = this.y0; y < this.y0 + this.size; y++) {
+                for (let z = this.z0; z < this.z0 + this.size; z++) {
+                    aset.add(ckey(x,y,z));
+                }
+            }
+        }
+    }
+    
+    contains(x, y, z) {
+        return x >= this.x0 && x < this.x0 + this.size
+            && y >= this.y0 && y < this.y0 + this.size
+            && z >= this.z0 && z < this.z0 + this.size;
+    }
+    
+    
+    findCube(x, y, z) {
+        if (this.contains(x,y,z)) {
+            if (this.full) return this;
+            for (let cube of this.children) {
+                let res = cube.findCube(x, y, z);
+                if (res) return res;
+            }
+        }
+        return null;
+    }
+    
+    fill(x, y, z) {
+        let c = this.findCube(x, y, z);
+        while (c && c.size > 1) {
+            c.split();
+            c = c.findCube(x, y, z);
+        }
+        if (c == null) debugger;
+        c.filled = true;
+    }
+    
+    unfill(x, y, z) {
+        let c = this.findCube(x, y, z);
+        c.filled = false;
+        if (c.parent) c.parent.tryCollapse();
+    }
+
+    tryCollapse() {
+        if (this.full) return;
+        if (this.children.every((c) => c.full && !c.filled)) {
+            this.full = true;
+            this.filled = false;
+            this.children = [];
+            if (this.parent) this.parent.tryCollapse();
+        }
+    }
+    
+    debug(indent = "", onlyFull = false, minSize = 0) {
+        if (this.size < minSize) return;
+        if (!onlyFull || this.full) {
+            console.log(indent, "cube", this.filled ? "*":" ", [this.x0, this.y0, this.z0], "x", this.size);
+        }
+        if (!this.full) {
+            this.children.forEach((c) => c.debug(indent + "  ", onlyFull, minSize));
+        }
+    }
+
+}
+
+//todo: another way: do not calculate air. just check neighbors. in this case we may add vertices for inner volume, but
+//that could have less problems
 
 class VoxelModel {
 
@@ -9,7 +112,12 @@ class VoxelModel {
         this._height = height;
         this._depth = depth;
         //todo: this is simplest for now. when performance problem appeared - we'll need to go with another solution
-        this._voxels = {};
+        this._voxels = new Map();
+        if (width !== 0 && height !== 0 && depth !== 0) {
+            let max = Math.max(width, height, depth);
+            let p2 = Math.pow(2, Math.ceil(Math.log(max) / Math.log(2)));
+            this._cube = new Cube(0, 0, 0, p2);
+        }
     }
     
     resizeUpTo(nw, nh, nd) {
@@ -21,7 +129,10 @@ class VoxelModel {
     setVoxel(x, y, z, color, props) {
         if (x < 0 || y < 0 || z < 0) throw new Error("xyz shall be >= 0");
         this.resizeUpTo(x,y,z);
-        this._voxels[ckey(x,y,z)] = {x, y, z, color: color, props: props || {}};
+        this._voxels.set(ckey(x,y,z), {x, y, z, color: color, props: props || {}});
+        if (this._cube) {
+            this._cube.fill(x, y, z);
+        }
     }
 
     getVoxelColor(x, y, z) {
@@ -29,7 +140,7 @@ class VoxelModel {
     }
 
     getVoxel(x, y, z, ifNull = undefined) {
-        return this._voxels[ckey(x,y,z)] || ifNull;
+        return this._voxels.get(ckey(x,y,z)) || ifNull;
     }
 
     getVoxelProp(name, x, y, z) {
@@ -37,10 +148,13 @@ class VoxelModel {
     }
 
     deleteVoxel(x, y, z) {
-        delete this._voxels[ckey(x,y,z)];
+        this._voxels.delete(ckey(x,y,z));
+        if (this._cube) {
+            this._cube.unfill(x, y, z);
+        }
     }
     
-    get voxels() { return Object.keys(this._voxels).map((k) => this._voxels[k]); }
+    get voxels() { return  this._voxels.values(); }
 
     forEachIn(fn, x0 = 0, y0 = 0, z0 = 0, x1 = this.maxX, y1 = this.maxY, z1 = this.maxZ) {
         let xs = Math.min(x0, x1);
@@ -70,7 +184,7 @@ class VoxelModel {
             for (y = ys; y <= ye; y++) {
                 for (z = zs; z <= ze; z++) {
                     currentKey = ckey(x,y,z);
-                    currentVoxel = this._voxels[currentKey];
+                    currentVoxel = this._voxels.get(currentKey);
                     fn(currentVoxel, x, y, z, changer);
                 }
             }
@@ -82,19 +196,38 @@ class VoxelModel {
     get maxY() { return this._height; }
     get maxZ() { return this._depth; }
 
+    getAirCube() {
+        let air = new Set();
+
+        function processCube(cube) {
+            if (cube.full) {
+                if (!cube.filled) {
+                    cube.fillSet(air);
+                }
+            } else {
+                cube.children.forEach(processCube);
+            }
+        }
+
+        processCube(this._cube);
+        return air;
+    }
+
     getAir() {
-        let air = {};
-        let toSeeMap = {"0_0_0": true};
+        let air = new Set();
+        let toSeeSet = new Set();
+        toSeeSet.add(ckey(0,0,0));
         let toSee = [{x:0,y:0,z:0}];
         while (toSee.length > 0) {
             let {x,y,z} = toSee.shift();
-            if (!this.getVoxel(x,y,z)) {
-                air[ckey(x,y,z)] = true;
+            let key = ckey(x,y,z);
+            if (!this._voxels.has(key)) {
+                air.add(key);
                 [[x-1,y,z],[x+1,y,z],[x,y-1,z],[x,y+1,z],[x,y,z-1],[x,y,z+1]].forEach(([nx,ny,nz]) => {
                     let nkey = ckey(nx,ny,nz);
-                   if (nx >= 0 && ny >= 0 && nz >= 0 && nx <= this.maxX && ny <= this.maxY && nz <= this.maxZ && !air[nkey] && !toSeeMap[nkey]) {
+                   if (nx >= 0 && ny >= 0 && nz >= 0 && nx <= this.maxX && ny <= this.maxY && nz <= this.maxZ && !air.has(nkey) && !toSeeSet.has(nkey)) {
                        toSee.push({x:nx, y:ny, z:nz});
-                       toSeeMap[nkey] = true;
+                       toSeeSet.add(nkey);
                    }
                 });
             }
@@ -103,29 +236,34 @@ class VoxelModel {
     }
 
 
-    toCubemap() {
+    toCubemap(ignoreEmptyness = false) {
 
-        var cubemaps = [
-            [{},{}],    //const-x edges
-            [{},{}],    //const-y edges
-            [{},{}]     //const-z edges
+        let cubemaps = [
+            [new Map(), new Map()],    //const-x edges
+            [new Map(), new Map()],    //const-y edges
+            [new Map(), new Map()]     //const-z edges
         ];
-        var air = this.getAir();
-        //1. add only meaningful edges - which touch air
-        for (let vk in this._voxels) {
-            if (this._voxels.hasOwnProperty(vk)) {
-                let voxel = this._voxels[vk];
-                let {x, y, z} = voxel;
-                let key = ckey(x, y, z);
-                [[x - 1, y, z], [x + 1, y, z], [x, y - 1, z], [x, y + 1, z], [x, y, z - 1], [x, y, z + 1]].forEach(([nx,ny,nz], idx) => {
-                    let isAir = nx <= 0 || ny <= 0 || nz <= 0 || nx >= this.maxX + 1 || ny >= this.maxY + 1 || nz >= this.maxZ + 1 || air[ckey(nx, ny, nz)];
-                    if (isAir) {
-                        let cmi = (idx / 2) | 0, cmj = idx % 2;
-                        cubemaps[cmi][cmj][key] = {start: voxel, end: voxel};
-                    }
-                });
-            }
+        let isAir;
 
+        if (ignoreEmptyness) {
+            isAir = (key) => !this._voxels.has(key)
+        } else {
+            let air = this._cube ? this.getAirCube() : this.getAir();
+            isAir = function(key) { return air.has(key); }
+        }
+        //1. add only meaningful edges - which touch air
+        for (let voxel of this._voxels.values()) {
+            let {x, y, z} = voxel;
+            let key = ckey(x, y, z);
+            let check = [[x - 1, y, z], [x + 1, y, z], [x, y - 1, z], [x, y + 1, z], [x, y, z - 1], [x, y, z + 1]];
+            for (let idx = 0; idx < check.length; idx++) {
+                let [nx,ny,nz] = check[idx];
+                let thisIsAir = nx <= 0 || ny <= 0 || nz <= 0 || nx >= this.maxX + 1 || ny >= this.maxY + 1 || nz >= this.maxZ + 1 || isAir(ckey(nx, ny, nz));
+                if (thisIsAir) {
+                    let cmi = (idx / 2) | 0, cmj = idx % 2;
+                    cubemaps[cmi][cmj].set(key, {start: voxel, end: voxel});
+                }
+            }
         }
         const axisCheck = [
             ["y", "z", "x", (c1, c2, cc) => ckey(cc, c1, c2)],
@@ -144,12 +282,13 @@ class VoxelModel {
             let [a1,a2,ac, ckey] = axisCheck[ci];
             coordMap.forEach((edgeMap, ei) => {
                 
-                let toCheck = Object.keys(edgeMap);
+                let toCheck = new Set(edgeMap.keys());
                 
-                while (toCheck.length) {
-                    let key = toCheck.shift();
+                while (toCheck.size) {
+                    let key = toCheck.values().next().value;
+                    toCheck.delete(key);
                     //console.log("check ", key);
-                    let sq = edgeMap[key];
+                    let sq = edgeMap.get(key);
                     let voxel = sq.start;
                     //check first axis
                     let expanded = false;
@@ -158,11 +297,11 @@ class VoxelModel {
                     let cc = voxel[ac];
                     do {
                         expanded = false;
-                        if (equal(voxel, edgeMap[ckey(c11-1, c21, cc)])) {
+                        if (equal(voxel, edgeMap.get(ckey(c11-1, c21, cc)))) {
                             c11--;
                             expanded = true;
                         }
-                        if (equal(voxel, edgeMap[ckey(c12+1, c21, cc)])) {
+                        if (equal(voxel, edgeMap.get(ckey(c12+1, c21, cc)))) {
                             c12++;
                             expanded = true;
                         }
@@ -172,7 +311,7 @@ class VoxelModel {
                         expanded = false;
                         let allEqual = true;
                         for (let c1 = c11; c1 <= c12; c1++) {
-                            if (!equal(voxel, edgeMap[ckey(c1, c21-1, cc)])) {
+                            if (!equal(voxel, edgeMap.get(ckey(c1, c21-1, cc)))) {
                                 allEqual = false;
                                 break;
                             }
@@ -183,7 +322,7 @@ class VoxelModel {
                         }
                         allEqual = true;
                         for (let c1 = c11; c1 <= c12; c1++) {
-                            if (!equal(voxel, edgeMap[ckey(c1, c22+1, cc)])) {
+                            if (!equal(voxel, edgeMap.get(ckey(c1, c22+1, cc)))) {
                                 allEqual = false;
                                 break;
                             }
@@ -195,25 +334,24 @@ class VoxelModel {
                     } while (expanded);
                     let key1 = ckey(c11, c21, cc);
                     let key2 = ckey(c12, c22, cc);
-                    let newEdge = {start: edgeMap[key1].start, end: edgeMap[key2].start};
+                    let newEdge = {start: edgeMap.get(key1).start, end: edgeMap.get(key2).start};
                     
                     for (let c1 = c11; c1 <= c12; c1++) {
                         for (let c2 = c21; c2 <= c22; c2++) {
                             let key = ckey(c1, c2, cc);
                             //console.log("remove ", key);
-                            delete edgeMap[key];
-                            let ci = toCheck.indexOf(key);
-                            if (ci !== -1) toCheck.splice(ci, 1);
+                            edgeMap.delete(key);
+                            toCheck.delete(key);
                         }
                     }
-                    edgeMap[key] = newEdge;
+                    edgeMap.set(key, newEdge);
                 }
                 
                 
             });
         });
      
-        return cubemaps.map((axisMap) => axisMap.map((edgeMap) => Object.keys(edgeMap).map((k) => edgeMap[k])));
+        return cubemaps.map((axisMap) => axisMap.map((edgeMap) => Array.from(edgeMap.values())));
     }
 
 }

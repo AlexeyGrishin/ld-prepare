@@ -1,4 +1,4 @@
-import ColorModel from './color_model';
+let ColorModel = require('./color_model');
 
 const Normals = [
     [-1, 0, 0], [1, 0, 0],  //x-edges
@@ -36,7 +36,7 @@ function getNormals(coords, axis, idx) {
 
 
 
-export default class CubicVerticesModel {
+class CubicVerticesModel {
     constructor(colorModel = new ColorModel()) {
         this._colorModel = colorModel;
         this._vertices = [];
@@ -46,11 +46,22 @@ export default class CubicVerticesModel {
         //todo: custom attributes
     }
     
-    addVoxelModel(voxelModel) {
-        let cubemaps = voxelModel.toCubemap();
+    addVoxelModel(voxelModel, ignoreEmptyness) {
+        let cubemaps = voxelModel.toCubemap(ignoreEmptyness);
+        //todo: for now - support only 1 voxel model
+        let edgesCount = 0;
         cubemaps.forEach((axis, ai) => {
             axis.forEach((edges, ei) => {
-                edges.forEach((edge) => {
+                edgesCount += edges.length;
+            });
+        });
+        this._vertices = new Float32Array(edgesCount * 6 * 3);
+        this._normals = new Float32Array(edgesCount * 6 * 3);
+        this._ci = new Float32Array(edgesCount * 6);
+        let idx = 0;
+        cubemaps.forEach((axis, ai) => {
+            axis.forEach((edges, ei) => {
+                for (let edge of edges) {
                     let coords = [
                         [edge.start.x, edge.end.x + 1],
                         [edge.start.y, edge.end.y + 1],
@@ -60,15 +71,21 @@ export default class CubicVerticesModel {
                     let normals = getNormals(coords, ai, ei);
                     let color = edge.start.color;
                     let ci = this._colorModel.getColorIndex(color);
-                    
-                    this._vertices = this._vertices.concat(vertices.reduce((a,b) => a.concat(b), []));
-                    for (let i = 0; i < 6; i++) {
-                        this._normals = this._normals.concat(normals);
-                        this._ci.push(ci);
+                    let vidx = idx * 6 * 3;
+                    for (let i = 0; i < vertices.length; i++) {
+                        this._vertices[vidx + i*3 + 0] = vertices[i][0];
+                        this._vertices[vidx + i*3 + 1] = vertices[i][1];
+                        this._vertices[vidx + i*3 + 2] = vertices[i][2];
+                        this._normals[vidx + i*3 + 0] = normals[0];
+                        this._normals[vidx + i*3 + 1] = normals[1];
+                        this._normals[vidx + i*3 + 2] = normals[2];
+                        this._ci[idx * 6 + i] = ci;
                     }
-                });
+                    idx++;
+                }
             });
         });
+        return this;
     }
 
     normalizeUv() {
@@ -86,3 +103,5 @@ export default class CubicVerticesModel {
         return this._uv;
     }
 }
+
+module.exports = CubicVerticesModel;

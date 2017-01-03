@@ -80,17 +80,19 @@ function create1() {
     scene = game.three.createScene(treesLayer, {
         //lights: [{color: 0xffffff, intensity: 0.5}],
         shadows: true,
-        render: ThreePlugin.RenderNothing,
+        render: (Performance.UseShadowMaterial && !Performance.RotateModels) ? ThreePlugin.RenderModels : ThreePlugin.RenderNothing,
         floor: Performance.UseShadowMaterial ? true : 0xffffff,
         ignore: [621,588]
     });
-    scene2 = game.three.createScene(treesLayer, {
-        lights: [{color: 0xcccccc, intensity: 0.5}],
-        key: "three2",
-        shadows: true,
-        render: ThreePlugin.RenderModels,
-        ignore: [621,588],
-    });
+    if (!(Performance.UseShadowMaterial && !Performance.RotateModels)) {
+        scene2 = game.three.createScene(treesLayer, {
+            lights: [{color: 0xcccccc, intensity: 0.5}],
+            key: "three2",
+            shadows: true,
+            render: ThreePlugin.RenderModels,
+            ignore: [621, 588],
+        });
+    }
 
     lightForHero = scene.addLight(ThreePlugin.PointLight, {intensity: 2, distance: 200});
     if (scene2) scene2.addExisting(lightForHero, "three");
