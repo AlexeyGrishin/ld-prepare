@@ -1,4 +1,4 @@
-let VoxelModel = require('./voxel_model');
+let VoxelModel = require('../../src/voxel_model');
 
 function compareAirs(model) {
     let air1 = model.getAir();

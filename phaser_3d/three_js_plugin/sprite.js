@@ -58,4 +58,14 @@ export default class ThreeSprite extends ThreeLinkedObject {
     cloneInto(newParent) {
         return new ThreeSprite(newParent, this.sprite, this.mesh.clone(), this.container.clone());
     }
+    
+    get polygons() {
+        let count = 0;
+        this.mesh.traverse(function(no) {
+            if (no instanceof THREE.Mesh && no.geometry instanceof THREE.BufferGeometry) {
+                count += no.geometry.attributes.position.count;
+            }
+        });
+        return count;
+    }
 }

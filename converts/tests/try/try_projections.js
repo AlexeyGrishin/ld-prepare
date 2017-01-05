@@ -1,6 +1,6 @@
-let Vox = require('./formats/vox');
-let VoxelModel = require('./voxel_model');
-let projections = require('./projections');
+let Vox = require('../../src/formats/vox');
+let VoxelModel = require('../../src/voxel_model');
+let projections = require('../../src/projections');
 let Jimp = require('jimp');
 
 function tryProjection(img, filename, proj) {

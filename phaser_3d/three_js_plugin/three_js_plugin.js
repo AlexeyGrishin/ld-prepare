@@ -353,6 +353,11 @@ var ThreeLight = function (_ThreeLinkedObject) {
             return new ThreeLight(newParent, this.sprite, this.light.clone(), this.typeConfig, this.config);
         }
     }, {
+        key: "polygons",
+        get: function get() {
+            return 0;
+        }
+    }, {
         key: "color",
         get: function get() {
             return this.light.color.getHex();
@@ -1131,6 +1136,15 @@ var ThreeScene = function () {
         get: function get() {
             return this._sceneRenderer.sprite;
         }
+    }, {
+        key: 'polygons',
+        get: function get() {
+            var _this7 = this;
+
+            return this._sprites.reduce(function (a, b) {
+                return a + b[_this7._key].polygons;
+            }, 0);
+        }
     }]);
 
     return ThreeScene;
@@ -1351,6 +1365,17 @@ var ThreeSprite = function (_ThreeLinkedObject) {
         key: 'renderOneByOne',
         get: function get() {
             return true;
+        }
+    }, {
+        key: 'polygons',
+        get: function get() {
+            var count = 0;
+            this.mesh.traverse(function (no) {
+                if (no instanceof THREE.Mesh && no.geometry instanceof THREE.BufferGeometry) {
+                    count += no.geometry.attributes.position.count;
+                }
+            });
+            return count;
         }
     }]);
 

@@ -2,17 +2,19 @@
 export default class ThreeExport {
 
     saveTexture(colorModel) {
-        let canvas = document.createElement('canvas');
-        let colors = colorModel.normalizedColors;
-        canvas.setAttribute("width", colors.length);
-        canvas.setAttribute('height', 1);
-        let ctx = canvas.getContext('2d');
-        let im = ctx.getImageData(0, 0, colors.length, 1);
-        for (let ci = 0; ci < colors.length; ci++) {
-            im.data[ci * 4 + 0] = colors[ci] >> 16;
-            im.data[ci * 4 + 1] = (colors[ci] >> 8) & 0xff;
-            im.data[ci * 4 + 2] = (colors[ci]) & 0xff;
-            im.data[ci * 4 + 3] = 0xff;
+        let canvas, ctx;
+        let im = colorModel.fillTexture((width, height) => {
+            canvas = document.createElement('canvas');
+            canvas.setAttribute("width", width);
+            canvas.setAttribute('height', height);
+            ctx = canvas.getContext('2d');
+            return ctx.getImageData(0, 0, width, height);
+        });
+        if (!ctx) {
+            canvas = document.createElement('canvas');
+            canvas.setAttribute("width", im.width);
+            canvas.setAttribute('height', im.height);
+            ctx = canvas.getContext('2d');
         }
         ctx.putImageData(im, 0, 0);
         return new THREE.CanvasTexture(canvas,

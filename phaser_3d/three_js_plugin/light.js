@@ -47,6 +47,8 @@ export default class ThreeLight extends ThreeLinkedObject {
     
     //todo: move helper creation here, inside updateDebug
     
+    get polygons() { return 0; }
+    
     get color() { return this.light.color.getHex();}
     set color(val) { this.light.color.setHex(val);}
     get intensity() { return this.light.intensity;}

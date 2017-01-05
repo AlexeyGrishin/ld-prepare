@@ -2,7 +2,8 @@ var Performance = initOptions({
     LightsAmount: ["int", 4],
     Blur: ["boolean", true],
     UseShadowMaterial: ["boolean", false],
-    RotateModels: ["boolean", true]
+    RotateModels: ["boolean", true],
+    ConvertViaVox: ["boolean", true]
 });
 
 function preload() {
@@ -17,6 +18,7 @@ function preload() {
     game.load.spritesheet('sprites', 'sprites.png', 16, 16);
     
     game.three.autoConvertSpritesUsing(Threedify({
+        method: Performance.ConvertViaVox ? "viaVox" : "directly",
         "roguelikeSheet_transparent": {
             530: {projection: Threedify.Sym, data: {translate: {y: 4}}},
             1411: {projection: Threedify.Sym},
@@ -30,15 +32,15 @@ function preload() {
             1359: {projection: Threedify.X, offset: 0, width: 2},
             1363: {projection: Threedify.X, offset: 0, width: 2},
             1364: {projection: Threedify.X, offset: 0, width: 2},
-            849: {projection: Threedify.X, offset: 0, width: 1},
-            850: {projection: Threedify.X, offset: 0, width: 1},
-            792: {projection: Threedify.X, offset: 0, width: 1},
-            793: {projection: Threedify.X, offset: 0, width: 1},
-            522: {projection: Threedify.X, offset: 0, width: 1},
-            680: {projection: Threedify.X, offset: 0, width: 1},
-            677: {projection: Threedify.X, top: 620, offset: 0, width: 1},
+            849: {projection: Threedify.X, offset: 0, width: 2},
+            850: {projection: Threedify.X, offset: 0, width: 2},
+            792: {projection: Threedify.X, offset: 0, width: 2},
+            793: {projection: Threedify.X, offset: 0, width: 2},
+            522: {projection: Threedify.X, offset: 0, width: 2},
+            680: {projection: Threedify.X, offset: 0, width: 2},
+            677: {projection: Threedify.X, top: 620, offset: 0, width: 2},
             1362: {projection: Threedify.Y, base: 1364,  offset: 0, width: 2},
-            default: {projection: Threedify.X}
+            default: {projection: Threedify.X, width: 4}
         }
 
     }).fromSpriteToGeometry);
@@ -136,6 +138,8 @@ function create1() {
             .concat(Performance.Blur ? [game.add.filter("BlurX"), game.add.filter("BlurY")] : []);
     }
     if (scene2) game.world.bringToTop(scene2.sprite);
+
+    document.getElementById("info").innerHTML = (scene.polygons/1000).toFixed(0) + "K triangles";
 }
 
 

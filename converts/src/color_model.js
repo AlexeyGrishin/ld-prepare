@@ -34,6 +34,18 @@ class ColorModel {
         if (count <= 1) return colorIndexes;
         return colorIndexes.map((ci) => ci / (count-1));
     }
+
+    fillTexture(imageDataCreator) {
+        let colors = this.normalizedColors;
+        let im = imageDataCreator(colors.length, 1);
+        for (let ci = 0; ci < colors.length; ci++) {
+            im.data[ci * 4 + 0] = colors[ci] >> 16;
+            im.data[ci * 4 + 1] = (colors[ci] >> 8) & 0xff;
+            im.data[ci * 4 + 2] = (colors[ci]) & 0xff;
+            im.data[ci * 4 + 3] = 0xff;
+        }
+        return im;
+    }
 }
 
 module.exports = ColorModel;

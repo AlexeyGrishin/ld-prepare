@@ -231,5 +231,9 @@ export default class ThreeScene {
     get camera() { return this._sceneRenderer.camera;}
 
     get sprite() { return this._sceneRenderer.sprite;}
+    
+    get polygons() {
+        return this._sprites.reduce((a,b) => a + b[this._key].polygons, 0)
+    }
 
 }

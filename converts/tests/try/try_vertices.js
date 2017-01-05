@@ -1,7 +1,7 @@
-let Vox = require('./formats/vox');
-let VoxelModel = require('./voxel_model');
-let VerticesModel = require('./vertices_model');
-let projections = require('./projections');
+let Vox = require('../src/../formats/vox');
+let VoxelModel = require('../../src/voxel_model');
+let VerticesModel = require('../../src/cubic_vertices_model');
+let projections = require('../../src/projections');
 let Jimp = require('jimp');
 
 const TIMES = 10;

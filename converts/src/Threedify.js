@@ -1,13 +1,17 @@
 import VoxelModel from './voxel_model';
 import ColorModel from './color_model';
-import VerticesModel from './vertices_model';
+import VerticesModel from './cubic_vertices_model';
+import {ProjectionVerticesModel} from './projection_vertices_model';
 import ThreeExport from './formats/three_export';
 import projections from './projections';
+
+
 
 export default function Threedify(configs = {}) {
 
     let configCache = {};
     let geometriesCache = {};
+    let mainMethod = configs.method || "viaVox";
     
     let tempCanvas = document.createElement('canvas');
 
@@ -16,16 +20,12 @@ export default function Threedify(configs = {}) {
             //gets config
             let config = configCache[key_or_config] || key_or_config;
             if (!config.projection) throw new Error("Cannot find projection for config/key: " + JSON.stringify(key_or_config));
-            //performs projection to voxel model
-            let voxModel = new VoxelModel(imageData.width, imageData.width, imageData.height);
-            config.projection(imageData, voxModel, config);
-            //converts to vertices
-            let vertModel = new VerticesModel();
-            vertModel.addVoxelModel(voxModel, true);
+            let vertModel = config.projection[mainMethod](imageData, config);
             //converts to geometry
             let exp = new ThreeExport();
             let geom = exp.saveGeometry(vertModel);
-            let text = exp.saveTexture(vertModel.colorModel);
+            config.projection.postProcess(geom, config);
+            let text = exp.saveTexture(vertModel);
             //console.log(vertModel.colorModel);
             let mesh = new THREE.Mesh(geom, new THREE.MeshPhongMaterial({map: text}));
             let group = new THREE.Group();
@@ -90,6 +90,41 @@ export default function Threedify(configs = {}) {
     return convertor;
 }
 
-Threedify.Sym = projections.projectSymmetric;
-Threedify.X = projections.projectFlatX;
-Threedify.Y = projections.projectFlatY;
+Threedify.Sym = {
+    viaVox: (imageData, config) => {
+        let vm = new VoxelModel(imageData.width, imageData.width, imageData.height);
+        projections.projectSymmetric(imageData, vm);
+        let vert = new VerticesModel();
+        vert.addVoxelModel(vm, true);
+        return vert;
+    },
+    directly: (imageData, config) => {
+        let vert = new ProjectionVerticesModel();
+        vert.addImageSymmetric(imageData, config ? config.quality : undefined);
+        return vert;
+    },
+    postProcess: (geometry) => {}
+};
+Threedify.X = {
+    viaVox: (imageData, config) => {
+        let vm = new VoxelModel(imageData.width, imageData.width, imageData.height);
+        projections.projectFlatX(imageData, vm, config);
+        let vert = new VerticesModel();
+        vert.addVoxelModel(vm, true);
+        return vert;
+    },
+    directly: (imageData, config) => {
+        let vert = new ProjectionVerticesModel();
+        vert.addImageFlatX(config.offset, config.width, imageData);
+        return vert;
+    },
+    postProcess: (geometry) => {}
+};
+Threedify.Y = {
+    viaVox: Threedify.X.viaVox,
+    directly: Threedify.X.directly,
+    postProcess: (geometry, config) => {
+        geometry.applyMatrix(new THREE.Matrix4().makeRotationZ(Math.PI/2));
+        geometry.applyMatrix(new THREE.Matrix4().makeTranslation(config.width + config.offset*2 + 1, 0, 0));
+    }
+};
