@@ -235,21 +235,25 @@ class ProjectionVerticesModel {
         
         let self = this;
 
-        let vmod = [[0,0], [0,0], [0,+1]];  //shift uv a bit for top side
-        let umod = [[-1,0], [0,0], [0,0]];   //shift uv a bit for right side
+        let vmod = [[0,0], [0,0], [0,-1]];  //shift uv a bit for top side
+        let umod = [[0,-1], [0,0], [0,0]];   //shift uv a bit for right side
 
         function addFace(coords, ai, ei) {
+            //swap z-values
+            let c20 = coords[2][0];
+            coords[2][0] = imageMask.height - coords[2][1];
+            coords[2][1] = imageMask.height - c20;
             let vertices = getEdge(coords, ai, ei);
             let normals = getNormals(coords, ai, ei);
             for (let i = 0; i < vertices.length; i++) {
                 self._vertices[vi + i*3 + 0] = vertices[i][0];
                 self._vertices[vi + i*3 + 1] = vertices[i][1];
-                self._vertices[vi + i*3 + 2] = imageMask.height - vertices[i][2];
+                self._vertices[vi + i*3 + 2] = vertices[i][2];
                 self._normals[vi + i*3 + 0] = normals[0];
                 self._normals[vi + i*3 + 1] = normals[1];
                 self._normals[vi + i*3 + 2] = normals[2];
                 self._uv[ui + i*2 + 0] = (umod[ai][ei] + vertices[i][0]) / (imageMask.width);
-                self._uv[ui + i*2 + 1] = 1 - (vmod[ai][ei] + vertices[i][2]) / (imageMask.height);
+                self._uv[ui + i*2 + 1] = (vmod[ai][ei] + vertices[i][2]) / (imageMask.height);
             }
             vi += 3*vertices.length;
             ui += 2*vertices.length;
@@ -273,12 +277,12 @@ class ProjectionVerticesModel {
                 [start[0], start[0]],
                 [offset, offset+width],
                 [start[1], end[1]]
-            ], Axis.x, 1);
+            ], Axis.x, 0);
             addFace([
                 [end[0], end[0]],
                 [offset, offset+width],
                 [start[1], end[1]]
-            ], Axis.x, 0);
+            ], Axis.x, 1);
             //3. top/bottom (z)
             addFace([
                 [start[0], end[0]],

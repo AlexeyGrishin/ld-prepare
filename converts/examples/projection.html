@@ -53,6 +53,10 @@
     var ambient = new THREE.AmbientLight(0xffffff, 0.5);
     scene.add(ambient);
 
+    var lightP = new THREE.PointLight(0xffffff, 2, 100);
+    lightP.position.set(0, 40, 0);
+    scene.add(lightP);
+
     let mesh = addMesh(0, function(vm, im) { vm.addImageSymmetric(im, 12) });
     //mesh.material.side = THREE.DoubleSide;
     mesh.position.set(20,20,10);
@@ -65,7 +69,7 @@
     //mesh2.geometry.applyMatrix(new THREE.Matrix4().makeTranslation(0,0,0));
     //mesh2.geometry.applyMatrix(new THREE.Matrix4().makeRotationZ(Math.PI/2));
     //mesh2.geometry.applyMatrix(new THREE.Matrix4().makeTranslation(6+2,0,0));
-    //mesh2.rotateZ(-Math.PI/2);
+    mesh2.rotateX(-Math.PI/2);
     //mesh2.rotateZ(Math.PI/2+0.2);
 
 
@@ -76,10 +80,10 @@
     function render() {
         renderer.render(scene, camera);
         //mesh.rotateZ(0.01);
-        //mesh2.rotateZ(0.01);
+        mesh2.rotateZ(0.01);
         //mesh2.rotateZ(0.01);
         //mesh.rotateX(-0.01);
-        //mesh2.rotateX(0.01);
+        mesh2.rotateX(0.01);
         requestAnimationFrame(render);
     }
     render();

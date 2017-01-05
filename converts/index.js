@@ -792,21 +792,25 @@ var ProjectionVerticesModel = function () {
 
             var self = this;
 
-            var vmod = [[0, 0], [0, 0], [0, +1]]; //shift uv a bit for top side
-            var umod = [[-1, 0], [0, 0], [0, 0]]; //shift uv a bit for right side
+            var vmod = [[0, 0], [0, 0], [0, -1]]; //shift uv a bit for top side
+            var umod = [[0, -1], [0, 0], [0, 0]]; //shift uv a bit for right side
 
             function addFace(coords, ai, ei) {
+                //swap z-values
+                var c20 = coords[2][0];
+                coords[2][0] = imageMask.height - coords[2][1];
+                coords[2][1] = imageMask.height - c20;
                 var vertices = getEdge(coords, ai, ei);
                 var normals = getNormals(coords, ai, ei);
                 for (var i = 0; i < vertices.length; i++) {
                     self._vertices[vi + i * 3 + 0] = vertices[i][0];
                     self._vertices[vi + i * 3 + 1] = vertices[i][1];
-                    self._vertices[vi + i * 3 + 2] = imageMask.height - vertices[i][2];
+                    self._vertices[vi + i * 3 + 2] = vertices[i][2];
                     self._normals[vi + i * 3 + 0] = normals[0];
                     self._normals[vi + i * 3 + 1] = normals[1];
                     self._normals[vi + i * 3 + 2] = normals[2];
                     self._uv[ui + i * 2 + 0] = (umod[ai][ei] + vertices[i][0]) / imageMask.width;
-                    self._uv[ui + i * 2 + 1] = 1 - (vmod[ai][ei] + vertices[i][2]) / imageMask.height;
+                    self._uv[ui + i * 2 + 1] = (vmod[ai][ei] + vertices[i][2]) / imageMask.height;
                 }
                 vi += 3 * vertices.length;
                 ui += 2 * vertices.length;
@@ -821,8 +825,8 @@ var ProjectionVerticesModel = function () {
                 addFace([[start[0], end[0]], [offset, offset], [start[1], end[1]]], Axis.y, 0);
                 addFace([[start[0], end[0]], [offset + width, offset + width], [start[1], end[1]]], Axis.y, 1);
                 //2. left/right (x)
-                addFace([[start[0], start[0]], [offset, offset + width], [start[1], end[1]]], Axis.x, 1);
-                addFace([[end[0], end[0]], [offset, offset + width], [start[1], end[1]]], Axis.x, 0);
+                addFace([[start[0], start[0]], [offset, offset + width], [start[1], end[1]]], Axis.x, 0);
+                addFace([[end[0], end[0]], [offset, offset + width], [start[1], end[1]]], Axis.x, 1);
                 //3. top/bottom (z)
                 addFace([[start[0], end[0]], [offset, offset + width], [start[1], start[1]]], Axis.z, 1);
                 addFace([[start[0], end[0]], [offset, offset + width], [end[1], end[1]]], Axis.z, 0);
