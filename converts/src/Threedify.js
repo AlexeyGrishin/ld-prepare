@@ -12,6 +12,7 @@ export default function Threedify(configs = {}) {
     let configCache = {};
     let geometriesCache = {};
     let mainMethod = configs.method || "viaVox";
+    let mainMaterial = THREE[configs.material] || THREE.MeshPhongMaterial; 
     
     let tempCanvas = document.createElement('canvas');
 
@@ -27,7 +28,7 @@ export default function Threedify(configs = {}) {
             config.projection.postProcess(geom, config);
             let text = exp.saveTexture(vertModel);
             //console.log(vertModel.colorModel);
-            let mesh = new THREE.Mesh(geom, new THREE.MeshPhongMaterial({map: text}));
+            let mesh = new THREE.Mesh(geom, new mainMaterial({map: text}));
             let group = new THREE.Group();
             group.add(mesh);
             geometriesCache[key_or_config] = group;

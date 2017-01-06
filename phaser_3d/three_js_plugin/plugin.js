@@ -65,7 +65,10 @@ export default class ThreePlugin extends Phaser.Plugin {
     }
 
     createMaterial(material, opacity = 1) {
-        if (material === undefined || material === true) {
+        if (material instanceof THREE.Material) {
+            //do nothing but set opacity
+            material.opacity = opacity;
+        } else if (material === undefined || material === true) {
             material = Consts.ShadowMaterial;
         } else if (typeof material === "number") {
             material = new THREE.MeshPhongMaterial({color: material});

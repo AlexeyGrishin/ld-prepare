@@ -629,7 +629,10 @@ var ThreePlugin = function (_Phaser$Plugin) {
         value: function createMaterial(material) {
             var opacity = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 1;
 
-            if (material === undefined || material === true) {
+            if (material instanceof THREE.Material) {
+                //do nothing but set opacity
+                material.opacity = opacity;
+            } else if (material === undefined || material === true) {
                 material = _consts2.default.ShadowMaterial;
             } else if (typeof material === "number") {
                 material = new THREE.MeshPhongMaterial({ color: material });

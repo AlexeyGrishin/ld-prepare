@@ -6,10 +6,21 @@ function initOptions(config) {
     var parsers = {
         boolean: function(s) {return {"true": true, "false": false}[s]},
         int: function(s) { return parseInt(s);},
-        str: function(s) { return s;}
+        str: function(s) { return s;},
+        select: function(s) { return s;}
     };
 
     var controls = {
+        select: function(key) {
+            var inp = document.createElement("select");
+            inp.innerHTML = config[key][2].map(function(opt) {
+                return "<option value='" + opt + "'" + (parsedConfig[key] === opt ? " selected " : "") + " >" + opt + "</option>";
+            }).join("");
+            inp.addEventListener("change", function() {
+                parsedConfig[key] = inp.options[inp.selectedIndex].value;
+            });
+            return inp;
+        },
         boolean: function(key) {
             var inp = document.createElement("input");
             inp.type = "checkbox";

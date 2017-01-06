@@ -1,7 +1,10 @@
 var Performance = initOptions({
     LightsAmount: ["int", 4],
     Blur: ["boolean", true],
-    UseShadowMaterial: ["boolean", false],
+    Material: ["select", "MeshPhongMaterial", ["MeshPhongMaterial", "MeshLambertMaterial", "ShadowMaterial"]],
+    FloorMaterial: ["select", "MeshPhongMaterial", ["MeshPhongMaterial", "MeshLambertMaterial", "ShadowMaterial", "MeshStandardMaterial"]],
+    DoubleScene: ["boolean", true],
+    ShadowShader: ["boolean", true],
     RotateModels: ["boolean", true],
     ConvertViaVox: ["boolean", true],
     TreeSegmentsCount: ["int", 16],
@@ -21,6 +24,7 @@ function preload() {
     
     game.three.autoConvertSpritesUsing(Threedify({
         method: Performance.ConvertViaVox ? "viaVox" : "directly",
+        material: Performance.Material,
         "roguelikeSheet_transparent": {
             530: {projection: Threedify.Sym, data: {translate: {y: 4}}, quality: Performance.TreeSegmentsCount},
             1411: {projection: Threedify.Sym},
@@ -84,11 +88,11 @@ function create1() {
     scene = game.three.createScene(treesLayer, {
         //lights: [{color: 0xffffff, intensity: 0.5}],
         shadows: 512 / Math.pow(2, Performance.ShadowMapQuality-1),
-        render: (Performance.UseShadowMaterial && !Performance.RotateModels) ? ThreePlugin.RenderModels : ThreePlugin.RenderNothing,
-        floor: Performance.UseShadowMaterial ? true : 0xffffff,
+        render: !Performance.DoubleScene ? ThreePlugin.RenderModels : ThreePlugin.RenderNothing,
+        floor: new THREE[Performance.FloorMaterial]({color: 0xffffff}),
         ignore: [621,588]
     });
-    if (!(Performance.UseShadowMaterial && !Performance.RotateModels)) {
+    if (Performance.DoubleScene) {
         scene2 = game.three.createScene(treesLayer, {
             lights: [{color: 0xcccccc, intensity: 0.5}],
             key: "three2",
@@ -117,7 +121,7 @@ function create1() {
     //
     game.world.bringToTop(treesLayer);
 
-    if (!Performance.UseShadowMaterial) {
+    if (Performance.ShadowShader) {
         scene.sprite.x = game.world.width;  //move outside
         scene.sprite.fixedToCamera = false;
 
@@ -214,7 +218,7 @@ function update1() {
     });
 
 
-    if (!Performance.UseShadowMaterial) {
+    if (Performance.ShadowShader) {
         var lights = [
             {x: lightHero.x+4, y: lightHero.y+8, z:heroHeight, distance: 400, radius: 40, strength: 1},
         ].concat(fireParticles.map(function(fp) {

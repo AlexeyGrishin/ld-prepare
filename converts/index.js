@@ -37,6 +37,7 @@ function Threedify() {
     var configCache = {};
     var geometriesCache = {};
     var mainMethod = configs.method || "viaVox";
+    var mainMaterial = THREE[configs.material] || THREE.MeshPhongMaterial;
 
     var tempCanvas = document.createElement('canvas');
 
@@ -52,7 +53,7 @@ function Threedify() {
             config.projection.postProcess(geom, config);
             var text = exp.saveTexture(vertModel);
             //console.log(vertModel.colorModel);
-            var mesh = new THREE.Mesh(geom, new THREE.MeshPhongMaterial({ map: text }));
+            var mesh = new THREE.Mesh(geom, new mainMaterial({ map: text }));
             var group = new THREE.Group();
             group.add(mesh);
             geometriesCache[key_or_config] = group;
