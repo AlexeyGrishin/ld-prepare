@@ -21,6 +21,10 @@ export default class ThreeTile extends ThreeSprite {
         this.layer.renderable = rendering === Consts.RenderSprites || rendering === Consts.RenderBoth;
     }
 
+    applyDebug(debug) {
+        //return
+    }
+
     updateCoords() {}
 
     cloneInto(newParent) {

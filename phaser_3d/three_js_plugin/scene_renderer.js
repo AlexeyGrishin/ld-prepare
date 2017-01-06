@@ -8,7 +8,7 @@ export default class ThreeSceneRenderer {
         this.camera.position.x = 0;
         this.camera.position.y = 0;
 
-        this.renderer = new THREE.WebGLRenderer({ alpha: true, preserveDrawingBuffer: true });
+        this.renderer = new THREE.WebGLRenderer({ alpha: true, preserveDrawingBuffer: true, premultipliedAlpha: false });
         this.renderer.setClearColor( 0x000000, 0 );
         this.renderer.setSize( this.game.camera.width, this.game.camera.height);
 

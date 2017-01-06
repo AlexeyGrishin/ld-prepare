@@ -2,7 +2,7 @@ var Performance = initOptions({
     LightsAmount: ["int", 4],
     Blur: ["boolean", true],
     Material: ["select", "MeshPhongMaterial", ["MeshPhongMaterial", "MeshLambertMaterial", "ShadowMaterial", "MeshStandardMaterial"]],
-    FloorMaterial: ["select", "MeshPhongMaterial", ["MeshPhongMaterial", "MeshLambertMaterial", "ShadowMaterial", "MeshStandardMaterial"]],
+    FloorMaterial: ["select", "MeshPhongMaterial", ["MeshPhongMaterial", "MeshLambertMaterial", "ShadowMaterial", "MeshStandardMaterial", "MeshPhysicalMaterial"]],
     DoubleScene: ["boolean", true],
     ShadowShader: ["boolean", true],
     RotateModels: ["boolean", true],
@@ -78,6 +78,7 @@ function create1() {
     bgLayer.resizeWorld();
 
     lightHero = game.add.sprite(100, 90, "sprites", 0);
+    lightHero.anchor.set(0.5, 0.5);
 
     game.physics.enable(lightHero, Phaser.Physics.ARCADE);
 
@@ -89,9 +90,15 @@ function create1() {
         //lights: [{color: 0xffffff, intensity: 0.5}],
         shadows: 512 / Math.pow(2, Performance.ShadowMapQuality-1),
         render: !Performance.DoubleScene ? ThreePlugin.RenderModels : ThreePlugin.RenderNothing,
-        floor: new THREE[Performance.FloorMaterial]({color: 0xffffff}),
+        //debug: true,
+        floor: new THREE[Performance.FloorMaterial]({
+            color: 0xffffff,
+            specular: 0x000000,
+            shininess: 0
+        }),
         ignore: [621,588]
     });
+    scene.floor.material.opacity = 0.5;
     if (Performance.DoubleScene) {
         scene2 = game.three.createScene(treesLayer, {
             lights: [{color: 0xcccccc, intensity: 0.5}],
@@ -102,7 +109,7 @@ function create1() {
         });
     }
 
-    lightForHero = scene.addLight(ThreePlugin.PointLight, {intensity: 2, distance: 200});
+    lightForHero = scene.addLight(ThreePlugin.PointLight, {intensity: 2, distance: 100, decay: 1});
     if (scene2) scene2.addExisting(lightForHero, "three");
     fireLights = [];
     for (var i = 0; i < Performance.LightsAmount-1;i++) {
@@ -112,10 +119,12 @@ function create1() {
     }
 
     if (Performance.RotateModels) {
-        if (scene2) scene2.forEach(function (sp) {
-            if (!sp.three2.mesh) return;
-            sp.three2.mesh.children[0].material = createRotatedMaterialFrom(sp.three2.mesh.children[0].material, game.world.width / 2);
+        let sc = scene2 || scene;
+        sc.forEach(function (sp) {
+            if (!sc.three(sp).mesh) return;
+            sc.three(sp).mesh.children[0].material = createRotatedMaterialFrom(sc.three(sp).mesh.children[0].material, game.world.width / 2);
         });
+
     }
 
     //
@@ -142,6 +151,11 @@ function create1() {
         soSprite.filters = [amb]
             .concat(shadow7)
             .concat(Performance.Blur ? [game.add.filter("BlurX"), game.add.filter("BlurY")] : []);
+    } else if (Performance.Blur) {
+        scene.renderer.shadowMap.type = THREE.PCFSoftShadowMap; //not sure why does not work
+        scene.forEach((sp) => {
+            if (sp.three.light) sp.three.light.shadow.radius = 16;
+        });
     }
     if (scene2) game.world.bringToTop(scene2.sprite);
 

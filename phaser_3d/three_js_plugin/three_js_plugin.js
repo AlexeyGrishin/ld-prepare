@@ -876,6 +876,7 @@ var ThreeScene = function () {
             floor.receiveShadow = true;
             floor.position.set(this.game.world.width / 2, this.game.world.height / 2, 0);
             this._scene.add(floor);
+            this._floor = floor;
         }
     }, {
         key: 'addGroup',
@@ -1052,6 +1053,11 @@ var ThreeScene = function () {
             }
         }
     }, {
+        key: 'three',
+        value: function three(sprite) {
+            return sprite[this._key];
+        }
+    }, {
         key: 'addLight',
         value: function addLight(type, config) {
             var _this6 = this;
@@ -1111,6 +1117,11 @@ var ThreeScene = function () {
         value: function forEach(cb) {
             this._sprites.forEach(cb);
             //assuming that any sprite in group already in _sprites
+        }
+    }, {
+        key: 'floor',
+        get: function get() {
+            return this._floor;
         }
     }, {
         key: 'render',
@@ -1190,7 +1201,7 @@ var ThreeSceneRenderer = function () {
         this.camera.position.x = 0;
         this.camera.position.y = 0;
 
-        this.renderer = new THREE.WebGLRenderer({ alpha: true, preserveDrawingBuffer: true });
+        this.renderer = new THREE.WebGLRenderer({ alpha: true, preserveDrawingBuffer: true, premultipliedAlpha: false });
         this.renderer.setClearColor(0x000000, 0);
         this.renderer.setSize(this.game.camera.width, this.game.camera.height);
 
@@ -1438,6 +1449,11 @@ var ThreeTile = function (_ThreeSprite) {
         key: 'applyRenderingForSprite',
         value: function applyRenderingForSprite(rendering) {
             this.layer.renderable = rendering === _consts2.default.RenderSprites || rendering === _consts2.default.RenderBoth;
+        }
+    }, {
+        key: 'applyDebug',
+        value: function applyDebug(debug) {
+            //return
         }
     }, {
         key: 'updateCoords',

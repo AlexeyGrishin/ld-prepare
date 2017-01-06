@@ -70,6 +70,7 @@ export default class ThreeScene {
         floor.receiveShadow = true;
         floor.position.set( this.game.world.width/2, this.game.world.height/2, 0 );
         this._scene.add(floor);
+        this._floor = floor;
     }
 
     addGroup(group) {
@@ -176,6 +177,10 @@ export default class ThreeScene {
         }
 
     }
+    
+    three(sprite) {
+        return sprite[this._key];
+    }
 
     addLight(type, config) {
         let sprite = this.game.make.sprite();
@@ -221,6 +226,8 @@ export default class ThreeScene {
         sp[this._key].applyDebug(this._debug);
         //iterate over all sprites and groups, apply shadows/renderable
     }
+
+    get floor() { return this._floor; }
 
     get render() { return this._render;}
     set render(val) { this._render = val; this.applyConfig(); }
