@@ -1,7 +1,7 @@
 var Performance = initOptions({
     LightsAmount: ["int", 4],
     Blur: ["boolean", true],
-    Material: ["select", "MeshPhongMaterial", ["MeshPhongMaterial", "MeshLambertMaterial", "ShadowMaterial"]],
+    Material: ["select", "MeshPhongMaterial", ["MeshPhongMaterial", "MeshLambertMaterial", "ShadowMaterial", "MeshStandardMaterial"]],
     FloorMaterial: ["select", "MeshPhongMaterial", ["MeshPhongMaterial", "MeshLambertMaterial", "ShadowMaterial", "MeshStandardMaterial"]],
     DoubleScene: ["boolean", true],
     ShadowShader: ["boolean", true],
