@@ -109,7 +109,7 @@ function create1() {
         });
     }
 
-    lightForHero = scene.addLight(ThreePlugin.PointLight, {intensity: 2, distance: 100, decay: 1});
+    lightForHero = scene.addLight(ThreePlugin.PointLight, {intensity: 2, distance: 200, decay: 2});
     if (scene2) scene2.addExisting(lightForHero, "three");
     fireLights = [];
     for (var i = 0; i < Performance.LightsAmount-1;i++) {
