@@ -3,7 +3,8 @@ var Performance = initOptions({
     Blur: ["boolean", true],
     UseShadowMaterial: ["boolean", false],
     RotateModels: ["boolean", true],
-    ConvertViaVox: ["boolean", true]
+    ConvertViaVox: ["boolean", true],
+    TreeSegmentsCount: ["int", 16]
 });
 
 function preload() {
@@ -20,12 +21,12 @@ function preload() {
     game.three.autoConvertSpritesUsing(Threedify({
         method: Performance.ConvertViaVox ? "viaVox" : "directly",
         "roguelikeSheet_transparent": {
-            530: {projection: Threedify.Sym, data: {translate: {y: 4}}},
+            530: {projection: Threedify.Sym, data: {translate: {y: 4}}, quality: Performance.TreeSegmentsCount},
             1411: {projection: Threedify.Sym},
             1136: {projection: Threedify.Sym},
             1410: {projection: Threedify.Sym},
             1409: {projection: Threedify.Sym},
-            644: {projection: Threedify.Sym, top: 587},
+            644: {projection: Threedify.Sym, top: 587, quality: Performance.TreeSegmentsCount},
             1358: {projection: Threedify.X, offset: 0, width: 2},
             1250: {projection: Threedify.X, offset: 0, width: 2},
             1361: {projection: Threedify.Y, base: 1358,  offset: 0, width: 2},
