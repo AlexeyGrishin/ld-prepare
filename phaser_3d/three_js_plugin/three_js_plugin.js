@@ -820,12 +820,19 @@ var ThreeScene = function () {
         this._debug = false;
         this._caches = {};
         this._scene = new THREE.Scene();
+        this._shadowsMapSize = 512;
 
         if (config) {
             if (config.key !== undefined) this._key = config.key;
             if (config.debug !== undefined) this._debug = config.debug;
             if (config.render !== undefined) this._render = config.render;
-            if (config.shadows !== undefined) this._shadows = config.shadows;
+            if (config.shadows !== undefined) {
+                this._shadows = !!config.shadows;
+                if (typeof config.shadows === "number") {
+                    if (!THREE.Math.isPowerOfTwo(config.shadows)) throw new Error("shadow map size shall be power of two, but " + config.shadows + " given");
+                    this._shadowsMapSize = config.shadows;
+                }
+            }
             if (config.floor !== undefined) {
                 this.addShadowFloor(config.floor === true ? undefined : config.floor);
             }
@@ -1049,6 +1056,9 @@ var ThreeScene = function () {
             var sprite = this.game.make.sprite();
 
             var light = this._createCachedLight(type, config);
+            if (type.shadows) {
+                light.shadow.mapSize.set(this._shadowsMapSize, this._shadowsMapSize);
+            }
             sprite[this._key] = new _light2.default(this, sprite, light, type, config);
             this._pushSprite(sprite);
             if ((config.debug || this._debug) && type.helperClass) {

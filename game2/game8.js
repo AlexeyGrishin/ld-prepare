@@ -4,7 +4,8 @@ var Performance = initOptions({
     UseShadowMaterial: ["boolean", false],
     RotateModels: ["boolean", true],
     ConvertViaVox: ["boolean", true],
-    TreeSegmentsCount: ["int", 16]
+    TreeSegmentsCount: ["int", 16],
+    ShadowMapQuality: ["int", 1]
 });
 
 function preload() {
@@ -82,7 +83,7 @@ function create1() {
 
     scene = game.three.createScene(treesLayer, {
         //lights: [{color: 0xffffff, intensity: 0.5}],
-        shadows: true,
+        shadows: 512 / Math.pow(2, Performance.ShadowMapQuality-1),
         render: (Performance.UseShadowMaterial && !Performance.RotateModels) ? ThreePlugin.RenderModels : ThreePlugin.RenderNothing,
         floor: Performance.UseShadowMaterial ? true : 0xffffff,
         ignore: [621,588]
@@ -91,7 +92,7 @@ function create1() {
         scene2 = game.three.createScene(treesLayer, {
             lights: [{color: 0xcccccc, intensity: 0.5}],
             key: "three2",
-            shadows: true,
+            shadows: 512 / Math.pow(2, Performance.ShadowMapQuality-1),
             render: ThreePlugin.RenderModels,
             ignore: [621, 588],
         });
