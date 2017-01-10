@@ -3,8 +3,10 @@ var Performance = initOptions({
     LightsAmount: ["int", 4],
     ShadowsStepsCount: ["int", 128],
     Map3dScale: ["int", 1],
-    Blur: ["boolean", true]
-});
+    Blur: ["boolean", true],
+    HeroX: ["int", 240],
+    HeroY: ["int", 500]
+}, {screenshot: function() { return lightHero }});
 
 function preload() {
     game.time.advancedTiming = true;
@@ -140,7 +142,8 @@ function create1() {
 
     bgLayer.resizeWorld();
 
-    lightHero = game.add.sprite(100, 90, "sprites", 0);
+    lightHero = game.add.sprite(Performance.HeroX, Performance.HeroY, "sprites", 0);
+    lightHero.anchor.set(0.5, 0.5);
 
     game.physics.enable(lightHero, Phaser.Physics.ARCADE);
 
@@ -318,6 +321,7 @@ function update1() {
 }
 
 function debugRender1() {
+    return;
     game.debug.text(game.time.fps, 32,32);
     if (window.performance && window.performance.memory && window.performance.memory.usedJSHeapSize) {
         game.debug.text((window.performance.memory.usedJSHeapSize / 1000 / 1000).toFixed(1) + " MB", 32, 64);

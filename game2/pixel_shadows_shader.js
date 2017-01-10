@@ -28,8 +28,6 @@ Phaser.Filter.Shadow2 = function(game) {
         "uniform vec2 sSize;",
         "uniform vec2 wSize;",
 
-        //todo: check with heights map as well
-
         "void main(void) {",
             "vec3 coords = vec3(gl_FragCoord.x, wSize.y-gl_FragCoord.y, 0);",
             "gl_FragColor = texture2D(uSampler, vTextureCoord);",
@@ -43,7 +41,10 @@ Phaser.Filter.Shadow2 = function(game) {
                 "vec3 light = lightCoords[i];",
                 "float dist = distance(light, coords);",
                 "vec3 point = coords;",
-                "vec4 ownHeight = texture2D(iChannel2, point.xy / tSize);",
+                 (Options.UseHeightsMap)
+                     ? "vec4 ownHeight = texture2D(iChannel2, point.xy / tSize);"
+                     : "vec4 ownHeight = vec4(0);"
+                    ,
                 "float dy = ownHeight.y > 0. ? (ownHeight.y * 255.0 - 128.0 + 1.) : 0.0;",
                 "point.y += dy;",
                 "point.z = ceil(ownHeight.z*255.0);",
@@ -74,11 +75,10 @@ Phaser.Filter.Shadow2 = function(game) {
                 "lightness += (0.3 + 0.7 * lightPass * lt * 2.)/float(lightsCount);",  //distance = -1 for infinite distance
             "}",
             "gl_FragColor = (gl_FragColor + colorChange) * min(1.0, max(0., lightness));",
+            //"if (coords.x > 630.) gl_FragColor = vec4(1,0,0,1);",
         "}"
     ];   
 };
-
-//how to avoid "raycasting" inside shader... so I have point, light and obstacles.
 
 Phaser.Filter.Shadow2.prototype = Object.create(Phaser.Filter.prototype);
 Phaser.Filter.Shadow2.prototype.constructor = Phaser.Filter.Shadow2;

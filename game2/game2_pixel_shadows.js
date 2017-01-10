@@ -1,9 +1,13 @@
 var Options = initOptions({
-   LightsAmount: ["int", 4]
-});
+   LightsAmount: ["int", 4],
+    UseHeightsMap: ["boolean", true],
+    HeroX: ["int", 240],
+    HeroY: ["int", 500]
+}, {screenshot: function() { return lightHero }});
 
 function preload() {
     game.time.advancedTiming = true;
+    PIXI.scaleModes.DEFAULT = PIXI.scaleModes.NEAREST;
     game.load.tilemap('level1', 'l4.json', null, Phaser.Tilemap.TILED_JSON);
 
     game.load.spritesheet('roguelikeSheet_transparent', 'roguelikeSheet_transparent.png', 16, 16, -1, 0, 1);
@@ -134,7 +138,8 @@ function create1() {
 
     bgLayer.resizeWorld();
 
-    lightHero = game.add.sprite(100, 90, "sprites", 0);
+    lightHero = game.add.sprite(Options.HeroX, Options.HeroY, "sprites", 0);
+    lightHero.anchor.set(0.5, 0.5);
 
     game.physics.enable(lightHero, Phaser.Physics.ARCADE);
 
@@ -151,13 +156,17 @@ function create1() {
     prepareHeightsMap(heightsBitmap, treesLayer.getTiles(0, 0, game.world.width, game.world.height, true));
 
     shadow2 = game.add.filter("Shadow2");
-    game.world.filters = [shadow2];
+    if (Options.UseHeightsMap) {
+        game.world.filters = [shadow2];
+    } else {
+        bgLayer.filters = [shadow2];
+        bgLayer.texture.baseTexture.scaleMode = Phaser.scaleModes.NEAREST;
+    }
 
     shadow2.uniforms.iChannel0.value = tempSprite.texture;
     shadow2.uniforms.iChannel0.textureData = {nearest: true};
 
     var shadowsSprite = game.add.sprite(textureSize, textureSize, "shadows");
-
 
     shadow2.uniforms.iChannel1.value = shadowsSprite.texture;
     shadow2.uniforms.iChannel1.textureData = {nearest: true};
@@ -168,7 +177,6 @@ function create1() {
     shadow2.uniforms.tSize.value = {x: textureSize, y: textureSize};
     shadow2.uniforms.sSize.value = {x: shadowsSprite.width, y: shadowsSprite.height};
 
-    console.log(shadow2.uniforms);
     fire = game.add.sprite(29*16, 20*16, "roguelikeSheet_transparent");
     fire.animations.add("idle", [470, 471], 8, true);
     fire.animations.play("idle");
@@ -262,6 +270,8 @@ function update1() {
 }
 
 function debugRender1() {
+    game.debug.text("FPS: 22", 32,32);
+    return;
     game.debug.text(game.time.fps, 32,32);
     if (window.performance && window.performance.memory && window.performance.memory.usedJSHeapSize) {
         game.debug.text((window.performance.memory.usedJSHeapSize / 1000 / 1000).toFixed(1) + " MB", 32, 64);

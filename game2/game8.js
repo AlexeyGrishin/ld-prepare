@@ -8,8 +8,10 @@ var Performance = initOptions({
     RotateModels: ["boolean", true],
     ConvertViaVox: ["boolean", true],
     TreeSegmentsCount: ["int", 16],
-    ShadowMapQuality: ["int", 1]
-});
+    ShadowMapQuality: ["int", 1],
+    HeroX: ["int", 240],
+    HeroY: ["int", 500]
+}, {screenshot: function() { return lightHero }});
 
 function preload() {
     game.time.advancedTiming = true;
@@ -77,7 +79,7 @@ function create1() {
 
     bgLayer.resizeWorld();
 
-    lightHero = game.add.sprite(100, 90, "sprites", 0);
+    lightHero = game.add.sprite(Performance.HeroX, Performance.HeroY, "sprites", 0);
     lightHero.anchor.set(0.5, 0.5);
 
     game.physics.enable(lightHero, Phaser.Physics.ARCADE);
@@ -109,7 +111,7 @@ function create1() {
         });
     }
 
-    lightForHero = scene.addLight(ThreePlugin.PointLight, {intensity: 2, distance: 200, decay: 2});
+    lightForHero = scene.addLight(ThreePlugin.PointLight, {intensity: 2, distance: 300, decay: 2});
     if (scene2) scene2.addExisting(lightForHero, "three");
     fireLights = [];
     for (var i = 0; i < Performance.LightsAmount-1;i++) {

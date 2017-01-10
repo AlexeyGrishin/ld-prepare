@@ -28,14 +28,7 @@ function createRotatedMaterialFrom(src, size) {
 
     material.map = src.map;
     //todo: copy other props from Phong, check it is exactly phong
-
-    //console.log();
-    //material.map = texture;
-    //material.mapEncoding = true;
     material.uniforms.map.value = material.map;
-    //material.uniforms.diffuse.value = new THREE.Color(0xff00ff);
-    //material.uniforms.specular.value = new THREE.Color(0x111111);
-    //material.uniforms.shininess.value = 30;
     material.needsUpdate = true;
 
     return material;

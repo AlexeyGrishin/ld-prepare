@@ -1,5 +1,6 @@
+var scSize = 300;
 
-function initOptions(config) {
+function initOptions(config, opts) {
 
     var parsedConfig = {};
 
@@ -99,7 +100,7 @@ function initOptions(config) {
         div.style.position = "fixed";
         div.style.right = 0;
         div.style.top = 0;
-        div.style.width = "200px";
+        div.style.width = Math.max(scSize + 20, 200) + "px";
         div.style.padding = "10px";
         div.style.backgroundColor = "#cccccc";
 
@@ -120,6 +121,25 @@ function initOptions(config) {
             }
         }
         document.body.appendChild(div);
+
+        if (opts) {
+            if (opts.screenshot) {
+                var screenshotCanvas = null;
+                var button = document.createElement("button");
+                button.innerHTML = "screenshot";
+                div.appendChild(button);
+                button.addEventListener("click", function() {
+                    if (!screenshotCanvas) {
+                        screenshotCanvas = document.createElement("canvas");
+                        screenshotCanvas.setAttribute("width", scSize);
+                        screenshotCanvas.setAttribute("height", scSize);
+                        div.appendChild(screenshotCanvas);
+                    }
+                    var ctx = screenshotCanvas.getContext("2d");
+                    ctx.drawImage(game.canvas, opts.screenshot().x - scSize/2, opts.screenshot().y - scSize/2, scSize, scSize, 0, 0, scSize, scSize);
+                });
+            }
+        }
     }
 }
 
