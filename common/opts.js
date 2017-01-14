@@ -1,4 +1,6 @@
-var scSize = 300;
+var scWidth = 250;
+var scHeight = 250;
+var scScale = 1;
 
 function initOptions(config, opts) {
 
@@ -100,7 +102,7 @@ function initOptions(config, opts) {
         div.style.position = "fixed";
         div.style.right = 0;
         div.style.top = 0;
-        div.style.width = Math.max(scSize + 20, 200) + "px";
+        div.style.width = Math.max(scWidth*scScale + 20, 200) + "px";
         div.style.padding = "10px";
         div.style.backgroundColor = "#cccccc";
 
@@ -131,12 +133,17 @@ function initOptions(config, opts) {
                 button.addEventListener("click", function() {
                     if (!screenshotCanvas) {
                         screenshotCanvas = document.createElement("canvas");
-                        screenshotCanvas.setAttribute("width", scSize);
-                        screenshotCanvas.setAttribute("height", scSize);
+                        screenshotCanvas.setAttribute("width", scWidth*scScale);
+                        screenshotCanvas.setAttribute("height", scHeight*scScale);
                         div.appendChild(screenshotCanvas);
                     }
                     var ctx = screenshotCanvas.getContext("2d");
-                    ctx.drawImage(game.canvas, opts.screenshot().x - scSize/2, opts.screenshot().y - scSize/2, scSize, scSize, 0, 0, scSize, scSize);
+                    ctx.imageSmoothingEnabled = false;
+                    ctx.drawImage(game.canvas,
+                        opts.screenshot().x - scWidth/2,
+                        opts.screenshot().y - scHeight/2,
+                        scWidth, scHeight,
+                        0, 0, scWidth*scScale, scHeight*scScale);
                 });
             }
         }

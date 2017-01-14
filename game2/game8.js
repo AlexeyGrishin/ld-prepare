@@ -22,7 +22,7 @@ function preload() {
     game.load.script('blur', 'blurs.js');
 
     game.load.spritesheet('roguelikeSheet_transparent', 'roguelikeSheet_transparent.png', 16, 16, -1, 0, 1);
-    game.load.spritesheet('sprites', 'sprites.png', 16, 16);
+    game.load.spritesheet('sprites', 'adam.png', 16, 16);
     
     game.three.autoConvertSpritesUsing(Threedify({
         method: Performance.ConvertViaVox ? "viaVox" : "directly",
@@ -36,7 +36,7 @@ function preload() {
             644: {projection: Threedify.Sym, top: 587, quality: Performance.TreeSegmentsCount},
             1358: {projection: Threedify.X, offset: 0, width: 2},
             1250: {projection: Threedify.X, offset: 0, width: 2},
-            1361: {projection: Threedify.Y, base: 1358,  offset: 0, width: 2},
+            1361: {projection: Threedify.Y, base: 1358,  offset: 12, width: 3},
             1359: {projection: Threedify.X, offset: 0, width: 2},
             1363: {projection: Threedify.X, offset: 0, width: 2},
             1364: {projection: Threedify.X, offset: 0, width: 2},
@@ -47,13 +47,14 @@ function preload() {
             522: {projection: Threedify.X, offset: 0, width: 2},
             680: {projection: Threedify.X, offset: 0, width: 2},
             677: {projection: Threedify.X, top: 620, offset: 0, width: 2},
-            1362: {projection: Threedify.Y, base: 1364,  offset: 0, width: 2},
-            default: {projection: Threedify.X, width: 4}
+            1362: {projection: Threedify.Y, base: 1364,  offset: 0, width: 3},
+            default: {projection: Threedify.X, width: 2, offset: 0}
         }
 
     }).fromSpriteToGeometry);
 
     game.load.script("shadows7", "shadows7.js");
+    game.load.bitmapFont('myfont', '../game4/font.png', '../game4/font.fnt')
 
 }
 
@@ -111,7 +112,7 @@ function create1() {
         });
     }
 
-    lightForHero = scene.addLight(ThreePlugin.PointLight, {intensity: 2, distance: 300, decay: 2});
+    lightForHero = scene.addLight(ThreePlugin.PointLight, {intensity: 2, distance: 500, decay: 2});
     if (scene2) scene2.addExisting(lightForHero, "three");
     fireLights = [];
     for (var i = 0; i < Performance.LightsAmount-1;i++) {
@@ -162,8 +163,50 @@ function create1() {
     if (scene2) game.world.bringToTop(scene2.sprite);
 
     document.getElementById("info").innerHTML = (scene.polygons/1000).toFixed(0) + "K triangles";
+/*
+    var adamDialog = game.add.bitmapData(130, 20);
+    adamDialog.ctx.lineWidth = 2;
+    roundRect(adamDialog.ctx, 0, 0, 130, 20, 10, "white", "black");
+    game.add.sprite(Performance.HeroX + 10, Performance.HeroY - 11, adamDialog);
+    var adamText = game.add.bitmapText(Performance.HeroX + 12, Performance.HeroY-5,'myfont','i never asked for this',12);
+*/
 }
+function roundRect(ctx, x, y, width, height, radius, fill, stroke) {
+    if (typeof stroke == 'undefined') {
+        stroke = true;
+    }
+    if (typeof radius === 'undefined') {
+        radius = 5;
+    }
+    if (typeof radius === 'number') {
+        radius = {tl: radius, tr: radius, br: radius, bl: radius};
+    } else {
+        var defaultRadius = {tl: 0, tr: 0, br: 0, bl: 0};
+        for (var side in defaultRadius) {
+            radius[side] = radius[side] || defaultRadius[side];
+        }
+    }
+    ctx.beginPath();
+    ctx.moveTo(x + radius.tl, y);
+    ctx.lineTo(x + width - radius.tr, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + radius.tr);
+    ctx.lineTo(x + width, y + height - radius.br);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - radius.br, y + height);
+    ctx.lineTo(x + radius.bl, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - radius.bl);
+    ctx.lineTo(x, y + radius.tl);
+    ctx.quadraticCurveTo(x, y, x + radius.tl, y);
+    ctx.closePath();
+    if (fill) {
+        ctx.fillStyle = fill;
+        ctx.fill();
+    }
+    if (stroke) {
+        ctx.strokeStyle = stroke;
+        ctx.stroke();
+    }
 
+}
 
 var lightForHero, fireLights, shadow7;
 
@@ -255,6 +298,7 @@ function update1() {
 
 }
 function debugRender1() {
+    return;
     game.debug.text(game.time.fps, 32,32);
     if (window.performance && window.performance.memory && window.performance.memory.usedJSHeapSize) {
         game.debug.text((window.performance.memory.usedJSHeapSize / 1000 / 1000).toFixed(1) + " MB", 32, 64);
