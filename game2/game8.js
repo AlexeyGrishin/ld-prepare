@@ -20,7 +20,7 @@ function preload() {
     game.load.script('blur', 'blurs.js');
 
     game.load.spritesheet('roguelikeSheet_transparent', 'roguelikeSheet_transparent.png', 16, 16, -1, 0, 1);
-    game.load.spritesheet('sprites', 'sprites.png', 16, 16);
+    game.load.spritesheet('sprites', 'adam.png', 16, 16);
     
     game.three.autoConvertSpritesUsing(Threedify({
         method: Performance.ConvertViaVox ? "viaVox" : "directly",

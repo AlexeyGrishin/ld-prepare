@@ -57,8 +57,9 @@ Phaser.Filter.Shadow5 = function(game) {
         //"uniform float map3d"
 
         "#define SHADOW_CHECK_DIST " + (Performance.ShadowsStepsCount || 64),
-         //1 if match, 0 if not
-        "float checkBitF(float val, float bit) { float f = pow(2., floor(mod(bit, 16.))); float vf = val - mod(val,f); return 1. - step(1., abs(floor(vf/f/2.)*2.*f - (vf-f)));  }",
+        "#define MAP_SCALE " + (Performance.Map3dScale || 1) + ".",
+
+        "float checkBitF(float val, float bit) { float f = pow(2., floor(mod(bit, 16.))); return step(1., mod(floor(val/f),2.));  }",
 
     ];
 
@@ -86,11 +87,11 @@ Phaser.Filter.Shadow5 = function(game) {
         "float lt = (lightSize.x < 0. ? 1.0 : smoothstep(1.0, 0.0, (distance(coords, light))/lightSize.x));",
         //raycast
         "vec3 point = coords;",
-        "vec4 ownHeight = texture2D(iChannel2, point.xy / tSize);",
+        "vec4 ownHeight = texture2D(iChannel2, point.xy * MAP_SCALE / tSize);",
         "vec4 rcolor = vec4(0);",
         "if (lt > 0.0) {",
             "float dy = ownHeight.y > 0. ? (ownHeight.y * 255.0 - 128.0 + 1.) : 0.0;",
-            "point.y += dy;",
+            "point.y += dy/ MAP_SCALE;",
             "point.z = ceil(ownHeight.z*255.0);",
             "vec3 start = point;",
             "vec3 toLight = light - start;",

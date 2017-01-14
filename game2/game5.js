@@ -12,7 +12,7 @@ function preload() {
 
     game.load.spritesheet('roguelikeSheet_transparent', 'roguelikeSheet_transparent.png', 16, 16, -1, 0, 1);
     game.load.spritesheet('roguelikeSheet_transparent_normales', 'roguelikeSheet_transparent_NRM.png', 16, 16, -1, 0, 1);
-    game.load.spritesheet('sprites', 'sprites.png', 16, 16);
+    game.load.spritesheet('sprites', 'adam.png', 16, 16);
 
     game.load.script('shadow5', 'shadow5.js');
     game.load.script('blur', 'blurs.js');

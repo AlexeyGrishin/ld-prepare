@@ -4,11 +4,12 @@ var Options = initOptions({
 
 function preload() {
     game.time.advancedTiming = true;
+    PIXI.scaleModes.DEFAULT = PIXI.scaleModes.NEAREST;
     game.load.tilemap('level1', 'l4.json', null, Phaser.Tilemap.TILED_JSON);
 
     game.load.spritesheet('roguelikeSheet_transparent', 'roguelikeSheet_transparent.png', 16, 16, -1, 0, 1);
     game.load.spritesheet('roguelikeSheet_transparent_normales', 'roguelikeSheet_transparent_NRM.png', 16, 16, -1, 0, 1);
-    game.load.spritesheet('sprites', 'sprites.png', 16, 16);
+    game.load.spritesheet('sprites', 'adam.png', 16, 16);
 
     game.load.script('shadow2', 'pixel_shadows_shader.js');
     game.load.script('normal', 'normal_test.js');
@@ -168,7 +169,6 @@ function create1() {
     shadow2.uniforms.tSize.value = {x: textureSize, y: textureSize};
     shadow2.uniforms.sSize.value = {x: shadowsSprite.width, y: shadowsSprite.height};
 
-    console.log(shadow2.uniforms);
     fire = game.add.sprite(29*16, 20*16, "roguelikeSheet_transparent");
     fire.animations.add("idle", [470, 471], 8, true);
     fire.animations.play("idle");
