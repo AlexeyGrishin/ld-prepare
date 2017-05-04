@@ -11,10 +11,61 @@ function makeSharped() {
 
 function preload() {
     game.load.spritesheet('wind', 'wind test.png', 16, 16);
+    game.load.spritesheet('owl', 'owl.png', 24, 24);
+    game.load.spritesheet('mouse', 'mouse.png', 24, 24);
+    game.load.spritesheet('cheese', 'cheese.png', 24, 24);
 }
 
-var hero, cursors, space;
-var groundGrp, grassGrp, windParticlesGrp;
+var hero, cursors, space, owl;
+var groundGrp, grassGrp, windParticlesGrp, miceGrp;
+
+
+function addOwl(gx, gy) {
+    let branch = game.add.sprite(r(gx), r(gy), 'wind', 16);
+    branch.anchor.set(0.5, 0.19);
+    let owl = game.add.sprite(r(gx), r(gy), 'owl', 0);
+    owl.anchor.set(0.5, 0.5);
+    owl.animations.add('starting', [1,2,3,4,5], 6);
+    owl.animations.add('flying', [2,3,4,5,4,3], 6, true);
+    owl.animations.add('winded', [3], 12, true);
+
+    game.physics.arcade.enable(owl);
+
+    function fly() {
+        owl.animations.play('starting').onComplete.addOnce(() => {
+            owl.body.velocity.x = 5;
+            owl.body.velocity.y = 2;
+            let loops = 0;
+
+            owl.animations.getAnimation('flying').onLoop.add(() => {
+                loops++;
+                if (loops % 5 == 0) {
+                    owl.animations.play('winded');
+                    game.time.events.add(1000, () => {
+                        owl.animations.play('flying');
+                    });
+                }
+            });
+            owl.animations.play('flying');
+        });
+    }
+
+    return owl;
+}
+
+function addMouse(gx, gy) {
+    let mouse = game.add.sprite(r(gx), r(gy), 'mouse', 0, miceGrp);
+    mouse.anchor.set(0.5, 1);
+
+    mouse.animations.add('walking', [0,1,2,1], 8, true);
+    mouse.animations.add('idle', [3,4,3,4,3,4,3,4,5,6,5,6,5,6,5,6], 6, true);
+    mouse.animations.add('eating', [7,8,9], 6, true);
+
+    mouse.animations.play('idle');
+
+    game.physics.arcade.enable(mouse);
+    return mouse;
+}
 
 function r(gc) { return 16*gc;}
 
@@ -105,6 +156,7 @@ function create() {
     makeSharped();
 
     groundGrp = game.add.group();
+    miceGrp = game.add.group();
     grassGrp = game.add.group();
     windParticlesGrp = game.add.group();
 
@@ -148,6 +200,9 @@ function create() {
     };
 
 
+
+    addOwl(0.5,3);
+    addMouse(5.5,5);
 
     addGround(5,5);
     addGround(6,5);
