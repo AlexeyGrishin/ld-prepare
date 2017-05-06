@@ -33,7 +33,7 @@ class Sun extends Phaser.Sprite {
         let hasOverlap = false;
 
         cloudGrp.forEach(cloud => {
-            hasOverlap = hasOverlap || (cloud.overlap(this) && cloud.windResistance < 0.5);
+            hasOverlap = hasOverlap || (cloud.overlap(this) && cloud.windResistance < 0.1);
         });
         let hadPwr = this.pwr;
         if (hasOverlap) {
@@ -75,7 +75,7 @@ class Cloud extends Phaser.Sprite {
         }
         let speedToSun = 0;
         if (this.x < game.sun.x) {
-            speedToSun = Math.max(0.2, Math.pow(game.sun.x - this.x, 0.1)*0.2);
+            speedToSun = 0.08;// Math.max(0.05, Math.pow(game.sun.x - this.x, 0.1)*0.05);
         }
         this.speedX = speedToSun - this.windResistance;
 
@@ -83,7 +83,7 @@ class Cloud extends Phaser.Sprite {
     }
 
     updateWind() {
-        this.windResistance = 2;
+        this.windResistance = 0.3;
     }
 }
 

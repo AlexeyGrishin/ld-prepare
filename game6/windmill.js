@@ -25,6 +25,7 @@ class Windmill extends Phaser.Sprite {
             wm.rotatingSpeed = 0;
             wm.phase = 0;
             game.physics.arcade.enable(wm);
+            wm.body.setSize(4,4,wm.width/2-1,wm.height/2-1)
         }
 
     }

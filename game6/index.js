@@ -53,7 +53,7 @@ function addOwl(gx, gy) {
     let target = null;
     let retPoint = {x: r(gx), y: r(gy)};
 
-    owl.speed = 48;
+    owl.speed = 32;
     owl.speedFactor = 1;
     owl.windForce = {x:0, y:0};
 
@@ -161,7 +161,7 @@ function addMouse(gx, gy) {
     let state = 'idle';
     let hasCheese = false;
 
-    const SPEED = 48;
+    const SPEED = 32;
 
     function tryToGetCheese() {
         state = 'tocheese';
