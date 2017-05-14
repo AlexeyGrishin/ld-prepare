@@ -6,13 +6,14 @@
     <script src="../game6/phaser.js"></script>
 </head>
 <body>
+<div id="fps"></div>
 <div id="container"></div>
 
 <script src="bitmap.js"></script>
 <script>
     var game = new Phaser.Game({
         width: 1024,
-        height: 1024,
+        height: 4096,
         renderer: Phaser.AUTO,
         parent: 'container',
         antialias: false,
