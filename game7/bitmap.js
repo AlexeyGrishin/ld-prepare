@@ -22,5 +22,5 @@ function update() {
 }
 
 function debugRender1() {
-    game.debug.text(game.time.fps, game.camera.width/2,game.camera.height-10);
+    game.debug.text(game.time.fps, game.camera.width/2,25);
 }
