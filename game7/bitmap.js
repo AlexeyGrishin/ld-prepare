@@ -152,81 +152,111 @@ function create() {
         Z: game.input.keyboard.addKey(Phaser.Keyboard.Z),
         X: game.input.keyboard.addKey(Phaser.Keyboard.X)
     }
+    updateCellsToUpdate();
+
 }
+
+function updateCellsToUpdate() {
+   cellsToUpdate = [];
+    grid.forEach((val, gx, gy, cell, x, y) => {
+       if (val) cellsToUpdate.push({cell, x, y, gx, gy});
+    });
+}
+
 let pix = 0;
+let cellsToUpdate = [];
 
 function update() {
-    //if (pix%10 == 0) {
-        //bitmap.setPixel((pix % 1024), (pix / 1024) | 0, 255, 0, 0);
-    //}
-    //bitmap.ctx.fillRect(pix%W, (pix/W)|0, 1, 1);
-    //bitmap.dirty = true;
     let mb = bitmap;
 
     let gx = (game.input.activePointer.x/PIX)|0, gy = (game.input.activePointer.y/PIX)|0;
 
     if (buttons.Z.justDown) {
         grid.set(gx, gy, {i: true});
+        updateCellsToUpdate();
     }
     if (buttons.X.justDown) {
         grid.set(gx, gy, undefined);
+        updateCellsToUpdate();
     }
 
+    let recoloredPerUpdate = 0;
+    const MAX_RECOLOR_PER_UPDATE = 40;
+    const MAX_CELLS_TO_UPDATE = 240;
+    let updatedCells = 0;
+
+    //todo: queue for recolor, queue for cells update - to move in time
 
     grid.forEach((val, gx, gy, cell, x, y) => {
         if (cell.dirty) {
-            //let {bitmap, sx, sy} = mb._bitmap(x, y);
-            /*
-            if (val) {
-                //draw cell
-                for (let dx = 0; dx < PIX; dx++) {
-                    for (let dy = 0; dy < PIX; dy++) {
-                        bitmap.setPixel(x-sx+dx, y-sy+dy, 255, 0, 0, false);
-                    }
-                }
-                console.log('draw  on ', gx, gy);
-            } else {
-                for (let dx = 0; dx < PIX; dx++) {
-                    for (let dy = 0; dy < PIX; dy++) {
-                        bitmap.setPixel(x-sx+dx, y-sy+dy, 0, 0, 0, false);
-                    }
-                }
-                console.log('erase on ', gx, gy);
-                //undraw cell
-            }
-            mb.setDirty(bitmap);
-            */
             let updated = false;
             for (let ax = -1; ax <= +1; ax++) {
-                //let ay = 0;
                 for (let ay = -1; ay <= +1; ay++) {
                     let acell = grid.getCell(gx+ax, gy+ay);
                     updated = updated || updateCell(mb, grid, gx+ax, gy+ay, x+ax*PIX, y+ay*PIX, acell, acell.value)
+                    updatedCells++;
                 }
             }
-            updated = updated || recolorCell(mb,  x, y);
+            if (updated) cell._recolor = true;
             cell.dirty = updated;
         }
+        if (cell._recolor && recoloredPerUpdate < MAX_RECOLOR_PER_UPDATE && game.rnd.frac() < 0.5) {
+          recoloredPerUpdate++;        
+          let recolorAgain = recolorCell(mb, x, y);
+          if (!recolorAgain) {
+            cell._recolor = false;
+          } else {
+            cell._recolor = true;
+            for (let ax = -1; ax <= +1; ax++) {
+                for (let ay = -1; ay <= +1; ay++) {
+                    let acell = grid.getCell(gx+ax, gy+ay); 
+                    acell._recolor = true;
+                }
+            }
+          }
+        }
     });
+
+    let maxLoop = cellsToUpdate.length; iLoop = 0;
+
+            //todo: need to update each 400ms with different shift, 
+    while (updatedCells < MAX_CELLS_TO_UPDATE) { break;
+       let cell2u = cellsToUpdate.pop(); 
+       cellsToUpdate.unshift(cell2u);
+       iLoop++; if (iLoop >= maxLoop) break;
+       let {gx,gy,x,y,cell} = cell2u;
+       if (!cell.value) continue;
+
+       updateCell(mb, grid, gx, gy, x, y, cell, cell.value);
+       updatedCells++;
+       
+    }
 
     mb.update();
 
     pix++;
 }
 
+let neiColors = [];
+
+const RADIUS = 2;
+
+for (let x = -RADIUS; x <= RADIUS; x++) {
+    for (let y = -RADIUS; y <= RADIUS; y++) {
+         let nei = {x, y, color: {}};
+         if (Math.hypot(x,y) <= RADIUS) neiColors.push(nei);
+    }
+}
+
+
 function recolorCell(mb, x, y) {
     let recolored = false;
-    let color = {}, neiColors = [
-        {x:+1, y:0, color: {}},
-        {x:+1, y:+1, color: {}},
-        {x:0, y:+1, color: {}},
-        {x:-1, y:+1, color: {}},
-        {x:-1, y:0, color: {}},
-        {x:-1, y:-1, color: {}},
-        {x:0, y:-1, color: {}},
-        {x:+1, y:-1, color: {}},
-    ];
+    let color = {};
+    const RSTEP = 12;
+    const SSTEP = 4;
+    const MAX_UPDATES = 200;
     let updates = [];
+    outer:
     for (let xx = 0; xx < PIX; xx++) {
         for (let yy = 0; yy < PIX; yy++) {
             let px = x + xx;
@@ -245,11 +275,12 @@ function recolorCell(mb, x, y) {
             if (minR == 0) {
                 r = 255;
             } else {
-                r = maxR - 10;
+                r = Math.max(RSTEP, maxR - RSTEP);
             }
             if (color.r != r) {
-                updates.push({x: px, y: py, r: r});
+                updates.push({x: px, y: py, r: color.r + SSTEP*Math.sign(r - color.r)});
             }
+            if (updates.length > MAX_UPDATES) break outer;
         }
     }
     recolored = updates.length > 0;
@@ -303,8 +334,13 @@ function updateCell(mb, grid, gx, gy, x, y, item, growing) {
 
             mb.getPixel(px, py, color);
 
+            let isLeft = xx <= PIX_B1 +  ((Math.cos(yy+gx+gy)*1)|0) + ((Math.sin(Math.cos(yy)+xx+(game.time.time/400))*2)|0);
+            let isRight = xx >= PIX_B2 + ((Math.sin(yy-gx+gy)*2)|0) + ((Math.sin(Math.sin(yy)+xx+(game.time.time/400))*2)|0);
+            let isUp = yy <= PIX_B1 +    ((Math.cos(xx-gx-gy)*1)|0) + ((Math.cos(Math.cos(xx)+yy+(game.time.time/400))*1)|0);
+            let isDown = yy >= PIX_B2 +  ((Math.cos(xx+gx-gy)*2)|0) + ((Math.sin(Math.cos(xx)+yy+(game.time.time/400))*1)|0);
+
             //middle shall be drawn anywhere
-            if (!growing || (xx >= PIX_B1 && xx <= PIX_B2 && yy >= PIX_B1 && yy <= PIX_B2)) {
+            if (!growing || (!isLeft && !isRight && !isUp && !isDown)) {
 
                 //first middle point
                 if (xx == PIX_MID && yy == PIX_MID && growing && !color.r) {
@@ -327,13 +363,13 @@ function updateCell(mb, grid, gx, gy, x, y, item, growing) {
                     updates.push({x: px, y: py, color: {r:0, g:0, b:0}});
                 }
 
-            } else if (xx <= PIX_B1) {
+            } else if (isLeft) {
                 checkCell(-1, 0, px, py, color);
-            } else if (xx >= PIX_B2) {
+            } else if (isRight) {
                 checkCell(+1, 0, px, py, color);
-            } else if (yy <= PIX_B1) {
+            } else if (isUp) {
                 checkCell(0, -1, px, py, color);
-            } else if (yy >= PIX_B2) {
+            } else if (isDown) {
                 checkCell(0, +1, px, py, color);
             }
 
