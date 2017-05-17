@@ -1,9 +1,10 @@
 function preload() {
     game.time.advancedTiming = true;
 }
+const MIN_SIZE = 256;
 
 class MultiBitmap {
-    constructor(width, height, sw = 256, sh = 256) {
+    constructor(width, height, sw = MIN_SIZE, sh = MIN_SIZE, sprite = true) {
         this.width = width;
         this.height = height;
         this.sw = sw;
@@ -18,7 +19,7 @@ class MultiBitmap {
                     bitmap,
                     sx: c*sw,
                     sy: r*sh,
-                    sprite: game.add.sprite(c*sw, r*sh, bitmap)
+                    sprite: game.add.sprite(sprite ? c*sw : -1000, r*sh, bitmap)
                 });
             }
         }
@@ -98,10 +99,13 @@ class Grid {
             let col = [];
             this.grid.push(col);
             for (let r = 0; r < H/PIX;r++) {
-                col.push({value: undefined});
+                col.push({value: undefined, _state: {}});
             }
         }
     }
+
+    get width() { return this.grid.length;}
+    get height() { return this.grid[0].length;}
 
     get(gx, gy) {
         if (gx < 0 || gx >= this.grid.length || gy < 0 || gy >= this.grid[gx].length) return undefined;
@@ -134,268 +138,381 @@ class Grid {
     }
 }
 
+let particles = [];
 
-let bitmap, grid;
+
+let bitmap, grid, growingBitmap, tempCanvas;
 const W = 1024, H = 4096, PIX = 16;
 const PIX_MID = PIX/2;
 const PIX_B1 = PIX_MID-PIX/4, PIX_B2 = PIX_MID+PIX/4;
 let buttons;
+
+let timer;
+let inited = false;
+let SX = 12, SY = 12;
 function create() {
+    game.stage.backgroundColor = '#cccccc';
+
     bitmap = new MultiBitmap(W, H);
-    bitmap.fill(0,0,0);
+    //bitmap.fill(0,0,0);
     bitmap.updateAll();
-    bitmap.forEach(b => b.ctx.fillStyle = "red");
+
+    growingBitmap = new MultiBitmap(W, H, MIN_SIZE, MIN_SIZE, false);
+
+    tempCanvas = (() => {let c = document.createElement('canvas'); c.width=MIN_SIZE; c.height=MIN_SIZE; c.context = c.ctx = c.getContext('2d'); return c;})();
+
     grid = new Grid();
 
-    grid.set(1, 1, {i: true});
+    grid.set(SX, SY, {i: true});
     buttons = {
         Z: game.input.keyboard.addKey(Phaser.Keyboard.Z),
         X: game.input.keyboard.addKey(Phaser.Keyboard.X)
-    }
-    updateCellsToUpdate();
+    };
+    prepareParticles();
 
-}
-
-function updateCellsToUpdate() {
-   cellsToUpdate = [];
-    grid.forEach((val, gx, gy, cell, x, y) => {
-       if (val) cellsToUpdate.push({cell, x, y, gx, gy});
-    });
+    timer = game.time.create();
+    timer.loop(2000, () => {
+        let toAdd = [];
+        grid.forEach((val, x, y) => {
+            if (!val) {
+                let total = around(x, y).total;
+                if (total >= 2 && total < 7 && Math.random() < 0.9) {
+                    toAdd.push({x,y});
+                }
+            }
+        });
+        toAdd.forEach(({x,y}) => grid.set(x, y, {i:true}))
+    }, this);
+    //timer.start();
 }
 
 let pix = 0;
-let cellsToUpdate = [];
+let recolor = createRecolorer();
+
+let toRecolor = [];
 
 function update() {
+    if (!inited && grid.getCell(SX, SY)._state.growing === true) {
+        grid.set(SX+1, SY, {i: true});
+        inited = true;
+        //timer.start();
+    }
+
     let mb = bitmap;
 
-    let gx = (game.input.activePointer.x/PIX)|0, gy = (game.input.activePointer.y/PIX)|0;
+    let gx = (game.input.activePointer.x / PIX) | 0, gy = (game.input.activePointer.y / PIX) | 0;
 
     if (buttons.Z.justDown) {
         grid.set(gx, gy, {i: true});
-        updateCellsToUpdate();
     }
     if (buttons.X.justDown) {
         grid.set(gx, gy, undefined);
-        updateCellsToUpdate();
     }
-
-    let recoloredPerUpdate = 0;
-    const MAX_RECOLOR_PER_UPDATE = 40;
-    const MAX_CELLS_TO_UPDATE = 240;
-    let updatedCells = 0;
-
-    //todo: queue for recolor, queue for cells update - to move in time
 
     grid.forEach((val, gx, gy, cell, x, y) => {
         if (cell.dirty) {
-            let updated = false;
-            for (let ax = -1; ax <= +1; ax++) {
-                for (let ay = -1; ay <= +1; ay++) {
-                    let acell = grid.getCell(gx+ax, gy+ay);
-                    updated = updated || updateCell(mb, grid, gx+ax, gy+ay, x+ax*PIX, y+ay*PIX, acell, acell.value)
-                    updatedCells++;
-                }
-            }
-            if (updated) cell._recolor = true;
+            let updated = updateCell(mb, cell, x, y, gx, gy);
             cell.dirty = updated;
         }
-        if (cell._recolor && recoloredPerUpdate < MAX_RECOLOR_PER_UPDATE && game.rnd.frac() < 0.5) {
-          recoloredPerUpdate++;        
-          let recolorAgain = recolorCell(mb, x, y);
-          if (!recolorAgain) {
-            cell._recolor = false;
-          } else {
-            cell._recolor = true;
-            for (let ax = -1; ax <= +1; ax++) {
-                for (let ay = -1; ay <= +1; ay++) {
-                    let acell = grid.getCell(gx+ax, gy+ay); 
-                    acell._recolor = true;
-                }
-            }
-          }
+        if (!cell._coords) cell._coords = {x,y};
+        if (cell.value && toRecolor.indexOf(cell._coords) == -1) {
+            toRecolor.push(cell._coords);
         }
     });
-
-    let maxLoop = cellsToUpdate.length; iLoop = 0;
-
-            //todo: need to update each 400ms with different shift, 
-    while (updatedCells < MAX_CELLS_TO_UPDATE) { break;
-       let cell2u = cellsToUpdate.pop(); 
-       cellsToUpdate.unshift(cell2u);
-       iLoop++; if (iLoop >= maxLoop) break;
-       let {gx,gy,x,y,cell} = cell2u;
-       if (!cell.value) continue;
-
-       updateCell(mb, grid, gx, gy, x, y, cell, cell.value);
-       updatedCells++;
-       
+    if (toRecolor.length) {
+        let { x, y} = toRecolor.shift();
+        let {bitmap, sx, sy} = mb._bitmap(x, y);
+        bitmap.update(0, 0, bitmap.width, bitmap.height);
+        recolor(mb, x, y);
     }
-
     mb.update();
 
-    pix++;
+
 }
 
-let neiColors = [];
+function aroundBase(getter, gx, gy) {
+    let res = {
+        total: 0,
+        list: []
+    };
+    for (let ax = -1; ax <= 1; ax++) {
+        let r = {};
+        res[ax] = r;
+        for (let ay = -1; ay <= 1; ay++) {
+            let val = r[ay] = getter(gx+ax, gy+ay);
+            if (val && (ay != 0 || ax != 0)) {
+                res.total++;
+                res.list.push({ax, ay, val});
+            }
+        }
+    }
+    return res;
+}
 
-const RADIUS = 2;
+function around(gx, gy) {
+    return aroundBase((gx,gy) => grid.get(gx, gy), gx, gy);
+}
 
-for (let x = -RADIUS; x <= RADIUS; x++) {
-    for (let y = -RADIUS; y <= RADIUS; y++) {
-         let nei = {x, y, color: {}};
-         if (Math.hypot(x,y) <= RADIUS) neiColors.push(nei);
+function aroundGrown(gx, gy) {
+    return aroundBase((gx, gy) => {
+        let cell = grid.getCell(gx, gy);
+        return cell && cell._state && cell._state.growing === true
+    }, gx, gy)
+}
+
+
+function prepareParticles() {
+    for (let i = 0; i < 10; i++) {
+        let canvas1 = document.createElement('canvas');
+        document.body.appendChild(canvas1);
+        canvas1.width = PIX;
+        canvas1.height = PIX;
+        let context = canvas1.getContext('2d');
+        //context.globalAlpha = 1;// + 0.1*game.rnd.frac();
+        context.fillStyle = `rgb(${game.rnd.integerInRange(250,255)},0,50)`;
+        context.beginPath();
+        context.arc(PIX / 2, PIX / 2, PIX / 8 * 2, 0, Math.PI * 2);
+        context.fill();
+        context.fillStyle = 'rgba(255,0,255,255)';
+        context.globalCompositeOperation = 'destination-out';
+        context.beginPath();
+        for (let j = 0; j < i*10; j++) {
+            context.rect(
+                game.rnd.integerInRange(0, PIX-1),
+                game.rnd.integerInRange(0, PIX-1),
+                game.rnd.integerInRange(1,2),
+                game.rnd.integerInRange(1,2)
+            );
+        }
+        context.fill();
+        //todo: add some noise
+        canvas1.cache = {};
+        particles.push(canvas1);
     }
 }
 
+function drawParticle(context, x, y, particle, mode) {
+    particle = particle || game.rnd.pick(particles);
+    if (!mode || mode.scale == 1) {
+        context.drawImage(particle, x | 0, y | 0);
+    } else if (mode.scale) {
 
-function recolorCell(mb, x, y) {
-    let recolored = false;
-    let color = {};
-    const RSTEP = 12;
-    const SSTEP = 4;
-    const MAX_UPDATES = 200;
-    let updates = [];
-    outer:
-    for (let xx = 0; xx < PIX; xx++) {
-        for (let yy = 0; yy < PIX; yy++) {
-            let px = x + xx;
-            let py = y + yy;
+        if (!particle.cache[mode.scale]) {
+            let oldW = PIX, oldH = PIX, oldMiddle = PIX/2;
+            let newW = (oldW*mode.scale) |0, newH = (oldH*mode.scale)|0;
+            let newMiddle = (newW/2)|0;
+            let diff = newMiddle - oldMiddle;
+            //todo: cache sized particles
+            //console.log(mode, ': ', x,y, '->', newX, newY, newW, newH);
 
-            mb.getPixel(px, py, color);
-            if (color.r == 0) continue;
-            let maxR = color.r, minR = color.r;
-            for (let ni = 0; ni < neiColors.length; ni++) {
-                let nc = neiColors[ni];
-                mb.getPixel(px+nc.x, py+nc.y, nc.color);
-                maxR = Math.max(maxR, nc.color.r);
-                minR = Math.min(minR, nc.color.r);
-            }
-            let r;
-            if (minR == 0) {
-                r = 255;
+            let c = document.createElement('canvas');
+            c.width = PIX;
+            c.height = PIX;
+            let ctx = c.getContext('2d');
+
+            ctx.drawImage(particle, 0, 0, oldW, oldH, -diff, -diff, newW, newH);
+            particle.cache[mode.scale] = c;
+        }
+        context.drawImage(particle.cache[mode.scale], x|0, y|0);
+
+
+    }
+    //todo: different particles. pre-print and now copy
+}
+
+
+function updateCell(mb, cell, x, y, gx, gy) {
+    let {sx, sy, bitmap} = mb._bitmap(x, y);
+    let resultBitmap = bitmap;
+    bitmap = tempCanvas;
+    bitmap.context.clearRect(0,0,bitmap.width,bitmap.height);
+
+    let ar = aroundGrown(gx, gy);
+    if (!cell._state) {
+        cell._state = {};
+    }
+    const SPEED = 2;
+    if (cell.value) {
+        //growing
+        if (!cell._state.growing) {
+            //bitmap.context.strokeStyle = 'red';
+            //bitmap.context.strokeRect(x-sx,y-sy,PIX,PIX);
+            //need to init
+            if (ar.total == 0) {
+                //console.log('alone');
+                cell._state.growing = [{
+                   particle: particles[0],
+                    x: x,
+                    y: y,
+                    dx: 0,
+                    dy: 0,
+                    stepsLeft: PIX/2,
+                    skipLeft: 0,
+                    size: (stepsLeft) => (1-stepsLeft/PIX*2)*1
+                }];
+                //for now just put cell
+                //drawParticle(bitmap.ctx, x-sx, y-sy);
+                /*bitmap.context.fillStyle = '#ff0000';
+                bitmap.context.beginPath();
+                bitmap.context.arc(x-sx+PIX/2, y-sy+PIX/2, PIX/8*3, 0, Math.PI*2);
+                bitmap.context.fill();
+
+                cell._state.growing = true;*/
+                //bitmap.update(0, 0, bitmap.width, bitmap.height);
+                bitmap.dirty = true;
             } else {
-                r = Math.max(RSTEP, maxR - RSTEP);
+                let ps = [];
+                ar.list.forEach(({ax,ay,val}) => {
+                   ps.push({
+                       x: x+ax*PIX+game.rnd.integerInRange(-1,1),
+                       y: y+ay*PIX+game.rnd.integerInRange(-1,1),
+                       dx: -ax,
+                       dy: -ay,
+                       stepsLeft: PIX+2,
+                       particle: game.rnd.pick(particles),
+                       skipLeft: 0,
+                       size: (stepsLeft) => { return (Math.abs(((stepsLeft-2)/(PIX) - 0.5)))*2*0.3 + 0.7}
+                   });
+                    /*ps.push({
+                        x: x+ax*PIX+game.rnd.integerInRange(-1,1),
+                        y: y+ay*PIX+game.rnd.integerInRange(-1,1),
+                        dx: -ax*2,
+                        dy: -ay*2,
+                        stepsLeft: PIX/2,
+                        particle: game.rnd.pick(particles),
+                        skipLeft: 0
+                    });
+                    ps.push({
+                        x: x+ax*PIX+game.rnd.integerInRange(-1,1),
+                        y: y+ay*PIX+game.rnd.integerInRange(-1,1),
+                        dx: -ax,
+                        dy: -ay,
+                        stepsLeft: PIX,
+                        particle: game.rnd.pick(particles),
+                        skipLeft: 0
+                    });*/
+                });
+                cell._state.growing = ps;
             }
-            if (color.r != r) {
-                updates.push({x: px, y: py, r: color.r + SSTEP*Math.sign(r - color.r)});
-            }
-            if (updates.length > MAX_UPDATES) break outer;
+
         }
-    }
-    recolored = updates.length > 0;
-    for (let i = 0; i < updates.length; i++) {
-        let {x,y, r} = updates[i];
-        //console.log('draw', x, y, color);
-        mb.setPixel(x, y, r, 0, 0, false);
+        if ( cell._state.growing !== true) {
+            cell._state.growing.forEach(part => {
+                //todo: between-canvases
+                if (part.skipLeft == 0) {
+                    part.skipLeft = SPEED;
+                } else {
+                    part.skipLeft--;
+                    return;
+                }
+               drawParticle(bitmap.ctx, part.x-sx, part.y-sy, part.particle, {scale: part.size(part.stepsLeft)});
+                //debug
+                //bitmap.context.strokeStyle = 'black';
+                //bitmap.context.moveTo(100+part.x-sx,part.y-sy);
+               part.x += part.dx + Math.sign(part.dx)*game.rnd.pick([0,0,0,0,0,-1,1]);
+               part.y += part.dy + Math.sign(part.dy)*game.rnd.pick([0,0,0,0,0,-1,1]);
+                //bitmap.context.lineTo(100+part.x-sx,part.y-sy);
+                //bitmap.context.stroke();
+               part.stepsLeft--;
+               if (part.stepsLeft == 0) {
+                   cell._state.growing = true;
+                   //bitmap.update(0, 0, bitmap.width, bitmap.height);
+               }
+            });
+            bitmap.dirty = true;
+        }
+        delete cell._state.reducing;
+    } else {
+        if (!cell._state.reducing) {
+            if (ar.total == 0) {
+                //todo: animate;
+
+            }
+            bitmap.ctx.fillStyle = 'rgba(255,0,0,0)';
+            bitmap.ctx.fillRect(x-sx, y-sy, PIX, PIX);
+            cell._state.reducing = true;
+            bitmap.dirty = true;
+            //bitmap.update(0, 0, bitmap.width, bitmap.height);
+            delete cell._state.growing;
+        }
+
     }
 
-    return recolored;
+    if (bitmap.dirty) {
+        bitmap.ctx.drawImage(resultBitmap.canvas, 0, 0);
+        resultBitmap.ctx.drawImage(bitmap, 0, 0);
+        resultBitmap.dirty = true;
+    }
+
+        //bitmap.ctx.fillStyle = cell.value ? "red" : "black";
+    //bitmap.ctx.fillRect(x-sx,y-sy,PIX,PIX);
+
+
+    return true;
 }
 
-function updateCell(mb, grid, gx, gy, x, y, item, growing) {
-    let changedSomething = false;
-    let cellCache = item._cache;
-    if (!cellCache) {
-        cellCache = {};
-        item._cache = cellCache;
-    }
-    var color = {}, nearColor = {};
 
-    let updates = [];
+function createRecolorer() {
 
-    function checkCell(dx, dy, px, py, color) {
-        //if dx = -1 - check neibhor on left
-        let hasNeighbor = growing ? grid.get(gx+dx, gy+dy) : false;
+    let neiColors = [];
 
-        if (hasNeighbor && !color.r) {
-           //check pixel on right. if red - turn this tor red too
-            mb.getPixel(px-dx, py-dy, nearColor);
-            if (nearColor.r) {
-                updates.push({x: px, y: py, color: {r:255,g:0,b:0}})
-            }
-        }
+    const RADIUS = 1;
 
-        if (!hasNeighbor && color.r) {
-            //check pixel on left
-            //console.log('no nei, has pix');
-            mb.getPixel(px+dx, py+dy, nearColor);
-            if (!nearColor.r) {
-                updates.push({x:px, y:py, color: {r:0,g:0,b:0}});
-                //console.log('delete', px, py);
-            }
+    for (let x = -RADIUS; x <= RADIUS; x++) {
+        for (let y = -RADIUS; y <= RADIUS; y++) {
+            let nei = {x, y, color: {}};
+            if (Math.hypot(x,y) <= RADIUS) neiColors.push(nei);
         }
     }
 
-    for (let xx = 0; xx < PIX; xx++) {
-        for (let yy = 0; yy < PIX; yy++) {
-            let px = x + xx;
-            let py = y + yy;
+    console.log(neiColors);
 
-            mb.getPixel(px, py, color);
+    function recolorCell(mb, x, y) {
+        let recolored = false;
+        let color = {};
+        const RSTEP = 12;
+        const SSTEP = 4;
+        const MAX_UPDATES = 200;
+        let updates = [];
+        outer:
+            for (let xx = 0; xx < PIX; xx++) {
+                for (let yy = 0; yy < PIX; yy++) {
+                    let px = x + xx;
+                    let py = y + yy;
 
-            let isLeft = xx <= PIX_B1 +  ((Math.cos(yy+gx+gy)*1)|0) + ((Math.sin(Math.cos(yy)+xx+(game.time.time/400))*2)|0);
-            let isRight = xx >= PIX_B2 + ((Math.sin(yy-gx+gy)*2)|0) + ((Math.sin(Math.sin(yy)+xx+(game.time.time/400))*2)|0);
-            let isUp = yy <= PIX_B1 +    ((Math.cos(xx-gx-gy)*1)|0) + ((Math.cos(Math.cos(xx)+yy+(game.time.time/400))*1)|0);
-            let isDown = yy >= PIX_B2 +  ((Math.cos(xx+gx-gy)*2)|0) + ((Math.sin(Math.cos(xx)+yy+(game.time.time/400))*1)|0);
-
-            //middle shall be drawn anywhere
-            if (!growing || (!isLeft && !isRight && !isUp && !isDown)) {
-
-                //first middle point
-                if (xx == PIX_MID && yy == PIX_MID && growing && !color.r) {
-                    updates.push({x: px, y: py, color: {r:255, g:0, b:0}});
-                    continue;
+                    mb.getPixel(px, py, color);
+                    if (color.r == 0) continue;
+                    let maxR = color.r, minR = color.r;
+                    for (let ni = 0; ni < neiColors.length; ni++) {
+                        let nc = neiColors[ni];
+                        mb.getPixel(px+nc.x, py+nc.y, nc.color);
+                        maxR = Math.max(maxR, nc.color.r);
+                        minR = Math.min(minR, nc.color.r);
+                    }
+                    let r;
+                    if (minR == 0) {
+                        r = 255;
+                    } else {
+                        r = Math.max(RSTEP, maxR - RSTEP);
+                    }
+                    if (Math.abs(color.r - r) > SSTEP) {
+                        updates.push({x: px, y: py, r: Math.floor(color.r + SSTEP*Math.sign(r - color.r))});
+                    }
+                    if (updates.length > MAX_UPDATES) break outer;
                 }
-                if (xx == PIX_MID && yy == PIX_MID && !growing && color.r) {
-                    updates.push({x: px, y: py, color: {r:0, g:0, b:0}});
-                    continue;
-                }
-                let neiCount = !!mb.getPixel(px+1, py).r
-                    + !!mb.getPixel(px-1, py).r
-                    + !!mb.getPixel(px, py+1).r
-                    + !!mb.getPixel(px, py-1).r;
-                //console.log(xx, yy, neiCount);
-                if (growing && neiCount > 0 && !color.r) {
-                    updates.push({x: px, y: py, color: {r:255, g:0, b:0}});
-                }
-                if (!growing && neiCount < 4 && color.r) {
-                    updates.push({x: px, y: py, color: {r:0, g:0, b:0}});
-                }
-
-            } else if (isLeft) {
-                checkCell(-1, 0, px, py, color);
-            } else if (isRight) {
-                checkCell(+1, 0, px, py, color);
-            } else if (isUp) {
-                checkCell(0, -1, px, py, color);
-            } else if (isDown) {
-                checkCell(0, +1, px, py, color);
             }
-
-            //checkCell(+1, 0, px, py, color);
-            //
-            //checkCell(0, +1, px, py, color);
-            //checkCell(0, -1, px, py, color);
+        recolored = updates.length > 0;
+        for (let i = 0; i < updates.length; i++) {
+            let {x,y, r} = updates[i];
+            //console.log('draw', x, y, r);
+            mb.setPixel(x, y, r, 0, 0, false);
         }
+
+        return recolored;
     }
 
-    if (updates.length) changedSomething = true;
-    for (let i = 0; i < updates.length; i++) {
-        let {x,y, color} = updates[i];
-        let {r,g,b} = color;
-        //console.log('draw', x, y, color);
-        mb.setPixel(x, y, r, g, b, false);
-    }
-
-    //1. create 9x9 matrix (or 16x16) of desired result. todo: cache it?
-    //2. find border (red pixels surrounded with black, or edges)
-    //3. check where to grow or shrink - and do that (with some probability)
-    //4. re-color (make darker)
-
-    return changedSomething;
+    return recolorCell;
 }
-
 
 let fpsEl = document.querySelector("#fps");
 function debugRender1() {
