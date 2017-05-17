@@ -1,0 +1,35 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Performance</title>
+    <script src="../game6/phaser.js"></script>
+    <style>
+        a {
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+<div id="links">
+</div>
+<div id="fps"></div>
+<div id="container"></div>
+
+<script src="perf.js"></script>
+<script>
+    var game = new Phaser.Game({
+        width: 512,
+        height: 512,
+        renderer: Phaser.AUTO,
+        parent: 'container',
+        antialias: false,
+        state: {preload: preload,
+            create: create,
+            update: update,
+            render: debugRender1 }
+    });
+
+</script>
+</body>
+</html>
