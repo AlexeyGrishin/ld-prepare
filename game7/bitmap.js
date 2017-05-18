@@ -8,7 +8,7 @@ const REGION_SIZE = 128;
 let options = initOptions({
     doRecolor: ["boolean", true],
     useRegions: ["boolean", true],
-    regionsPerTick: ["int", 32],
+    regionsPerTick: ["int", 8],
     recolorMode: ["int", 1],
     recolorRadius: ["int", 2],
     spawnDelay: ["int", 1000]
@@ -625,8 +625,8 @@ function createRecolorer() {
     let aroundCache = {};
 
     function recolorAll(mb, bitmap, sx, sy, width, height, pad = 0) {
-        const RSTEP = 12;
-        const SSTEP = 4;
+        const RSTEP = 16;
+        const SSTEP = 8;
 
         let data = bitmap.imageData.data;
         let len = data.length;

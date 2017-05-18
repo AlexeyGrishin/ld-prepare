@@ -12,6 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "babel": "^6.5.2",
+    "babel-preset-es2015": "^6.24.1",
     "babelify": "^7.3.0",
     "jimp": "^0.2.27",
     "mathjs": "^3.8.1",

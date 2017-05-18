@@ -14,7 +14,7 @@ var REGION_SIZE = 128;
 var options = initOptions({
     doRecolor: ["boolean", true],
     useRegions: ["boolean", true],
-    regionsPerTick: ["int", 32],
+    regionsPerTick: ["int", 8],
     recolorMode: ["int", 1],
     recolorRadius: ["int", 2],
     spawnDelay: ["int", 1000]
@@ -714,8 +714,8 @@ function createRecolorer() {
     function recolorAll(mb, bitmap, sx, sy, width, height) {
         var pad = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : 0;
 
-        var RSTEP = 12;
-        var SSTEP = 4;
+        var RSTEP = 16;
+        var SSTEP = 8;
 
         var data = bitmap.imageData.data;
         var len = data.length;
