@@ -1,7 +1,19 @@
 function preload() {
     game.time.advancedTiming = true;
 }
-const MIN_SIZE = 256;
+const MIN_SIZE = 1024;
+
+const REGION_SIZE = 128;
+
+let options = initOptions({
+    doRecolor: ["boolean", true],
+    useRegions: ["boolean", true],
+    regionsPerTick: ["int", 32],
+    recolorMode: ["int", 1],
+    recolorRadius: ["int", 2],
+    spawnDelay: ["int", 1000]
+});
+
 
 class MultiBitmap {
     constructor(width, height, sw = MIN_SIZE, sh = MIN_SIZE, sprite = true) {
@@ -24,6 +36,14 @@ class MultiBitmap {
             }
         }
         this.dirtyBitmaps = [];
+
+        //todo: for first bitmap only
+        this.regions = [];
+        for (let x = 0; x < sw; x += REGION_SIZE/2) {
+            for (let y = 0; y < sh; y+= REGION_SIZE/2) {
+                this.regions.push({sx: x, sy: y, w: REGION_SIZE, h: REGION_SIZE});
+            }
+        }
     }
     _bitmap(x,y) {
         return this.bitmaps[(y/this.sh)|0][(x/this.sw)|0];
@@ -142,7 +162,7 @@ let particles = [];
 
 
 let bitmap, grid, growingBitmap, tempCanvas;
-const W = 1024, H = 4096, PIX = 16;
+const W = 1024, H = 1024, PIX = 16;
 const PIX_MID = PIX/2;
 const PIX_B1 = PIX_MID-PIX/4, PIX_B2 = PIX_MID+PIX/4;
 let buttons;
@@ -171,7 +191,7 @@ function create() {
     prepareParticles();
 
     timer = game.time.create();
-    timer.loop(500, () => {
+    timer.loop(options.spawnDelay, () => {
         let toAdd = [];
         grid.forEach((val, x, y) => {
             if (!val) {
@@ -189,14 +209,17 @@ function create() {
 let pix = 0;
 let recolor = createRecolorer();
 
-let toRecolor = [];
-const MAX_RECOLOR = 10;
+let toRecolor = [], regionsToRecolor;
+const MAX_RECOLOR = options.useRegions ? options.regionsPerTick : 1;
 
 function update() {
+    if (!regionsToRecolor) {
+        regionsToRecolor = bitmap.regions.slice();
+    }
     if (!inited && grid.getCell(SX, SY)._state.growing === true) {
         grid.set(SX+1, SY, {i: true});
         inited = true;
-        timer.start();
+        //timer.start();
     }
 
     let mb = bitmap;
@@ -211,7 +234,7 @@ function update() {
     }
 
     growingBitmap.forEach((bm) => {
-       bm._inited = false;
+        bm._inited = false;
     });
     mb.forEach((bm) => {
         bm._updated = false;
@@ -224,29 +247,48 @@ function update() {
             cell.dirty = updated;
             updatedCount++;
         }
-        if (!cell._coords) cell._coords = {x,y};
-        if (cell.value && toRecolor.indexOf(cell._coords) == -1) {
-            toRecolor.push(cell._coords);
+        //todo: optimize. it shall not be in per-cell loop, it is about bitmaps
+        let {bitmap, sx, sy} = mb._bitmap(x, y);
+        if ((cell.value || cell.dirty) && options.doRecolor && !options.useRegions && !bitmap._scheduledForRecolor) {
+            toRecolor.push({bitmap, sx, sy});
+            bitmap._scheduledForRecolor = true;
         }
     });
     growingBitmap.forEach((bm, r, c) => {
         if (bm._inited) {
             let resultBitmap = mb.bitmaps[r][c].bitmap;
             bm.ctx.drawImage(resultBitmap.canvas, 0, 0);
+            resultBitmap.ctx.globalCompositeOperation = "source-over";
             resultBitmap.ctx.drawImage(bm.canvas, 0, 0);
             resultBitmap.dirty = true;
         }
     });
-    for (let i = 0; i < MAX_RECOLOR && i < toRecolor.length; i++) {
-        let { x, y} = toRecolor.shift();
-        let {bitmap, sx, sy} = mb._bitmap(x, y);
-        if (!bitmap._updated) {
-            bitmap.update(0, 0, bitmap.width, bitmap.height);
-            bitmap._updated = true;
+    if (options.doRecolor) {
+        if (!options.useRegions) {
+            for (let i = 0; i < MAX_RECOLOR && i < toRecolor.length; i++) {
+                let {bitmap, sx, sy} = toRecolor.shift();
+                bitmap._scheduledForRecolor = false;
+                if (!bitmap._updated) {
+                    bitmap.update(0, 0, bitmap.width, bitmap.height);
+                    bitmap._updated = true;
+                }
+                recolor(mb, bitmap, sx, sy, bitmap.width, bitmap.height);
+            }
+            mb.update();
         }
-        recolor(mb, x, y);
+        else {
+            for (let i = 0; i < MAX_RECOLOR && i < regionsToRecolor.length; i++) {
+                let region = regionsToRecolor.shift();
+                regionsToRecolor.push(region);
+                let onlyBitmap = mb.bitmaps[0][0].bitmap;
+                onlyBitmap.update(region.sx, region.sy, region.w, region.h);
+                recolor(mb, onlyBitmap, region.sx, region.sy, region.w, region.h, PIX);
+                onlyBitmap.ctx.putImageData(onlyBitmap.imageData, region.sx, region.sy);
+                onlyBitmap.dirty = true;
+            }
+        }
+
     }
-    mb.update();
 
 
 }
@@ -259,10 +301,10 @@ function aroundBase(getter, gx, gy) {
         list: []
     };
     for (let ax = -1; ax <= 1; ax++) {
-        let r = {};
-        res[ax] = r;
+        //let r = {};
+        //res[ax] = r;
         for (let ay = -1; ay <= 1; ay++) {
-            let val = r[ay] = getter(gx+ax, gy+ay);
+            let val = /*r[ay] = */getter(gx+ax, gy+ay);
             if (val && (ay != 0 || ax != 0)) {
                 res.total++;
                 res.list.push({ax, ay, val});
@@ -357,6 +399,7 @@ function updateCell(mb, cell, x, y, gx, gy) {
         cell._state = {};
     }
     const SPEED = 2;
+    const PIX_PER_STEP = 4;
     if (cell.value) {
         //growing
         if (!cell._state.growing) {
@@ -391,12 +434,12 @@ function updateCell(mb, cell, x, y, gx, gy) {
                    ps.push({
                        x: x+ax*PIX+game.rnd.integerInRange(-1,1),
                        y: y+ay*PIX+game.rnd.integerInRange(-1,1),
-                       dx: -ax*2,
-                       dy: -ay*2,
-                       stepsLeft: PIX/2+1,
+                       dx: -ax*PIX_PER_STEP,
+                       dy: -ay*PIX_PER_STEP,
+                       stepsLeft: PIX/PIX_PER_STEP+1,
                        particle: game.rnd.pick(particles),
                        skipLeft: (x+y)%SPEED,
-                       size: (stepsLeft) => { return (Math.abs(((stepsLeft-2)/(PIX/2) - 0.5)))*2*0.5 + 0.5}
+                       size: (stepsLeft) => { return (Math.abs(((stepsLeft-2)/(PIX/PIX_PER_STEP) - 0.5)))*2*0.5 + 0.5}
                    });
                     /*ps.push({
                         x: x+ax*PIX+game.rnd.integerInRange(-1,1),
@@ -433,6 +476,7 @@ function updateCell(mb, cell, x, y, gx, gy) {
                     part.skipLeft--;
                     return;
                 }
+                bitmap.ctx.globalCompositeOperation = "source-over";
                drawParticle(bitmap.ctx, part.x-sx, part.y-sy, part.particle, {scale: part.size(part.stepsLeft)});
                 //debug
                 //bitmap.context.strokeStyle = 'black';
@@ -458,17 +502,80 @@ function updateCell(mb, cell, x, y, gx, gy) {
         if (!cell._state.reducing) {
             if (ar.total == 0) {
                 //todo: animate;
+                cell._state.reducing = [{
+                    x: x,
+                    y: y,
+                    dx: 0,
+                    dy: 0,
+                    particle: particles[0],
+                    stepsLeft: PIX,
+                    skipLeft: (x+y)%SPEED,
+                    size: (stepsLeft) => (1-stepsLeft/PIX)*1.5
+                }];
+            } else {
+                let ps = [];
+                ar.list.forEach(({ax,ay,val}) => {
+                    ps.push({
+                        x: x,
+                        y: y,
+                        dx: ax*PIX_PER_STEP/2,
+                        dy: ay*PIX_PER_STEP/2,
+                        stepsLeft: PIX/PIX_PER_STEP+1,
+                        particle: particles[0],
+                        skipLeft: (x+y)%SPEED,
+                        size: (stepsLeft) => { return 1}
+                    });
+                });
+                ps.push({
+                    x: x,
+                    y: y,
+                    dx: 0,
+                    dy: 0,
+                    particle: particles[0],
+                    stepsLeft: PIX/2,
+                    skipLeft: (x+y)%SPEED,
+                    size: (stepsLeft) => (1-stepsLeft/PIX*2)*1.5
+                });
 
+                cell._state.reducing = ps;
             }
-            bitmap.ctx.fillStyle = 'rgba(255,0,0,0)';
-            bitmap.ctx.fillRect(x-sx, y-sy, PIX, PIX);
-            cell._state.reducing = true;
+            //bitmap.ctx.fillStyle = 'rgba(255,0,0,0)';
+            //bitmap.ctx.fillRect(x-sx, y-sy, PIX, PIX);
             bitmap.dirty = true;
             //bitmap.update(0, 0, bitmap.width, bitmap.height);
             delete cell._state.growing;
         }
         if (cell._state.reducing === true) {
             return false;
+        } else {
+            let somethingChanged = 0;
+            resultBitmap.ctx.globalCompositeOperation = "destination-out";
+            cell._state.reducing.forEach(part => {
+                //todo: between-canvases
+                if (part.skipLeft == 0) {
+                    part.skipLeft = SPEED;
+                } else {
+                    part.skipLeft--;
+                    return;
+                }
+                drawParticle(resultBitmap.ctx, part.x-sx, part.y-sy, part.particle, {scale: part.size(part.stepsLeft)});
+                //debug
+                //bitmap.context.strokeStyle = 'black';
+                //bitmap.context.moveTo(100+part.x-sx,part.y-sy);
+                part.x += part.dx + Math.sign(part.dx)*game.rnd.pick([0,0,0,0,0,-1,1]);
+                part.y += part.dy + Math.sign(part.dy)*game.rnd.pick([0,0,0,0,0,-1,1]);
+                //bitmap.context.lineTo(100+part.x-sx,part.y-sy);
+                //bitmap.context.stroke();
+                part.stepsLeft--;
+                if (part.stepsLeft == 0) {
+                    cell._state.reducing = true;
+                    //bitmap.update(0, 0, bitmap.width, bitmap.height);
+                }
+                somethingChanged++;
+            });
+            if (somethingChanged) {
+                resultBitmap.dirty = true;
+            }
         }
 
     }
@@ -483,63 +590,150 @@ function updateCell(mb, cell, x, y, gx, gy) {
 function createRecolorer() {
 
     let neiColors = [];
+    let neiColors1 = [];
 
-    const RADIUS = 1;
+    const RADIUS = options.recolorRadius;
 
-    for (let x = -RADIUS; x <= RADIUS; x++) {
-        for (let y = -RADIUS; y <= RADIUS; y++) {
-            let nei = {x, y, color: {}};
-            if (Math.hypot(x,y) <= RADIUS) neiColors.push(nei);
+    if (options.recolorMode == 1) {
+        for (let x = -RADIUS; x <= RADIUS; x++) {
+            for (let y = -RADIUS; y <= RADIUS; y++) {
+                let nei = {x, y, color: {}};
+                if (Math.hypot(x, y) <= RADIUS) neiColors.push(nei);
+            }
         }
+    } else if (options.recolorMode == 2) {
+        neiColors.push({x:-2,y:+1,color:{}});
+        neiColors.push({x:+1,y:-2,color:{}});
+        neiColors.push({x:-1,y:-2,color:{}});
+        neiColors.push({x:0,y:+1,color:{}});
+    } else if (options.recolorMode == 3) {
+        neiColors.push({x:-RADIUS,y:0,color:{}});
+        neiColors.push({x:RADIUS,y:0,color:{}});
+        neiColors.push({x:0,y:-RADIUS,color:{}});
+        neiColors.push({x:0,y:RADIUS,color:{}});
+
     }
 
-    console.log(neiColors);
 
-    function recolorCell(mb, x, y) {
-        let recolored = false;
-        let color = {};
+    neiColors1.push({x:-1,y:0,color:{}});
+    neiColors1.push({x:+1,y:0,color:{}});
+    neiColors1.push({x:0,y:-1,color:{}});
+    neiColors1.push({x:0,y:+1,color:{}});
+
+
+
+    let aroundCache = {};
+
+    function recolorAll(mb, bitmap, sx, sy, width, height, pad = 0) {
         const RSTEP = 12;
         const SSTEP = 4;
-        const MAX_UPDATES = 200;
-        let updates = [];
-        outer:
-            for (let xx = 0; xx < PIX; xx++) {
-                for (let yy = 0; yy < PIX; yy++) {
-                    let px = x + xx;
-                    let py = y + yy;
 
-                    mb.getPixel(px, py, color);
-                    if (color.r == 0) continue;
-                    let maxR = color.r, minR = color.r;
+        let data = bitmap.imageData.data;
+        let len = data.length;
+        let row = width * 4;
+
+        let updates = [];
+        let x = 0, y = 0;
+        aroundCache = {};
+        for (let i = 0; i < len; i+= 4) {
+            if (x < pad || x > width-pad || y < pad || y > height-pad) {
+                x++;
+                if (x >= width) {
+                    x = 0;
+                    y++;
+                }
+                continue;
+            }
+            let red = data[i];
+            let blue = data[i+2];
+            let maxR = red, minR = red;
+            let gx = ((sx+x)/PIX) |0;
+            let gy = ((sy+y)/PIX) |0;
+            let cell = grid.getCell(gx, gy);
+            if (!red) {
+                if (cell.value) {
+                    let total = (aroundCache[gx + '_' + gy] = aroundCache[gx + '_' + gy] || around(gx, gy).total);
+                    if (total === 8) {
+                        let redAround = false;
+                        for (let ni = 0; ni < neiColors1.length; ni++) {
+                            let {x, y} = neiColors1[ni];
+                            let ii = i + x * 4 + y * row;
+                            if (ii >= 0 && ii <= len - 4 && data[ii]) {
+                                redAround = true;
+                                break;
+                            }
+                        }
+                        if (redAround && Math.random() < 0.5) {
+                            updates.push({i, r: 255});
+                        }
+                    }
+                }
+            } else {
+                if (!cell.value) {
+                let total = (aroundCache[gx + '_' + gy] = aroundCache[gx + '_' + gy] || around(gx, gy).total);
+                if (total === 0 || cell._state.reducing === true) {
+                    if (blue >= 100) {
+                        updates.push({i, del: true});
+                    } else if (Math.random() < 0.8) {
+                        updates.push({i, b: Math.min(251, blue + 10)});
+                    }
+                }
+                } else {
                     for (let ni = 0; ni < neiColors.length; ni++) {
-                        let nc = neiColors[ni];
-                        mb.getPixel(px+nc.x, py+nc.y, nc.color);
-                        maxR = Math.max(maxR, nc.color.r);
-                        minR = Math.min(minR, nc.color.r);
+                        let {x, y} = neiColors[ni];
+                        let ii = i + x * 4 + y * row;
+                        if (ii >= 0 && ii <= len - 4) {
+                            let nred = data[ii];
+                            if (nred > maxR) maxR = nred;
+                            if (nred < minR) minR = nred;
+                        }
+
                     }
-                    let r;
+                    let outR = 0;
                     if (minR == 0) {
-                        r = 255;
+                        outR = 255;
                     } else {
-                        r = Math.max(RSTEP, maxR - RSTEP);
+                        outR = Math.max(RSTEP, maxR - RSTEP);
                     }
-                    if (Math.abs(color.r - r) > SSTEP) {
-                        updates.push({x: px, y: py, r: Math.floor(color.r + SSTEP*Math.sign(r - color.r))});
+                    if (Math.abs(outR - red) >= SSTEP) {
+                        updates.push({i, r: Math.floor(red + SSTEP * Math.sign(outR - red))});
                     }
-                    if (updates.length > MAX_UPDATES) break outer;
+                    else if (data[i + 3] < 255) {
+                        updates.push({i});
+                    }
                 }
             }
-        recolored = updates.length > 0;
-        for (let i = 0; i < updates.length; i++) {
-            let {x,y, r} = updates[i];
-            //console.log('draw', x, y, r);
-            mb.setPixel(x, y, r, 0, 0, false);
-        }
 
-        return recolored;
+            x++;
+            if (x >= width) {
+                x = 0;
+                y++;
+            }
+        }
+        if (updates.length) {
+            for (let ui = 0; ui < updates.length; ui++) {
+                let up = updates[ui];
+
+                if (up.del) {
+                    data[up.i+3] = 0;
+                    data[up.i] = 0;
+                } else if (up.b) {
+                    data[up.i] = 255-up.b;
+                    data[up.i+2] = up.b;
+                } else if (up.r) {
+                    data[up.i] = up.r;
+                }
+                if (data[up.i+3] < 255) {
+                    data[up.i+3] += 1;
+                }
+            }
+            mb.setDirty(bitmap);
+        } else {
+            return false;
+        }
     }
 
-    return recolorCell;
+    return recolorAll;
 }
 
 let fpsEl = document.querySelector("#fps");
@@ -547,3 +741,10 @@ function debugRender1() {
     fpsEl.innerText = game.time.fps + " updated: " + updatedCount;
     //game.debug.text(game.time.fps, game.camera.width/2,25);
 }
+
+let started = false;
+document.querySelector("#start").addEventListener("click", () => {
+    if (started) timer.resume(); else timer.start();
+    started = true;
+});
+document.querySelector("#stop").addEventListener("click", () => timer.pause());

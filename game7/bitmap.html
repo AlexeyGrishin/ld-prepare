@@ -4,16 +4,19 @@
     <meta charset="UTF-8" />
     <title>Demo 1</title>
     <script src="../game6/phaser.js"></script>
+    <script src="../common/opts.js"></script>
 </head>
 <body>
 <div id="fps"></div>
+<button id="start">Start spawning</button>
+<button id="stop">Stop spawning</button>
 <div id="container"></div>
 
-<script src="bitmap.js"></script>
+<script src="../dist/game7/bitmap.js"></script>
 <script>
     var game = new Phaser.Game({
         width: 1024,
-        height: 4096,
+        height: 1024,
         renderer: Phaser.AUTO,
         parent: 'container',
         antialias: false,

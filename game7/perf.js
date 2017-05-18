@@ -64,6 +64,35 @@ const Methods = {
             bitmap.context.beginPath();
         },
         name: "arc"
+    },
+
+    putImageDataRecolor: {
+        init(bitmap) {
+            bitmap._first = true;
+            bitmap.update(0, 0, bitmap.width, bitmap.height);
+        },
+        drawParticle(bitmap, x, y) {
+            if (!bitmap._first) return;
+            bitmap._first = false;
+            let data = bitmap.imageData.data;
+            let row = bitmap.width*4;
+            for (var i = 0; i < data.length; i+= 4) {
+                var around = [
+                    i > 0 ? data[i-4] : 0,
+                    i < data.length-4 ? data[i+4] : 0,
+                    i > row ? data[i-row] : 0,
+                    i < data.length-row-4 ? data[i+row] : 0
+                ];
+                data[i] = Math.max.apply(null, around) + 1;
+                data[i+3] += 1;
+            }
+        },
+        flush(bitmap) {
+            bitmap.context.putImageData(bitmap.imageData, 0, 0);
+            bitmap.dirty = true;
+            bitmap._first = true;
+        },
+        name: "recolor"
     }
 };
 
