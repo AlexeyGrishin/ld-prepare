@@ -1,4 +1,6 @@
-"use strict";
+'use strict';
+
+var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
@@ -6,10 +8,11 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 function preload() {
     game.time.advancedTiming = true;
+    game.load.image('texture', 'texture.png');
 }
 var MIN_SIZE = 1024;
 
-var REGION_SIZE = 128;
+var REGION_SIZE = 512;
 
 var options = initOptions({
     doRecolor: ["boolean", true],
@@ -17,7 +20,9 @@ var options = initOptions({
     regionsPerTick: ["int", 8],
     recolorMode: ["int", 1],
     recolorRadius: ["int", 2],
-    spawnDelay: ["int", 1000]
+    spawnDelay: ["int", 1000],
+    showGrid: ["boolean", false],
+    splitRegion: ["int", 3]
 });
 
 var MultiBitmap = function () {
@@ -33,16 +38,18 @@ var MultiBitmap = function () {
         this.sw = sw;
         this.sh = sh;
         this.bitmaps = [];
-        for (var r = 0; r < height / sh; r++) {
+        for (var _r = 0; _r < height / sh; _r++) {
             var row = [];
             this.bitmaps.push(row);
             for (var c = 0; c < width / sw; c++) {
                 var _bitmap2 = game.add.bitmapData(sw, sh);
+                //bitmap.baseTexture.premultipliedAlpha = false;
+                //bitmap.texture.premultipliedAlpha = false;
                 row.push({
                     bitmap: _bitmap2,
                     sx: c * sw,
-                    sy: r * sh,
-                    sprite: game.add.sprite(sprite ? c * sw : -1000, r * sh, _bitmap2)
+                    sy: _r * sh,
+                    sprite: game.add.sprite(sprite ? c * sw : -1000, _r * sh, _bitmap2)
                 });
             }
         }
@@ -50,32 +57,33 @@ var MultiBitmap = function () {
 
         //todo: for first bitmap only
         this.regions = [];
-        for (var x = 0; x < sw; x += REGION_SIZE / 2) {
-            for (var y = 0; y < sh; y += REGION_SIZE / 2) {
+        for (var x = 0; x < sw - REGION_SIZE / 2; x += REGION_SIZE / 2) {
+            for (var y = 0; y < sh - REGION_SIZE / 2; y += REGION_SIZE / 2) {
                 this.regions.push({ sx: x, sy: y, w: REGION_SIZE, h: REGION_SIZE });
             }
         }
+        console.log(this.regions.length, 'regions');
     }
 
     _createClass(MultiBitmap, [{
-        key: "_bitmap",
+        key: '_bitmap',
         value: function _bitmap(x, y) {
             return this.bitmaps[y / this.sh | 0][x / this.sw | 0];
         }
     }, {
-        key: "bitmap",
+        key: 'bitmap',
         value: function bitmap(x, y) {
             return this._bitmap(x, y).bitmap;
         }
     }, {
-        key: "fill",
+        key: 'fill',
         value: function fill(r, g, b) {
             this.forEach(function (bm) {
                 return bm.fill(r, g, b);
             });
         }
     }, {
-        key: "setDirty",
+        key: 'setDirty',
         value: function setDirty(bitmap, y) {
             if (y !== undefined) {
                 bitmap = this.bitmap(bitmap, y);
@@ -86,8 +94,9 @@ var MultiBitmap = function () {
             }
         }
     }, {
-        key: "update",
+        key: 'update',
         value: function update() {
+            if (options.useRegions) throw new Error('shall not be used');
             var bm = this.dirtyBitmaps.shift();
             if (bm) {
                 bm._ourDirty = false;
@@ -96,7 +105,7 @@ var MultiBitmap = function () {
             }
         }
     }, {
-        key: "getPixel",
+        key: 'getPixel',
         value: function getPixel(x, y) {
             var obj = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
 
@@ -119,7 +128,7 @@ var MultiBitmap = function () {
             return bitmap.getPixel(x - sx, y - sy, obj);
         }
     }, {
-        key: "setPixel",
+        key: 'setPixel',
         value: function setPixel(x, y, r, g, b, immediate) {
             var _bitmap4 = this._bitmap(x, y),
                 bitmap = _bitmap4.bitmap,
@@ -132,16 +141,16 @@ var MultiBitmap = function () {
             }
         }
     }, {
-        key: "forEach",
+        key: 'forEach',
         value: function forEach(cb) {
-            for (var r = 0; r < this.bitmaps.length; r++) {
-                for (var c = 0; c < this.bitmaps[r].length; c++) {
-                    cb(this.bitmaps[r][c].bitmap, r, c);
+            for (var _r2 = 0; _r2 < this.bitmaps.length; _r2++) {
+                for (var c = 0; c < this.bitmaps[_r2].length; c++) {
+                    cb(this.bitmaps[_r2][c].bitmap, _r2, c);
                 }
             }
         }
     }, {
-        key: "updateAll",
+        key: 'updateAll',
         value: function updateAll() {
             this.forEach(function (b) {
                 return b.update(0, 0, b.width, b.height);
@@ -152,6 +161,8 @@ var MultiBitmap = function () {
     return MultiBitmap;
 }();
 
+var EMPTY = { value: undefined };
+
 var Grid = function () {
     function Grid() {
         _classCallCheck(this, Grid);
@@ -160,58 +171,85 @@ var Grid = function () {
         for (var c = 0; c < W / PIX; c++) {
             var col = [];
             this.grid.push(col);
-            for (var r = 0; r < H / PIX; r++) {
-                col.push({ value: undefined, _state: {} });
+            for (var _r3 = 0; _r3 < H / PIX; _r3++) {
+                col.push({
+                    value: undefined,
+                    _state: {},
+                    _total: 0
+                });
             }
         }
+        this.width = this.grid.length;
+        this.height = this.grid[0].length;
     }
 
     _createClass(Grid, [{
-        key: "get",
+        key: 'get',
         value: function get(gx, gy) {
             if (gx < 0 || gx >= this.grid.length || gy < 0 || gy >= this.grid[gx].length) return undefined;
             return this.grid[gx][gy].value;
         }
     }, {
-        key: "getCell",
+        key: 'getCell',
         value: function getCell(gx, gy) {
-            if (gx < 0 || gx >= this.grid.length || gy < 0 || gy >= this.grid[gx].length) return { value: undefined };
+            if (gx < 0 || gx >= this.grid.length || gy < 0 || gy >= this.grid[gx].length) return EMPTY;
             return this.grid[gx][gy];
         }
     }, {
-        key: "set",
+        key: 'set',
         value: function set(gx, gy, val) {
+            var oldT = this.grid[gx][gy].value ? 1 : -1;
             this.grid[gx][gy].value = val;
             this.grid[gx][gy].dirty = true;
-        }
-    }, {
-        key: "getReal",
-        value: function getReal(x, y) {
-            return this.get(x / PIX | 0, y / PIX | 0);
-        }
-    }, {
-        key: "setReal",
-        value: function setReal(x, y, val) {
-            this.set(x / PIX | 0, y / PIX | 0, val);
-        }
-    }, {
-        key: "forEach",
-        value: function forEach(cb) {
-            for (var x = 0; x < this.grid.length; x++) {
-                for (var y = 0; y < this.grid[x].length; y++) {
-                    cb(this.grid[x][y].value, x, y, this.grid[x][y], x * PIX, y * PIX);
+            var t = val ? 1 : -1;
+            if (t == oldT) return;
+            var y1 = gy > 0;
+            var y2 = gy < this.height - 1;
+            if (gx > 0) {
+                this.grid[gx - 1][gy]._total += t;
+                if (y1) {
+                    this.grid[gx - 1][gy - 1]._total += t;
+                }
+                if (y2) {
+                    this.grid[gx - 1][gy + 1]._total += t;
+                }
+            }
+            if (gx < this.width - 1) {
+                this.grid[gx + 1][gy]._total += t;
+                if (y1) {
+                    this.grid[gx + 1][gy - 1]._total += t;
+                }
+                if (y2) {
+                    this.grid[gx + 1][gy + 1]._total += t;
+                }
+            }
+            {
+                if (y1) {
+                    this.grid[gx][gy - 1]._total += t;
+                }
+                if (y2) {
+                    this.grid[gx][gy + 1]._total += t;
                 }
             }
         }
     }, {
-        key: "width",
-        get: function get() {
-            return this.grid.length;
+        key: 'getReal',
+        value: function getReal(x, y) {
+            return this.get(x >> PIX_SHIFT, y >> PIX_SHIFT);
         }
     }, {
-        key: "height",
-        get: function get() {
-            return this.grid[0].length;
+        key: 'setReal',
+        value: function setReal(x, y, val) {
+            this.set(x >> PIX_SHIFT, y >> PIX_SHIFT, val);
+        }
+    }, {
+        key: 'forEach',
+        value: function forEach(cb) {
+            for (var x = 0; x < this.grid.length; x++) {
+                for (var y = 0; y < this.grid[x].length; y++) {
+                    cb(this.grid[x][y].value, x, y, this.grid[x][y], x << PIX_SHIFT, y << PIX_SHIFT);
+                }
+            }
         }
     }]);
 
@@ -226,7 +264,8 @@ var bitmap = void 0,
     tempCanvas = void 0;
 var W = 1024,
     H = 1024,
-    PIX = 16;
+    PIX = 16,
+    PIX_SHIFT = 4;
 var PIX_MID = PIX / 2;
 var PIX_B1 = PIX_MID - PIX / 4,
     PIX_B2 = PIX_MID + PIX / 4;
@@ -236,6 +275,8 @@ var timer = void 0;
 var inited = false;
 var SX = 12,
     SY = 12;
+
+var infection = void 0;
 function create() {
     game.stage.backgroundColor = '#cccccc';
 
@@ -252,7 +293,8 @@ function create() {
     grid.set(SX, SY, { i: true });
     buttons = {
         Z: game.input.keyboard.addKey(Phaser.Keyboard.Z),
-        X: game.input.keyboard.addKey(Phaser.Keyboard.X)
+        X: game.input.keyboard.addKey(Phaser.Keyboard.X),
+        C: game.input.keyboard.addKey(Phaser.Keyboard.C)
     };
     prepareParticles();
 
@@ -273,6 +315,14 @@ function create() {
             return grid.set(x, y, { i: true });
         });
     }, this);
+    infection = new Infection(game);
+    var infTextureSprite = game.add.sprite(-100, -100, 'texture');
+    infection.uniforms.iChannel0.value = infTextureSprite.texture;
+    infection.uniforms.textureSize.value = { x: infTextureSprite.width, y: infTextureSprite.height };
+    infection.uniforms.resolution.value = { x: game.world.width, y: game.world.height };
+    game.world.filters = [infection];
+
+    //bitmap.fill(255,0,0);
     //timer.start();
 }
 
@@ -284,6 +334,7 @@ var toRecolor = [],
 var MAX_RECOLOR = options.useRegions ? options.regionsPerTick : 1;
 
 function update() {
+    infection.update();
     if (!regionsToRecolor) {
         regionsToRecolor = bitmap.regions.slice();
     }
@@ -303,6 +354,9 @@ function update() {
     }
     if (buttons.X.justDown) {
         grid.set(gx, gy, undefined);
+    }
+    if (buttons.C.justDown) {
+        console.log(JSON.stringify(grid.getCell(gx, gy), null, 4));
     }
 
     growingBitmap.forEach(function (bm) {
@@ -342,6 +396,7 @@ function update() {
     });
     if (options.doRecolor) {
         if (!options.useRegions) {
+            r.innerHTML = "";
             for (var i = 0; i < MAX_RECOLOR && i < toRecolor.length; i++) {
                 var _toRecolor$shift = toRecolor.shift(),
                     _bitmap5 = _toRecolor$shift.bitmap,
@@ -357,18 +412,94 @@ function update() {
             }
             mb.update();
         } else {
+            r.innerHTML = "-";
+            var getDataTime = 0,
+                putDataTime = 0,
+                recolorTime1 = 0,
+                recolorTime2 = 0,
+                recolorTime3 = 0;
+            var onlyBitmap = mb.bitmaps[0][0].bitmap;
+            var count = 0;
+            var checkedPixelsTotal = 0;
             for (var _i = 0; _i < MAX_RECOLOR && _i < regionsToRecolor.length; _i++) {
+                var s1 = new Date().getTime();
                 var region = regionsToRecolor.shift();
                 regionsToRecolor.push(region);
-                var onlyBitmap = mb.bitmaps[0][0].bitmap;
+                if (region.sx == 0 && region.sy == 0) r.innerHTML = "*";
                 onlyBitmap.update(region.sx, region.sy, region.w, region.h);
-                recolor(mb, onlyBitmap, region.sx, region.sy, region.w, region.h, PIX);
-                onlyBitmap.ctx.putImageData(onlyBitmap.imageData, region.sx, region.sy);
-                onlyBitmap.dirty = true;
+                var s2 = new Date().getTime();
+
+                var _recolor = recolor(mb, onlyBitmap, region.sx, region.sy, region.w, region.h, PIX),
+                    _recolor2 = _slicedToArray(_recolor, 4),
+                    t1 = _recolor2[0],
+                    t2 = _recolor2[1],
+                    updated = _recolor2[2],
+                    checked = _recolor2[3];
+
+                recolorTime1 += t1;
+                recolorTime2 += t2;
+                var s3 = new Date().getTime();
+                if (updated) {
+                    onlyBitmap.ctx.putImageData(onlyBitmap.imageData, region.sx, region.sy);
+                    onlyBitmap.dirty = true;
+                }
+                checkedPixelsTotal += checked;
+                var s4 = new Date().getTime();
+                getDataTime += s2 - s1;
+                putDataTime += s4 - s3;
+                count++;
+            }
+            times.push([getDataTime, recolorTime1, recolorTime2, recolorTime3, putDataTime]);
+            if (times.length > 60) {
+                getDataTime = recolorTime1 = recolorTime2 = recolorTime3 = putDataTime = 0;
+                var _iteratorNormalCompletion = true;
+                var _didIteratorError = false;
+                var _iteratorError = undefined;
+
+                try {
+                    for (var _iterator = times[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                        var _step$value = _slicedToArray(_step.value, 5),
+                            a = _step$value[0],
+                            b1 = _step$value[1],
+                            b2 = _step$value[2],
+                            b3 = _step$value[3],
+                            c = _step$value[4];
+
+                        getDataTime += a;
+                        recolorTime1 += b1;
+                        recolorTime2 += b2;
+                        recolorTime3 += b3;
+                        putDataTime += c;
+                    }
+                } catch (err) {
+                    _didIteratorError = true;
+                    _iteratorError = err;
+                } finally {
+                    try {
+                        if (!_iteratorNormalCompletion && _iterator.return) {
+                            _iterator.return();
+                        }
+                    } finally {
+                        if (_didIteratorError) {
+                            throw _iteratorError;
+                        }
+                    }
+                }
+
+                console.log(checkedPixelsTotal, ' =>', [getDataTime, recolorTime1, recolorTime2, recolorTime3, putDataTime].map(function (s) {
+                    return (s / 60).toFixed(2);
+                }).join(" / "));
+                times = [];
             }
         }
+    } else {
+        r.innerHTML = "";
     }
+    r.innerHTML += " bm: " + (mb.bitmaps[0][0].bitmap.dirty ? "dirty" : "-");
 }
+var times = [];
+
+var r = document.querySelector("#recolor");
 
 var updatedCount = 0;
 
@@ -412,7 +543,7 @@ function prepareParticles() {
         canvas1.height = PIX;
         var context = canvas1.getContext('2d');
         //context.globalAlpha = 1;// + 0.1*game.rnd.frac();
-        context.fillStyle = "rgb(" + game.rnd.integerInRange(250, 255) + ",0,50)";
+        context.fillStyle = 'rgb(' + game.rnd.integerInRange(250, 255) + ',0,50)';
         context.beginPath();
         context.arc(PIX / 2, PIX / 2, PIX / 8 * 2, 0, Math.PI * 2);
         context.fill();
@@ -480,13 +611,17 @@ function updateCell(mb, cell, x, y, gx, gy) {
     if (cell.value) {
         //growing
         if (!cell._state.growing) {
-            //bitmap.context.strokeStyle = 'red';
-            //bitmap.context.strokeRect(x-sx,y-sy,PIX,PIX);
+            if (options.showGrid) {
+                bitmap.context.strokeStyle = 'gray';
+                bitmap.context.lineWidth = 1;
+                bitmap.context.strokeRect(x - sx, y - sy, PIX, PIX);
+            }
+            cell._state.delay = game.rnd.integerInRange(0, 5);
             //need to init
             if (ar.total == 0) {
                 //console.log('alone');
                 cell._state.growing = [{
-                    particle: particles[0],
+                    particle: game.rnd.pick(particles),
                     x: x,
                     y: y,
                     dx: 0,
@@ -548,6 +683,7 @@ function updateCell(mb, cell, x, y, gx, gy) {
             }
         }
         delete cell._state.reducing;
+        if (cell._state.delay-- > 0) return true;
 
         if (cell._state.growing !== true) {
             var somethingChanged = 0;
@@ -722,65 +858,96 @@ function createRecolorer() {
         var row = width * 4;
 
         var updates = [];
+        var checked = 0;
         var x = 0,
             y = 0;
+        var s1 = new Date().getTime();
         aroundCache = {};
+        var red,
+            blue,
+            green,
+            alpha,
+            maxR,
+            minR,
+            gx = 0,
+            gy = 0,
+            cell;
+        var updatesCount = 0;
+        var ni, nc, nred, ii;
+
+        var maxSkip = options.splitRegion;
+        var skip = game.rnd.integerInRange(0, maxSkip - 1);
+
         for (var i = 0; i < len; i += 4) {
             if (x < pad || x > width - pad || y < pad || y > height - pad) {
                 x++;
+                skip++;
                 if (x >= width) {
                     x = 0;
                     y++;
                 }
                 continue;
             }
-            var red = data[i];
-            var blue = data[i + 2];
-            var maxR = red,
-                minR = red;
-            var gx = (sx + x) / PIX | 0;
-            var gy = (sy + y) / PIX | 0;
-            var cell = grid.getCell(gx, gy);
-            if (!red) {
-                if (cell.value) {
-                    var total = aroundCache[gx + '_' + gy] = aroundCache[gx + '_' + gy] || around(gx, gy).total;
-                    if (total === 8) {
-                        var redAround = false;
-                        for (var ni = 0; ni < neiColors1.length; ni++) {
-                            var _neiColors1$ni = neiColors1[ni],
-                                _x6 = _neiColors1$ni.x,
-                                _y = _neiColors1$ni.y;
 
-                            var ii = i + _x6 * 4 + _y * row;
-                            if (ii >= 0 && ii <= len - 4 && data[ii]) {
-                                redAround = true;
-                                break;
-                            }
+            red = data[i];
+            blue = data[i + 2];
+            green = data[i + 1];
+            maxR = red;
+            minR = red;
+            alpha = data[i + 3];
+
+            gx = sx + x >> PIX_SHIFT; // 0;// ((sx+x)/PIX) |0;
+            gy = sy + y >> PIX_SHIFT; //0;// ((sy+y)/PIX) |0;
+            cell = grid.grid[gx][gy];
+            //if (cell._total == 8) console.log(gx,gy);
+
+            if (green && red && alpha < 250) {
+                data[i + 3] += 5;
+                updatesCount++;
+            }
+            //if (alpha > 100) {
+
+            if (!red) {
+                if (cell.value && cell._total == 8) {
+                    var redAround = false;
+                    for (ni = 0; ni < neiColors1.length; ni++) {
+                        nc = neiColors1[ni];
+                        ii = i + nc.x * 4 + nc.y * row;
+                        if (ii >= 0 && ii <= len - 4 && data[ii]) {
+                            redAround = true;
+                            break;
                         }
-                        if (redAround && Math.random() < 0.5) {
-                            updates.push({ i: i, r: 255 });
-                        }
+                    }
+                    if (redAround) {
+                        updates.push({ i: i, r: 255, g: 3 });
                     }
                 }
             } else {
                 if (!cell.value) {
-                    var _total = aroundCache[gx + '_' + gy] = aroundCache[gx + '_' + gy] || around(gx, gy).total;
-                    if (_total === 0 || cell._state.reducing === true) {
-                        if (blue >= 100) {
+                    if (cell._total === 0 || cell._state.reducing === true) {
+
+                        if (blue >= 30) {
                             updates.push({ i: i, del: true });
-                        } else if (Math.random() < 0.8) {
-                            updates.push({ i: i, b: Math.min(251, blue + 10) });
+                        } else {
+                            var emptyAround = false;
+                            for (ni = 0; ni < neiColors1.length; ni++) {
+                                nc = neiColors1[ni];
+                                ii = i + nc.x * 4 + nc.y * row;
+                                if (ii >= 0 && ii <= len - 4 && data[ii + 3] < 100) {
+                                    emptyAround = true;
+                                    break;
+                                }
+                            }
+                            if (emptyAround) updates.push({ i: i, b: Math.min(251, blue + 10) });
                         }
                     }
-                } else {
-                    for (var _ni = 0; _ni < neiColors.length; _ni++) {
-                        var _neiColors$_ni = neiColors[_ni],
-                            _x7 = _neiColors$_ni.x,
-                            _y2 = _neiColors$_ni.y;
-
-                        var _ii = i + _x7 * 4 + _y2 * row;
-                        if (_ii >= 0 && _ii <= len - 4) {
-                            var nred = data[_ii];
+                } else if (alpha > 100 && skip % maxSkip == 0) {
+                    checked++;
+                    for (ni = 0; ni < neiColors.length; ni++) {
+                        nc = neiColors[ni];
+                        ii = i + nc.x * 4 + nc.y * row;
+                        if (ii >= 0 && ii <= len - 4) {
+                            nred = data[ii];
                             if (nred > maxR) maxR = nred;
                             if (nred < minR) minR = nred;
                         }
@@ -792,19 +959,23 @@ function createRecolorer() {
                         outR = Math.max(RSTEP, maxR - RSTEP);
                     }
                     if (Math.abs(outR - red) >= SSTEP) {
-                        updates.push({ i: i, r: Math.floor(red + SSTEP * Math.sign(outR - red)) });
-                    } else if (data[i + 3] < 255) {
-                        updates.push({ i: i });
+                        var sgn = Math.sign(outR - red);
+                        if (sgn > 0) sgn *= 2;
+                        updates.push({ i: i, r: Math.floor(red + SSTEP * sgn) });
                     }
                 }
             }
+            //}
 
             x++;
+            skip++;
             if (x >= width) {
                 x = 0;
                 y++;
             }
         }
+        var s2 = new Date().getTime();
+
         if (updates.length) {
             for (var ui = 0; ui < updates.length; ui++) {
                 var up = updates[ui];
@@ -814,18 +985,23 @@ function createRecolorer() {
                     data[up.i] = 0;
                 } else if (up.b) {
                     data[up.i] = 255 - up.b;
+                    data[up.i + 1] = 0;
                     data[up.i + 2] = up.b;
                 } else if (up.r) {
                     data[up.i] = up.r;
-                }
-                if (data[up.i + 3] < 255) {
-                    data[up.i + 3] += 1;
+                    if (up.g) {
+                        //console.log(up.i, 'set up green', up.g, 'from', data[up.i+1]);
+                        data[up.i + 1] = up.g;
+                        data[up.i + 3] = 100;
+                    }
                 }
             }
-            mb.setDirty(bitmap);
-        } else {
-            return false;
+            //console.log('updated');
+            if (!options.useRegions) mb.setDirty(bitmap);
         }
+        var s3 = new Date().getTime();
+
+        return [s2 - s1, s3 - s2, updates.length + updatesCount, checked];
     }
 
     return recolorAll;
