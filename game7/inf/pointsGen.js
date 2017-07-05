@@ -31,7 +31,33 @@
     }
 
     getPointsInsideCircle(x, y, r) {
-      let out = this.getPointsInside(x - r, y - r, x + r, y + r);
+      let out = [];
+      let tx = ((x-r) / this.size)|0;
+      let ty = ((y-r) / this.size)|0;
+      let tx2 = ((x+r)/this.size)|0;
+      let ty2 = ((y+r)/this.size)|0;
+      let r2 = r*r;
+
+      let p, ttx, tty, rx, ry, pi;
+      for (pi = 0; pi < this.points.length; pi++) {
+        p = this.points[pi];
+        //i have myself for those var names
+        for (ttx = tx; ttx <= tx2; ttx++) {
+          for (tty = ty; tty <= ty2; tty++) {
+            rx = ttx * this.size + p.x;
+            ry = tty * this.size + p.y;
+            if (rx >= x - r && ry >= y - r && rx < x + r && ry < y + r && ((rx-x)*(rx-x) + (ry-y)*(ry-y)) < r2) {
+              out.push({x: rx, y: ry, r: p.r, id: p.id});
+            }
+          }
+        }
+      }
+      return out;
+    }
+
+
+    getPointsInsideCircle_old(x, y, r) {
+      let out = this.getPointsInside(x - r, y - r, 2*r, 2*r);
       let p;
       for (let pi = out.length-1; pi >= 0; pi--) {
         p = out[pi];
@@ -162,7 +188,7 @@
     while (x < textureSize) {
       x += r;
       r = game.rnd.integerInRange(minR, maxR);
-      x += r + pad;
+      x += r + pad + 2;
       if (x >= textureSize) break;
       addShifted(x, y, r);
     }
@@ -171,7 +197,7 @@
     while (y < textureSize) {
       y += r;
       r = game.rnd.integerInRange(minR, maxR);
-      y += r + pad;
+      y += r + pad + 2;
       if (y >= textureSize) break;
       addShifted(x, y, r);
     }

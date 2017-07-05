@@ -114,7 +114,9 @@ function createInfectionController2(size, pix, infBC, infBE, infSE) {
   function initSmallEyes(bc) {
     if (bc.smallEyes) return;
     bc.smallEyes = [];
-    for (let se of infSE.getPointsInsideCircle(bc.x, bc.y, bc.r)) {
+    let found = infSE.getPointsInsideCircle(bc.x, bc.y, bc.r);
+    //console.log('se', found.length);
+    for (let se of found) {
       let sid = 'se_' + se.x + '_' + se.y;
       if (!existMap.has(sid)) {
         existMap.set(sid, true);
@@ -213,6 +215,8 @@ function createInfectionController2(size, pix, infBC, infBE, infSE) {
   const DESTROYING = "destroying";
   const DESTROYED = "destroyed";
 
+  const MAX_SMALL_EYES_GROWING = 1000;
+
   let circlesByState = new Map();
   for (let state of [NONE, DESTROYING, DESTROYED, GROWING, SMALL_EYES_GROWING, BIG_EYES_GROWING, IDLE]) {
     circlesByState.set(state, []);
@@ -308,6 +312,10 @@ function createInfectionController2(size, pix, infBC, infBE, infSE) {
 
     get canGrow() {
       return this.state === NONE || (this.state === DESTROYED && this.cooldown <= 0);
+    }
+
+    get canRegrow() {
+      return this.state === IDLE;
     }
 
     doGrow(from) {
@@ -448,7 +456,7 @@ function createInfectionController2(size, pix, infBC, infBE, infSE) {
       for (let c1 of bigCircles) {
         c1.update();
 
-        if (c1.state === IDLE && initedSmallCircles < 30) {
+        if (c1.state === IDLE && initedSmallCircles < MAX_SMALL_EYES_GROWING) {
 
           if (c1.expectedGrowState === SMALL_EYES_GROWING) {
             c1.setState(SMALL_EYES_GROWING);
@@ -571,7 +579,9 @@ function createInfectionController2(size, pix, infBC, infBE, infSE) {
     },
 
     regrow(bigCircle) {
-      this.tryGrow(bigCircle);
+      if (bigCircle.canRegrow) {
+        bigCircle.doGrow();
+      }
     },
 
     renderSmallEyes() {
@@ -652,11 +662,11 @@ function create() {
     points3 = preparePoints3(32, 1, 2, 1);
     console.log('p3 generated');
     */
-    points1 = preparePoints3(128, 8, 10, -7, true, 8);
+    points1 = preparePoints3(128, 8, 10, -7, true, 9);
     console.log('p1 generated');
-    points2 = preparePoints3(64, 4, 5, 2);
+    points2 = preparePoints3(64, 4, 7, 2);
     console.log('p2 generated');
-    points3 = preparePoints3(32, 1, 3, 0);
+    points3 = preparePoints3(32, 1, 3, 1);
     console.log('p3 generated');
     //console.log('window.P = ' + JSON.stringify({P1: points1.store(), P2: points2.store(), P3: points3.store()}) + ';');
   }
@@ -666,7 +676,7 @@ function create() {
   if (options.debugPointsList) {
     debugPoints3(debugBitmap, points1, 'red');
     debugPoints3(debugBitmap, points2, 'blue');
-    //debugPoints3(debugBitmap, points3, 'green');
+    debugPoints3(debugBitmap, points3, 'green');
   }
 
   controller = createInfectionController2(SIZE, PIX, points1, points2, points3);
