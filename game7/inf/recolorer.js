@@ -44,8 +44,8 @@
                 updatesCount++;
             }
 
-            gx = (x)>>PIX_SHIFT;// 0;// ((sx+x)/PIX) |0;
-            gy = (y)>>PIX_SHIFT;
+            gx = (x/PIX)|0;// 0;// ((sx+x)/PIX) |0;
+            gy = (y/PIX)|0;
             cell = grid.grid[gx][gy];
             if (!red) {
                 if (cell.value && cell._total == 8) {

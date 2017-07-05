@@ -43,7 +43,10 @@
                 cell._state = {};
             }
             const SPEED = 2;
-            const PIX_PER_STEP = 4;
+            const PIX_PER_STEP = 3;
+            if (Math.floor(PIX / PIX_PER_STEP) !== (PIX/PIX_PER_STEP)) {
+                console.warn("PIX/PIX_PER_STEP", PIX/PIX_PER_STEP);
+            }
             if (cell.value) {
                 //growing
                 if (!cell._state.growing) {

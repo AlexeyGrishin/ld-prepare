@@ -24,7 +24,7 @@ class LowInfection extends Phaser.Filter {
                        + texture2D(uSampler, vTextureCoord.xy + vec2(-pix,0)).a
                        + texture2D(uSampler, vTextureCoord.xy + vec2(0,+pix)).a
                        + texture2D(uSampler, vTextureCoord.xy + vec2(0,-pix)).a;
-            float k = 1.;// around <= 3. ? (0.5 + sin(time*around + vTextureCoord.x*time - vTextureCoord.y*around)/2.) : 1.;  
+            float k = around <= 3. ? (0.5 + sin(time*around + vTextureCoord.x*time - vTextureCoord.y*around)/2.) : 1.;  
                      
             vec4 aclr = gl_FragColor * 0.2
                        + texture2D(uSampler, vTextureCoord.xy + vec2(+pix,0)) * 0.2

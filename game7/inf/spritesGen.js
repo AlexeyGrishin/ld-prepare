@@ -2,7 +2,72 @@
 
     const INSTEP = 50;
 
-    function createCircleSprites(radius = 4, delta = 1) {
+    function createMultiBitmap(size, bitmaps, destroyBitmaps = true) {
+
+        let maxFrames = 0;
+        for (let bitmap of bitmaps) {
+            maxFrames = Math.max(maxFrames, bitmap.width/bitmap.height);
+        }
+
+        let bitmap = game.add.bitmapData(maxFrames * size, size * bitmaps.length);
+        let bitmapsAttributes = [];
+        for (let bi = 0; bi < bitmaps.length; bi++) {
+            let frames = bitmaps[bi].width / bitmaps[bi].height;
+            let frameSize = bitmaps[bi].height;
+            bitmapsAttributes.push({
+                frameSize,
+                index: bi,
+                frames,
+                radius: bitmaps[bi].radius
+            });
+            for (let fi = 0; fi < frames; fi++) {
+                bitmap.copyRect(bitmaps[bi], {
+                    x: fi*frameSize,
+                    y: 0,
+                    width: frameSize,
+                    height: frameSize
+                }, (fi*size + (size-frameSize)/2)|0, (bi * size + (size-frameSize)/2)|0);
+            }
+            if (destroyBitmaps) {
+                bitmaps[bi].destroy();
+            }
+        }
+
+        function find(radius) {
+            return bitmapsAttributes.filter(ba => ba.radius === radius).map(ba => ba.index);
+        }
+
+        return {
+
+            bitmap: bitmap,
+
+            find(radius) {
+                return find(radius);
+            },
+
+            getFrames(index) {
+                return bitmapsAttributes[index].frames;
+            },
+
+
+            drawFrame(target,index, frame,  x, y, mode) {
+                let frameSize = bitmapsAttributes[index].frameSize;
+                target.copyRect(bitmap, {
+                    x: size*frame,
+                    y: size*index,
+                    width: size,
+                    height: size
+                },
+                    (x - size/2)|0,
+                    (y - size/2)|0, 1, mode
+                )
+            }
+        }
+
+
+    }
+
+    function createCircleSprites(radius = 4, delta = 1, T = 1) {
         let spriteSize = radius*2 + 4 + delta;
         let raiseFrames = radius;
 
@@ -22,6 +87,20 @@
             tentAngles.push(game.rnd.realInRange(0, Math.PI*2));
         }
 
+        let curve = [];
+        let curveLength = 1;// game.rnd.integerInRange(0, 8);
+        let fx = game.rnd.realInRange(-1, 1);
+        let fy = game.rnd.realInRange(-1, 1);
+        let ffx = game.rnd.realInRange(-1, 1);
+        let ffy = game.rnd.realInRange(-1, 1);
+        for (let ci = 0; ci < curveLength; ci++) {
+            curve.push({fx:fx|0, fy:fy|0, fr: 1 - (1+ci)/curveLength});
+            fx += ffx;
+            fy += ffy;
+        }
+        curve.unshift({fx:0,fy:0, fr: 1});
+        //curve.unshift({fx:0,fy:0, fr: 0});
+
         let scale = game.rnd.realInRange(0.9, 1);
         let baseRotate = game.rnd.realInRange(-1, 1);
         function drawCircle(frame, r, tentacles, alt = true, main = true) {
@@ -34,8 +113,11 @@
             if (main) {
                 bitmap.ctx.fillStyle = 'rgb(255,' + (alt ? 0 : 10) + ',0)';
                 bitmap.ctx.beginPath();
-                bitmap.ctx.arc(x, y, r, 0, Math.PI * 2);
-                bitmap.ctx.closePath();
+                for (let {fx,fy,fr} of curve) {
+                    bitmap.ctx.moveTo(x+fx, y+fy);
+                    bitmap.ctx.arc(x+fx, y+fy, (r*fr)|0, 0, Math.PI * 2);
+                    //bitmap.ctx.closePath();
+                }
                 bitmap.ctx.fill();
 
                 bitmap.ctx.strokeStyle = 'red';
@@ -55,14 +137,18 @@
             if (alt) {
                 //todo: a bit more chaos needed
                 bitmap.ctx.fillStyle = 'blue';
-                bitmap.ctx.beginPath();
+                bitmap.ctx.beginPath()
                 let br = -Math.min(r, delta);
-                bitmap.ctx.arc(
-                    x,
-                    y,
-                    r + br,
-                    0, Math.PI * 2);
-                bitmap.ctx.closePath();
+                for (let {fx,fy,fr} of curve) {
+                    //bitmap.ctx.beginPath();
+                    bitmap.ctx.moveTo(x+fx, y+fy);
+                    bitmap.ctx.arc(
+                        x+fx,
+                        y+fy,
+                        (r + br)*(1-fr),
+                        0, Math.PI * 2);
+                    //bitmap.ctx.closePath();
+                }
                 bitmap.ctx.fill();
 
                 for (let a = 0; a < tentacles; a++) {
@@ -85,10 +171,10 @@
 
         for (; frame < raiseFrames; frame++) {
             let r = ((frame/raiseFrames)*radius);
-            drawCircle(frame, r, (frame/2)*r*Math.PI/2);
+            drawCircle(frame, r, T*(frame/2)*r*Math.PI/2);
         }
 
-        drawCircle(frame, radius, radius*Math.PI/2);
+        drawCircle(frame, radius, T*radius*Math.PI/2);
 
         bitmap.radius = radius;
 
@@ -144,5 +230,6 @@
     }
 
     global.createCircleSprites = createCircleSprites;
+    global.createMultiBitmap = createMultiBitmap;
 
 })(window);

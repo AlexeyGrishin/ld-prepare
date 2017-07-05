@@ -103,17 +103,17 @@ class Grid {
     }
 
     getReal(x, y) {
-        return this.get(x >> PIX_SHIFT, y >> PIX_SHIFT);
+        return this.get(x / PIX, y / PIX);
     }
 
     setReal(x, y, val) {
-        this.set(x >> PIX_SHIFT, y >> PIX_SHIFT, val);
+        this.set(x / PIX, y / PIX, val);
     }
 
     forEach(cb) {
         for (let x = 0; x < this.grid.length; x++) {
             for (let y = 0; y < this.grid[x].length; y++) {
-                cb(this.grid[x][y].value, x, y, this.grid[x][y], x << PIX_SHIFT, y << PIX_SHIFT);
+                cb(this.grid[x][y].value, x, y, this.grid[x][y], x * PIX, y * PIX);
             }
         }
     }

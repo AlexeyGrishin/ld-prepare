@@ -1,0 +1,39 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Demo 1</title>
+    <script src="../game6/phaser.js"></script>
+    <script src="../common/opts.js"></script>
+</head>
+<body>
+<div id="fps"></div>
+<div id="recolor" style="font-family: monospace"></div>
+<button id="start">Start spawning</button>
+<button id="stop">Stop spawning</button>
+<div id="container"></div>
+<script src="./inf/Grid.js"></script>
+<script src="./inf/pointsGen.js"></script>
+<script src="./inf/spritesGen.js"></script>
+<script src="./points.js"></script>
+<script src="./inf/LowInfection.js"></script>
+<script src="./inf/Breathing.js"></script>
+
+<script src="./bitmap3.js"></script>
+<script>
+  var game = new Phaser.Game({
+    width: SIZE,
+    height: SIZE,
+    renderer: Phaser.AUTO,
+    parent: 'container',
+    antialias: false,
+    state: {preload: preload,
+      create: create,
+      update: update,
+      render: debugRender1 }
+  });
+
+
+</script>
+</body>
+</html>
