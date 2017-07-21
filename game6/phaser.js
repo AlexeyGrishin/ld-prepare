@@ -16168,6 +16168,11 @@ PIXI.PixiShader.prototype.initSampler2D = function(uniform)
             wrapS = gl.REPEAT;
             wrapT = gl.REPEAT;
         }
+        //todo: alexey
+        if (data.nearest) {
+            magFilter = gl.NEAREST;
+            minFilter = gl.NEAREST;
+        }
 
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, !!data.flipY);
 

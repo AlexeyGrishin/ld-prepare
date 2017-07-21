@@ -135,11 +135,12 @@ class GrassModel {
                     let y = (item.y + item.delta.y)|0;
                     if (x >= 0 && y >= 0 && x < 24 && y < 24) {
                         if (!item.key) {
-                            this.bitmap.setPixel(x, y, item.color.r, item.color.g, item.color.b, false);
+                            let color = item.delta.color || item.color;
+                            this.bitmap.setPixel(x, y, color.r, color.g, color.b, false);
                             if (prev && (Math.abs(px-x) > 1 || Math.abs(py-y) > 1)) {
                                 let nx = ((px+x)/2)|0;
                                 let ny = ((py+y)/2)|0;
-                                this.bitmap.setPixel(nx, ny, item.color.r, item.color.g, item.color.b, false);
+                                this.bitmap.setPixel(nx, ny, color.r, color.g, color.b, false);
                             }
                             //this.bitmap.context[first ? 'moveTo' : 'lineTo'](x, y);
                         } else {
@@ -165,9 +166,9 @@ class GrassModel {
     }
 
     updateWind(direction, power, offsetY) {
-        //if (!this.impacting) {
+        if (power) {
             this.impact(direction, power, offsetY);
-        //}
+        }
     }
 
     impact(direction, power, offsetY) {
@@ -298,26 +299,136 @@ function pointImpacter(model) {
 
 
      */
-    let biList = [];
+    let perY = new Map();
+    let all = [];
 
-    let leafs = [];
-
-    function walkBranch(branch, reverseBranch) {
-        let last;
+    function walkBranch(branch, lastRef) {
         for (let item of branch) {
             if (item.branches) {
-                item.branches.forEach(b => walkBranch(b, reverseBranch.slice()));
+                item.branches.forEach(b => walkBranch(b, lastRef));
                 return;
             } else {
-                reverseBranch.unshift(item);
-                last = item;
+                let newItem = {
+                    item: item,
+                    prev: undefined,
+                    next: [],
+                    forces: [],
+                    speed: 0
+
+                };
+                if (lastRef) {
+                    lastRef.next.push(newItem);
+                    newItem.prev = lastRef;
+                }
+                let perYList = perY.get(item.y);
+                if (!perYList) {
+                    perYList = [];
+                    perY.set(item.y, perYList);
+                }
+                perYList.push(newItem);
+                all.push(newItem);
+                lastRef = newItem;
             }
         }
-        leafs.push(reverseBranch);
     }
 
-    walkBranch(model, []);
+    walkBranch(model);
+    for (let item of all) {
+        let nextCount = 0;
+        let next = item.next[0];
+        while (next) {
+            nextCount++;
+            next = next.next[0];
+        }
+        item.distanceFromTop = nextCount;
+    }
 
+    let impacting = false;
+
+    return {
+        impact(dir, power, offsetY) {
+            let list = perY.get(offsetY) || [];
+            //dir = 1;
+            impacting = true;
+            for (item of list) {
+
+                item.forces.push({
+                    power: power * Math.sqrt(1/(item.distanceFromTop+1)), dir, time: game.time.time, passedNext: false, passedPrev: false
+                });
+
+                //item.delta.color = {r:255,g:0,b:0};
+            }
+        },
+
+        update() {
+            const PASSING_COEF = 0.7;
+            const SLOWDOWN_COEF = 0.8;
+            const SPEED_COEF = 0.1;
+            const RESIST_COEF = 1;
+            const FORCE_COEF = 0.3;
+            const SPEED_DOWN_COEF = 0.99;
+            if (!impacting) {
+                return false;
+            }
+            let anyImpacted = false;
+            for (let item of all) {
+                item.forces = item.forces.filter(f => f.power >= 0.1);
+
+                let totalForce = 0;
+
+                for (let force of item.forces) {
+
+
+                    if (!force.passedNext) {
+                        force.passedNext = true;
+                        for (let anotherItem of item.next) {
+                            anotherItem.forces.push({
+                                power: force.power*PASSING_COEF,
+                                dir: force.dir,
+                                time: game.time.time,
+                                passedNext: false,
+                                passedPrev: true
+                            });
+                        }
+                    }
+                    if (!force.passedPrev && item.prev) {
+                        force.passedPrev = true;
+                        item.prev.forces.push({
+                            power: force.power*PASSING_COEF,
+                            dir: force.dir,
+                            time: game.time.time,
+                            passedNext: true,
+                            passedPrev: false
+                        });
+                    }
+
+                    force.power *= SLOWDOWN_COEF;
+                    totalForce += (force.power*force.dir);
+
+                }
+                let resistPower = -item.item.delta.angle * RESIST_COEF;
+
+                totalForce += resistPower;
+                item.speed += FORCE_COEF*totalForce;
+                item.speed *= SPEED_DOWN_COEF;
+                item.item.delta.angle += item.speed * SPEED_COEF;
+
+                if (totalForce || item.speed) {
+                    //console.log("force=", item.forces.length ? item.forces[0].power : 0, "resist=", resistPower, "delta=", item.item.delta.angle, "speed=",item.speed);
+                }
+
+                if (Math.abs(item.item.delta.angle) + Math.abs(totalForce) + Math.abs(item.speed) > 0.1) {
+                    anyImpacted = true;
+                } else {
+                    item.item.delta.angle = 0;
+                }
+            }
+            if (!anyImpacted) {
+                impacting = false;
+            }
+            return true;
+        }
+    }
 
 
 }

@@ -1,4 +1,4 @@
-var game = new Phaser.Game(600, 600, Phaser.AUTO, 'container', {
+var game = new Phaser.Game(200, 200, Phaser.AUTO, 'container', {
     preload: preload,
     create: create,
     update: update,
@@ -44,13 +44,13 @@ function create() {
 
 
     game.plugins.add(Phaser.Plugin.PhaserIlluminated);
-    lamp1 = game.add.illuminated.lamp(16*8.5-100, 16*6.5-100, {distance: 100});
+    lamp1 = game.add.illuminated.lamp(16*8.5-120, 16*6.5-120, {distance: 120, diffuse:0.1});
     var zabor1 = game.add.illuminated.rectangleObject(2*16, 2*16, 6*16, 1*16);
     var zabor2 = game.add.illuminated.rectangleObject(2*16, 2*16, 4, 6*16);
     var zabor3 = game.add.illuminated.rectangleObject(2*16, 7*16, 4*16, 1*16);
     var tree1 = game.add.illuminated.rectangleObject(4*16, 9*16, 16, 16);
     lamp1.createLighting([zabor1, zabor2, zabor3, tree1]);
-    mask1 = game.add.illuminated.darkMask([lamp1]);
+    mask1 = game.add.illuminated.darkMask([lamp1], 'rgba(0,0,0,1)');
     mask1.bringToTop();
 
     norm = game.add.filter('NormalTest');
@@ -78,13 +78,13 @@ function update() {
 
     //lamp1.x = hero.x-200;
     //lamp1.y = hero.y-200;
-    lamp1.x = 16*8.5-100 + lampd.x;
-    lamp1.y = 16*6.5-100 + lampd.y;
+    //lamp1.x = 16*8.5-100 + lampd.x;
+    //lamp1.y = 16*6.5-100 + lampd.y;
     lampd.ticks += game.time.elapsedMS;
     if (lampd.ticks >= 100) {
         lampd.ticks -= 100;
-        lampd.x = game.rnd.integerInRange(-2,+2);
-        lampd.y = game.rnd.integerInRange(-2,+4);
+        //lampd.x = game.rnd.integerInRange(-2,+2);
+        //lampd.y = game.rnd.integerInRange(-2,+4);
     }
 
     lamp1.refresh();

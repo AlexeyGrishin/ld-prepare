@@ -67,7 +67,25 @@
 
     }
 
-    function createCircleSprites(radius = 4, delta = 1, T = 1) {
+
+    function createCircleSpritesDpi(radius = 4, delta = 1, T = 1, dpi) {
+        let origBitmap = createCircleSprites(radius/dpi, delta, T, 1);
+        let bitmap = game.add.bitmapData(origBitmap.width * dpi, origBitmap.height * dpi);
+        bitmap.smoothed = false;
+        origBitmap.smoothed = false;
+        bitmap.fill(0, 0, 0, 0);
+        bitmap.copy(origBitmap, 0, 0, origBitmap.width, origBitmap.height, 0, 0, bitmap.width, bitmap.height, 0, 0, 0, 1, 1);
+        bitmap.radius = radius;
+        return bitmap;
+    }
+
+
+    function createCircleSprites(radius = 4, delta = 1, T = 1, dpi = 1) {
+
+        if (dpi !== 1) {
+            return createCircleSpritesDpi(radius, delta, T, dpi);
+        }
+
         let spriteSize = radius*2 + 4 + delta;
         let raiseFrames = radius;
 

@@ -15,6 +15,6 @@ class GrassSprite extends Phaser.Sprite {
     }
 
     updateWind(p, dir = -1, y) {
-        this.model.updateWind(dir, p, this.bottom - y);
+        this.model.updateWind(dir, p, y - this.top);
     }
 }

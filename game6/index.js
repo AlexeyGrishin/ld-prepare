@@ -158,6 +158,13 @@ function addMouse(gx, gy) {
 
     game.physics.arcade.enable(mouse);
 
+    mouse.nose = game.add.sprite(10, -4);
+    mouse.nose.width = 2;
+    mouse.nose.height = 2;
+    mouse.addChild(mouse.nose);
+    game.physics.arcade.enable(mouse.nose);
+    //mouse.nose.body.setSize(2,2);
+
     let state = 'idle';
     let hasCheese = false;
 
@@ -167,6 +174,7 @@ function addMouse(gx, gy) {
         state = 'tocheese';
         hasCheese = false;
         mouse.body.velocity.x = SPEED;
+        mouse.speedX = 1;
         mouse.scale.x = 1;
         mouse.animations.play('walking');
     }
@@ -174,6 +182,7 @@ function addMouse(gx, gy) {
     function rest() {
         state = 'idle';
         mouse.body.velocity.x = 0;
+        mouse.speedX = 0;
         if (hasCheese) {
             mouse.animations.play('eating');
             game.time.events.add(5000, tryToGetCheese);
@@ -186,6 +195,7 @@ function addMouse(gx, gy) {
     function goBack(noStop = false) {
         state = 'back';
         let goBackImmediately = () => {
+            mouse.speedX = -2;
             mouse.body.velocity.x = -SPEED*2;
             mouse.scale.x = -1;
             mouse.animations.play('walking');
@@ -195,6 +205,7 @@ function addMouse(gx, gy) {
             return goBackImmediately();
         }
         mouse.body.velocity.x = 0;
+        mouse.speedX = 0;
         mouse.animations.play('idle');
         game.time.events.add(500, goBackImmediately);
     }
@@ -209,7 +220,7 @@ function addMouse(gx, gy) {
                     hasCheese = true;
                     goBack();
                 }
-                if (Math.abs(owl.y - mouse.y) < 40) {
+                if (owl && Math.abs(owl.y - mouse.y) < 40) {
                     goBack(true);
                 }
                 break;
@@ -224,7 +235,7 @@ function addMouse(gx, gy) {
     };
 
     rest();
-
+    //tryToGetCheese();
     return mouse;
 }
 
@@ -322,10 +333,10 @@ const GRASSES = [
     }
 ];
 
-function addGrass(gx, gy, idx = undefined, color) {
+function addGrass(gx, gy, idx = undefined, color = undefined, ax = +4 + game.rnd.integerInRange(1,3)) {
     let kind = idx === undefined ? game.rnd.pick(GRASSES) : GRASSES[idx];
     kind.model[0].color = color || kind.color;
-    let g = new GrassSprite(r(gx), r(gy)+4 + game.rnd.integerInRange(1,3), new GrassModel(kind.model), grassGrp);
+    let g = new GrassSprite(r(gx), r(gy)+ax, new GrassModel(kind.model), grassGrp);
     return g;
 }
 
@@ -335,8 +346,10 @@ function throwWindParticle() {
     game.physics.arcade.enable(wp);
     wp.width = 4;
     wp.height = 4;
+    wp.weight = 1;
     wp.update = () => {
-       wp.x -= game.rnd.integerInRange(1,3);
+       wp.x -= game.rnd.integerInRange(1,3) / 3;
+       wp.weight *= 0.99;
     };
     wp.reactedWith = [];
     wp.checkWorldBounds = true;
@@ -430,6 +443,12 @@ function create() {
 
     game.world.bringToTop(cloudGrp);
 
+
+    //addGround(6, 5);
+    //addGround(5, 5);
+    //addGrass(6.5, 4, 0, undefined, +4);
+    //addGrass(5.5, 4, 0, undefined, +4);
+
 }
 
 function update() {
@@ -437,14 +456,19 @@ function update() {
     grassGrp.forEachAlive(grass => {
        let p = 0;
        windParticlesGrp.forEachAlive(wp => {
-            if (game.physics.arcade.overlap(grass, wp)/* && wp.reactedWith.indexOf(grass) == -1*/) {
-                p++;
+            if (game.physics.arcade.overlap(grass, wp) && wp.reactedWith.indexOf(grass) == -1) {
+                p += wp.weight;
                 wp.reactedWith.push(grass);
             }
        });
-
        grass.touchedByWind = p;
        grass.updateWind(p, -Math.sign(hero.scale.x), hero.y);
+       miceGrp.forEachAlive(mouse => {
+            if (game.physics.arcade.overlap(grass, mouse.nose)) {
+                grass.updateWind(0.2*Math.abs(mouse.speedX), mouse.speedX, mouse.bottom-2);
+            }
+       });
+
     });
     //todo: reuse
     cloudGrp.forEachAlive(cloud => {
@@ -467,10 +491,10 @@ function update() {
 
 function debugRender1() {
     windParticlesGrp.forEachAlive(wp => {
-        //game.debug.spriteBounds(wp, "#00cccc")
+        //game.debug.spriteBounds(wp, `rgba(0,200,200,${wp.weight.toFixed(2)})`);
     });
-    grassGrp.forEachAlive(gg => {
-        //game.debug.body(gg, "#cc0000");
-        //game.debug.spriteBounds(gg, "#440000", false);
+    miceGrp.forEachAlive(gg => {
+        //game.debug.body(gg.nose, "#cc0000");
+        //game.debug.spriteBounds(gg.nose, "#440000", false);
     });
 }

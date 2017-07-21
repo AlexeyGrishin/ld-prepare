@@ -145,7 +145,7 @@ Phaser.Plugin.PhaserIlluminated.prototype._createDarkMask = function(illuminated
 
     var bmd = game.add.bitmapData(this._game.width, this._game.height);
     game.cache.addBitmapData('illuminated-darkmask', bmd);
-    var darkMask = new illuminated.DarkMask({lights: lamps, color: color ? color : 'rgba(0,0,0,0.8'});
+    var darkMask = new illuminated.DarkMask({lights: lamps, color: color ? color : 'rgba(0,0,0,0.8)'});
     darkMask.compute(this._game.width, this._game.height);
     darkMask.render(bmd.ctx);
     var sprite = game.add.sprite(0, 0, bmd);

@@ -141,8 +141,8 @@
 
     function addShifted(x, y, r) {
       points.push({
-        x: ((x + game.rnd.integerInRange(-2,2)) + textureSize) % textureSize,
-        y: ((y + game.rnd.integerInRange(-2,2)) + textureSize) % textureSize,
+        x: ((x + game.rnd.integerInRange(-4,4)) + textureSize) % textureSize,
+        y: ((y + game.rnd.integerInRange(-4,4)) + textureSize) % textureSize,
         r: r
       })
     }
@@ -188,7 +188,7 @@
     while (x < textureSize) {
       x += r;
       r = game.rnd.integerInRange(minR, maxR);
-      x += r + pad + 2;
+      x += r + pad + 4;
       if (x >= textureSize) break;
       addShifted(x, y, r);
     }

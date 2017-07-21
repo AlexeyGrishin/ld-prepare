@@ -19,7 +19,7 @@ class Breathing extends Phaser.Filter {
         void main(void) {
             gl_FragColor = texture2D(uSampler, vTextureCoord.xy);
             //vec4 rnd = texture2D(uSampler, vec2(0.5 + 0.5*sin(vTextureCoord.x), 0.5 + 0.5*cos(vTextureCoord.y + mod(time, 6.28))));
-            vec4 rnd = texture2D(iChannel1, vTextureCoord.yx*2.);
+            vec4 rnd = texture2D(iChannel1, vTextureCoord.yx*22.);
             float a2 = 3. * rnd.b;
             float a4 = 5. * rnd.g;
             //float k = mod(time + a2, a4) > a4/2. ? 1. : 0.;// cos(mod(time*2. + a2, 6.28))*0.5 + 0.5;
@@ -32,10 +32,10 @@ class Breathing extends Phaser.Filter {
             
             //vec4 clr = texture2D(iChannel0, vec2(1.-rint, 0.5));
             vec4 clr;
-            if (rint > 0.9) {
+            if (rint > 0.95) {
               clr = vec4(74., 26., 39., 255.) / 255.;
               //clr = vec4(0,0,1,1);
-            } else if (rint > 0.8) {
+            } else if (rint > 0.9) {
               clr = vec4(136., 47., 53., 255.) / 255.;
               //clr = vec4(0,1,0,1);
             } else {

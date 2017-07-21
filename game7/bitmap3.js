@@ -18,7 +18,7 @@ let options = initOptions({
   useShaders: ["boolean", true]
 });
 
-const SIZE = 1024;
+const SIZE = 256;
 const PIX = 12;
 
 const ALPHA_MODE = null;//'darken';
@@ -71,7 +71,7 @@ function prepareInfectionSprites() {
 
   [[1,0], [2,0], [3, 0], [4, 0], [5, 0], [6, 1], [7,1], [8,2], [9,2], [10,2], [11,2],[12,2]/*,[13,2],[14,3],[15,3],[16,3]*/].forEach(([r, d]) => {
     for (let si = 0; si < 2; si++) {
-      sprites.push(createCircleSprites(r, d, 0));
+      sprites.push(createCircleSprites(r, d, 0, 2));
     }
     spritesPerSize.set(r, []);
   });
@@ -640,9 +640,49 @@ function createInfectionController2(size, pix, infBC, infBE, infSE) {
 
 }
 
+function createNoise(pix, dpi = 1) {
+  let COUNT = 10;
+  let PROP = 1;//0.6;
+  let R = 100, G = 100, B = 100;
+  let c = document.createElement('canvas');
+  c.width = pix * COUNT;
+  c.height = pix * COUNT;
+  let ctx = c.getContext('2d');
+  for (let x = 0; x < COUNT; x++) {
+    for (let y = 0; y < COUNT; y++) {
+      let id = ctx.getImageData(x*PIX, y*PIX, PIX, PIX);
+      for (let px = 0; px < PIX; px += dpi) {
+        for (let py = 0; py < PIX; py += dpi) {
+          let dist = 1 - Math.hypot(px-PIX/2, py-PIX/2) / Math.hypot(PIX,PIX);
+          dist = Math.pow(dist, 4);
+          let hasPixel = game.rnd.frac() < PROP*dist;
+          if (hasPixel) {
+            for (let dx = 0; dx < dpi; dx++) {
+              for (let dy = 0; dy < dpi; dy++) {
+                let i = (py+dy)*4*PIX + (px+dx)*4;
+                id.data[i]   = R;
+                id.data[i+1] = G;
+                id.data[i+2] = B;
+                id.data[i+3] = 255;
+
+              }
+            }
+          }
+        }
+      }
+      ctx.putImageData(id, x*PIX, y*PIX);
+    }
+  }
+  return c;
+}
+
+
 var grid, debugBitmap;
 
 function create() {
+
+  document.body.appendChild(createNoise(PIX, 2));
+
   game.rnd.sow([1]);
   grid = new Grid(SIZE/PIX, SIZE/PIX);
   game.stage.backgroundColor = '#cccccc';
@@ -664,9 +704,9 @@ function create() {
     */
     points1 = preparePoints3(128, 8, 10, -7, true, 9);
     console.log('p1 generated');
-    points2 = preparePoints3(64, 4, 7, 2);
+    points2 = preparePoints3(64, 4, 7, 3);
     console.log('p2 generated');
-    points3 = preparePoints3(32, 1, 3, 1);
+    points3 = preparePoints3(32, 2, 3, 1);
     console.log('p3 generated');
     //console.log('window.P = ' + JSON.stringify({P1: points1.store(), P2: points2.store(), P3: points3.store()}) + ';');
   }
@@ -695,6 +735,10 @@ function create() {
   //grid.set(9,1, {i:true});
 
   controller.growAt(8, 2);
+  controller.growAt(8, 1);
+  controller.growAt(8, 3);
+  controller.growAt(9, 2);
+  controller.growAt(7, 2);
   controller.growAt(8, 8);
 
   buttons = {
@@ -704,7 +748,6 @@ function create() {
   };
 
   game.world.bringToTop(debugBitmap.sprite);
-
 }
 
 
