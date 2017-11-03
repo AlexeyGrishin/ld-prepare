@@ -1,0 +1,272 @@
+<canvas width="256" height="256"></canvas>
+
+<script>
+    let c = document.querySelector("canvas")
+    let ctx = c.getContext('2d')
+
+    ctx.fillStyle = "black"
+    ctx.fillRect(0, 0, 256, 256)
+
+    let particles = [];
+    let fr = 0;
+    let np = {
+        add: false,
+        x: 0,
+        y: 0,
+        vx: 0,
+        vy: 0,
+        color: 0,
+        size: 0,
+        alpha: 0
+    };
+
+    function rndBetween(a, b) {
+        return a + Math.random()*(b-a);
+    }
+    window.rndBetween = rndBetween;
+
+    function intBetween(a, b) {
+        return Math.round(rndBetween(a,b));
+    }
+
+    function generateFireParticle() {
+        let r = intBetween(200, 255);
+        let b = intBetween(0, 100);
+        let g = intBetween(0, 100);
+        let a = rndBetween(0, 1);
+        return {
+            type: 'fire',
+            x: intBetween(-5,25),
+            y: intBetween(-4,2),
+            vx: rndBetween(-0.1, 0.3),
+            vy: rndBetween(-1.5, -0.5),
+            alpha: a,
+            size: intBetween(1, 3)*4,
+            vsize: 0.98,
+            va: -0.01,
+            color: 'rgb(' + r + ',' + g + ',' + b + ')',
+            visible: true
+        }
+    }
+
+    function generateSmokeParticle() {
+        let c = intBetween(50, 100);
+        return {
+            type: 'smoke',
+            x: intBetween(-5,5),
+            y: intBetween(-60, -50),
+            vx: rndBetween(0.2, 0.5),
+            vy: rndBetween(-0.75, -0.25),
+            alpha: rndBetween(0, 0.4),
+            size: intBetween(1, 3)*4,
+            vsize: 1.001,
+            va: -0.001,
+            color: 'rgb(' + c + ',' + c + ',' + c + ')',
+            visible: true
+        }
+    }
+
+    function generateCloudParticle() {
+        let c = intBetween(150, 250);
+        let x = intBetween(-130,-60);
+        let xx = 0.5-Math.abs((x+130)/(-60+130)-0.5);
+        let y = -190 + 2*intBetween(-10,+10)*Math.pow(xx,0.5);
+        return {
+            type: 'cloud',
+            x: x,
+            y: y,
+            vx: rndBetween(0.05, 0.06),
+            vy: 0,
+            alpha: rndBetween(0.1, 0.6),
+            size: intBetween(1, 6)*2,
+            vsize: 1,
+            va: -0,
+            color: 'rgb(' + c + ',' + c + ',' + c + ')',
+            visible: true
+        }
+    }
+
+    function generateRainParticle() {
+        let c = intBetween(200, 255);
+        return {
+            type: 'rain',
+            x: intBetween(cloudLeft+0,cloudLeft+60),
+            y: intBetween(-180,-170),
+            vx: rndBetween(0.8,1),
+            vy: 3,
+            alpha: rndBetween(0.5, 0.8),
+            size: intBetween(1, 3)*2,
+            vsize: 1,
+            va: -0,
+            color: 'rgb(' + 0 + ',' + ((c/10)).toFixed(0) + ',' + c + ')',
+            visible: true
+        }
+    }
+
+    var cloudLeft = 1000;
+    var rainSpeed = 1;
+    //var rainSpeedStep = 100;
+
+    function update() {
+        let add = [];
+        if (fr === 0) {
+            for (let i = 0; i < 400; i++) add.push(generateCloudParticle());
+        }
+        if (fr%1 === 0) {
+            //add new particle
+            add.push(generateFireParticle());
+            add.push(generateFireParticle());
+            add.push(generateFireParticle());
+            add.push(generateFireParticle());
+            add.push(generateFireParticle());
+            add.push(generateFireParticle());
+        }
+        if (fr > 40 && fr%4 === 0) {
+            //add.push(generateSmokeParticle());
+        }
+        if (fr > 1 && fr%rainSpeed === 0) {
+            for (let a = 0; a < 8; a++) add.push(generateRainParticle());
+        }
+        //if (fr % rainSpeedStep === 0 && rainSpeed > 1) rainSpeed-=2;
+        cloudLeft = 1000;
+        for (let p of particles) {
+            if (p.visible) {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.alpha += p.va;
+                if (p.alpha < 0 || p.x < -128 || p.y < -200 || p.y > 56 || p.x > 128) {
+                    p.visible = false;
+                    //if (p.type === 'rain' && fr < 400) console.log('hide rain', p.x, p.y, p.alpha, p.size);
+                }
+                if (p.vsize) {
+                    p.size = p.size * p.vsize;
+                }
+                if (p.type === 'cloud') cloudLeft = Math.min(cloudLeft, p.x);
+            } else if (add.length) {
+                let np = add.pop();
+                p.x = np.x;
+                p.y = np.y;
+                p.alpha = np.alpha;
+                p.vx = np.vx;
+                p.vy = np.vy;
+                p.va = np.va;
+                p.vsize = np.vsize;
+                p.color = np.color;
+                p.visible = true;
+                p.size = np.size;
+                p.type = np.type;
+            }
+        }
+        collision(add);
+        if (add.length && particles.length < 20000) {
+            for (let np of add) {
+                particles.push(np);
+            }
+        }
+        fr++;
+        draw();
+    }
+
+    function collision(add) {
+        //collision
+        let fire = [], water = [];
+        let fbox = undefined;
+        for (let p of particles) {
+            if (!p.visible) continue;
+            if (p.type === 'fire') {
+                fire.push(p);
+                if (!fbox) { fbox = {left:p.x, right:p.x, top: p.y, bottom:p.y}}
+                else {
+                    if (p.x < fbox.left) fbox.left = p.x;
+                    if (p.x > fbox.right) fbox.right = p.x;
+                    if (p.y < fbox.top) fbox.top = p.y;
+                    if (p.y > fbox.bottom) fbox.bottom = p.y;
+                }
+            }
+            if (p.type === 'rain') water.push(p);
+        }
+        for (let w of water) {
+            if (w.x < fbox.left || w.x > fbox.right || w.y < fbox.top || w.y > fbox.bottom) continue;
+            for (let f of fire) {
+                if (!f.visible) continue;
+                if (Math.hypot(w.x-f.x, w.y-f.y) < (w.size+f.size)/2) {
+                    f.visible = false;
+                    w.visible = false;
+                    let smoke = generateSmokeParticle();
+                    smoke.x = f.x;
+                    smoke.y = f.y;
+                    add.push(smoke);
+                    if (add.length > 1000) return;
+                    break;
+                }
+            }
+        }
+    }
+
+    function draw() {
+        ctx.globalCompositeOperation = "source-over";
+        ctx.fillStyle = "black";
+        ctx.globalAlpha = 1;
+        ctx.fillRect(0, 0, 256, 256);
+        ctx.globalCompositeOperation = "lighter";
+        for (let p of particles) {
+            if (!p.visible) continue;
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = p.alpha;
+            let size = p.vsize !== undefined ? p.size : Math.max(2, Math.sqrt(p.alpha)*p.size);
+            //if (p.type === 'rain' && fr < 500) console.log(p.x, p.y, size, p.color, p.alpha);
+            //if (p.type === 'rain') {ctx.fillStyle = 'blue'; size = 10;}
+            //
+            drawCircle(p, size);
+
+        }
+    }
+
+    function drawRect(p, size) {
+        ctx.fillRect((p.x|0) + 128 - size/2, (p.y|0) + 240, size, size);
+    }
+
+    function drawCircle(p, size) {
+        ctx.save();
+        ctx.translate((p.x|0) + 128 - size/2, (p.y|0) + 240 - size/2);
+        if (p.type === 'cloud') {
+            ctx.scale(1, 0.5);
+        } else if (p.type === 'fire') {
+            ctx.scale(1, 1.5);
+        } else if (p.type === 'rain') {
+            ctx.rotate(Math.atan2(-p.vy, -p.vx) - Math.PI/2);
+            ctx.scale(0.2, 6);
+        }
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.arc(0, 0, size/2, 0, Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    function drawTriangle(p, size, time = 0) {
+        let a1 = (time % 100)/100 * Math.PI * 2;
+        let a2 = a1 +  Math.PI * 2 / 3;
+        let a3 = a2 +  Math.PI * 2 / 3;
+        let cx = (p.x|0) + 128 - size/2;
+        let cy = (p.y|0) + 240 - size/2;
+        ctx.beginPath();
+        ctx.moveTo(cx + size/2 * Math.cos(a1), cy + size/2 * Math.sin(a1));
+        ctx.lineTo(cx + size/2 * Math.cos(a2), cy + size/2 * Math.sin(a2));
+        ctx.lineTo(cx + size/2 * Math.cos(a3), cy + size/2 * Math.sin(a3));
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    function drawTriangleRotated(p, size) {
+        drawTriangle(p, size*1.5, fr + p.x);
+    }
+
+    function rafUpdate() {
+        update();
+        requestAnimationFrame(rafUpdate);
+    }
+
+    requestAnimationFrame(rafUpdate);
+    //update();
+</script>
