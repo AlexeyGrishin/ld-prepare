@@ -88,7 +88,6 @@ function addOwl(gx, gy) {
                 break;
         }
         owl.updateVelocity();
-
     };
 
     function idle() {
@@ -104,7 +103,7 @@ function addOwl(gx, gy) {
 
     function back() {
         state = 'back';
-        performFly(retPoint);
+        doFly(retPoint);
     }
 
     let loops;
@@ -121,18 +120,24 @@ function addOwl(gx, gy) {
     });
 
     function performFly(target) {
+        console.log('fly', target.x, target.y);
         owl.animations.play('starting').onComplete.addOnce(() => {
-            loops = 0;
-            owl.animations.play('flying');
-            owl.updateVelocity = () => {
-                let speed = owl.speed * owl.speedFactor;
-                let ang = Phaser.Point.angle(target, owl);
-                owl.body.velocity.x = Math.cos(ang)*speed + owl.windForce.x*speed;
-                owl.body.velocity.y = Math.sin(ang)*speed + owl.windForce.y*speed;
-                owl.scale.x = Math.sign(Math.cos(ang));
-
-            };
+            doFly(target);
         });
+    }
+
+    function doFly(target) {
+        loops = 0;
+        owl.animations.play('flying');
+        owl.updateVelocity = () => {
+            let speed = owl.speed * owl.speedFactor;
+            let ang = Phaser.Point.angle(target, owl);
+            owl.body.velocity.x = Math.cos(ang)*speed + owl.windForce.x*speed;
+            owl.body.velocity.y = Math.sin(ang)*speed + owl.windForce.y*speed;
+            //console.log(owl.body.velocity.y, ang, speed);
+            owl.scale.x = Math.sign(Math.cos(ang));
+
+        };
     }
 
     function fly() {
@@ -348,7 +353,7 @@ function throwWindParticle() {
     wp.height = 4;
     wp.weight = 1;
     wp.update = () => {
-       wp.x -= game.rnd.integerInRange(1,3) / 3;
+       wp.x -= game.rnd.integerInRange(1,3) / 2;
        wp.weight *= 0.99;
     };
     wp.reactedWith = [];
@@ -395,14 +400,14 @@ function create() {
         }
 
         if (cursors.left.isDown) {
-            hero.x -= 1 ;
+            if (hero.left > 0) hero.x -= 1 ;
         } else if (cursors.right.isDown) {
-            hero.x += 1;
+            if (hero.right < game.world.width-1) hero.x += 1;
         }
         if (cursors.up.isDown) {
-            hero.y -= 1;
+            if (hero.top > 0) hero.y -= 1;
         } else if (cursors.down.isDown) {
-            hero.y += 1;
+            if (hero.bottom < game.world.height-1) hero.y += 1;
         }
     };
 
