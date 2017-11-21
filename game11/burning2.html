@@ -1,0 +1,42 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Demo 11</title>
+    <script src="../game6/phaser.js"></script>
+    <script src="../common/opts.js"></script>
+
+</head>
+<body>
+<div id="fps"></div>
+<div id="container"></div>
+
+<script src="./main2.js"></script>
+<pre>
+</pre>
+<script>
+
+    var options = initOptions({
+        spritesCount: ["int", 100],
+        size: ["int", 512],
+        useShader: ["boolean", true]
+    });
+
+
+
+    var game = new Phaser.Game({
+        width: options.size,
+        height: options.size,
+        renderer: Phaser.AUTO,
+        parent: 'container',
+        antialias: false,
+        state: {preload: preload,
+            create: create,
+            update: update,
+            render: debugRender1 }
+    });
+
+
+</script>
+</body>
+</html>
