@@ -1,0 +1,31 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Demo 12</title>
+    <script src="../game6/phaser.js"></script>
+    <script src="../common/opts.js"></script>
+
+</head>
+<body>
+<div id="fps"></div>
+<div id="container"></div>
+
+<script src="./index.js"></script>
+<script>
+    var game = new Phaser.Game({
+        width: 640,
+        height: 640,
+        renderer: Phaser.AUTO,
+        parent: 'container',
+        antialias: false,
+        state: {preload: preload,
+            create: create,
+            update: update,
+            render: debugRender1 }
+    });
+
+
+</script>
+</body>
+</html>
