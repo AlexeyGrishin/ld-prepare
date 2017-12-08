@@ -95,10 +95,10 @@ class Component {
 class ComponentableSprite extends Phaser.Sprite {
     constructor(...args) {
         super(...args);
-        this.data.components = this.components.map(kls => new kls.attachTo(this));
+        this.data.components = this.componentClasses.map(kls => (new kls).attachTo(this));
     }
 
-    get components() { return [];}
+    get componentClasses() { return [];}
 
     update() {
         this.updateBeforeComponents();
@@ -171,9 +171,15 @@ class Walkable extends Component {
     }
 
     onUpdate() {
-        this.scale.set(this.direction === 'left' ? -1 : 1, 1);
+        this.sprite.scale.set(this.direction === 'left' ? -1 : 1, 1);
     }
 
+}
+
+class PathFinder extends Component {
+    static getSelf(sprite) { return sprite.data.pathf; }
+    setSelf(sprite) { sprite.data.pathf = this;}
+    resetSelf(sprite) { sprite.data.pathf = null;}
 }
 
 class Town extends Phaser.Sprite {
@@ -192,7 +198,7 @@ class Worker extends ComponentableSprite {
         this.direction = 'right';
     }
 
-    get components() { return [Selectable, Walkable]}
+    get componentClasses() { return [Selectable, Walkable]}
 }
 
 class Swordsman extends ComponentableSprite {
@@ -204,7 +210,7 @@ class Swordsman extends ComponentableSprite {
         this.direction = 'right';
     }
 
-    get components() { return [Selectable, Walkable]}
+    get componentClasses() { return [Selectable, Walkable]}
 
 }
 
@@ -311,6 +317,8 @@ function create() {
     state.platformsLayer.resizeWorld();
 
     state.selected = null;
+    state.mousedown = null;
+    state.selectionRect = null;
 
     //makeSharped();
 
@@ -363,6 +371,19 @@ function update() {
         state.debugway = [];
     }
 
+    if (!state.mousedown && game.input.activePointer.isDown) {
+        state.mousedown = {x:pos.x, y:pos.y};
+    }
+    if (state.mousedown) {
+        if (game.input.activePointer.isDown) {
+            state.selectionRect = new Phaser.Rectangle(state.mousedown.x, state.mousedown.y, pos.x - state.mousedown.x, pos.y - state.mousedown.y)
+           // console.log(state.selectionRect.x, state.selectionRect.y)
+        } else {
+            state.selectionRect = null;
+            state.mousedown = null;
+        }
+    }
+
 }
 
 function debugRender1() {
@@ -370,4 +391,5 @@ function debugRender1() {
     if (state.debugway && state.debugway.length) {
         state.debugway.forEach(w => game.debug.geom(new Phaser.Circle(w.x*16,w.y*16,4), "red"))
     }
+    if (state.selectionRect) game.debug.geom(state.selectionRect, "rgba(255,0,0,0.2)")
 }
