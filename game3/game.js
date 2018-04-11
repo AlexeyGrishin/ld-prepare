@@ -4,7 +4,7 @@ function preload() {
     game.load.spritesheet("cacodemon", "cacodemon.png", 76, 78);
     game.load.image("ground", "ground.png");
     game.load.script('fb', 'fireball.js');
-    game.load.script('gd', 'Ground.js');
+    game.load.script('gd', 'ground.js');
 }
 
 var hero, cursors, fire, fireCooldown = 0, world;
