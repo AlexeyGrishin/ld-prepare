@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8" />
-    <title>Demo 12</title>
+    <title>Demo 14</title>
     <script src="../game6/phaser.js"></script>
     <script src="../common/opts.js"></script>
 
@@ -14,17 +14,19 @@
 <script src="./index.js"></script>
 <script>
     var game = new Phaser.Game({
-        width: 464,
-        height: 320,
+        width: 600,
+        height: 500,
         renderer: Phaser.AUTO,
         parent: 'container',
-        antialias: false,
-        state: {preload: preload,
-            create: create,
-            update: update,
-            render: debugRender1 }
+        antialias: false
     });
 
+    game.state.add("Load", LoadState);
+    game.state.add("Level1", Level1);
+    game.state.add("Level2", Level2);
+    game.state.add("Win", WinState);
+
+    game.state.start("Load");
 
 </script>
 </body>
