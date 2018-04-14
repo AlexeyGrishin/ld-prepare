@@ -1,16 +1,24 @@
+window.ALEXEY_PROVED = true;
+
 class LoadState {
     preload() {
         game.load.image("level1.bg", "level1.png");
         game.load.image("level2.bg", "level2.png");
+        game.load.image("level3.bg", "level3.png");
         game.load.spritesheet("cat", "meteo-cat.png", 16, 16);
         game.load.spritesheet("grass", "meteo-grass.png", 16, 16);
         game.load.spritesheet("misc", "meteo-misc.png", 16, 16);
+        game.load.spritesheet("trees", "meteo-trees.png", 16, 16);
         game.load.image("lava-1", "lava-1.png");
         game.load.image("water-1", "water-1.png");
         game.load.image("pipe-2", "pipe-2.png");
         game.load.image("water-2", "water-2.png");
+        game.load.image("water-31", "water-31.png");
+        game.load.image("water-32", "water-32.png");
         game.load.tilemap("level1", "map1.json", null, Phaser.Tilemap.TILED_JSON);
         game.load.tilemap("level2", "map2.json", null, Phaser.Tilemap.TILED_JSON);
+        game.load.tilemap("level3", "map3.json", null, Phaser.Tilemap.TILED_JSON);
+        game.load.audio("music1", "frozen-1.ogg");
         game.rnd.sow([0]);
         game.time.advancedTiming = true;
         makeSharped();
@@ -18,12 +26,30 @@ class LoadState {
 
     create() {
         createMaskSpritesheet('grass');
+        createMaskSpritesheet('trees');
         createMaskSpritesheet('cat', false, true);
         createMaskSpritesheet('misc', false, true);
         game.state.start("Level1");
+        game.add.sound("music1").play(undefined, undefined, 0.6, true);
+        let lib = {"explosion":{"Frequency":{"Start":44,"Slide":-0.71,"RepeatSpeed":0.07,"ChangeSpeed":0.6767148937582615,"ChangeAmount":11.496596211476469,"Max":220,"Min":153},"Generator":{"Func":"noise","B":0},"Volume":{"Sustain":0.14,"Decay":0.251,"Punch":0.11,"Attack":0.011,"Master":0.52},"Filter":{"LP":0.99,"HP":0,"LPSlide":1,"HPSlide":-0.11,"LPResonance":0.89},"Vibrato":{"Frequency":0.01,"Depth":0.08,"FrequencySlide":0.01},"Phaser":{"Offset":0.75,"Sweep":-0.65}},"fire":{"Frequency":{"Start":76,"Slide":-0.01,"RepeatSpeed":0,"Min":113,"Max":251,"ChangeAmount":-12,"DeltaSlide":-1},"Generator":{"Func":"triangle","ASlide":-0.5,"BSlide":1,"B":1,"A":0},"Phaser":{"Offset":-0.03,"Sweep":-0.82},"Volume":{"Sustain":0.17,"Decay":0.471,"Punch":0.19,"Attack":0.001,"Master":1},"Vibrato":{"Frequency":1.01,"Depth":0.18,"FrequencySlide":0.6,"DepthSlide":0.83},"Filter":{"HP":0,"LP":1}},"freeze":{"Frequency":{"Start":200,"Slide":0.1,"Min":278,"Max":398},"Vibrato":{"Depth":0.2,"Frequency":3.01,"DepthSlide":-0.03,"FrequencySlide":0.83},"Generator":{"Func":"synth"},"Volume":{"Sustain":0.31795825857994836,"Decay":1.331,"Attack":0.091}},"cool":{"Frequency":{"Start":184.21439605070142,"Min":530.993599988916,"Max":1447.1188719523338,"Slide":0.17936147773177602,"DeltaSlide":-0.45662796368987024,"RepeatSpeed":2.112301481170091,"ChangeAmount":3.9970456539836476,"ChangeSpeed":0.7917707252304746},"Vibrato":{"Depth":0.686114126329183,"DepthSlide":0.5874120889378238,"Frequency":42.91891942369315,"FrequencySlide":-0.4637672665849397},"Generator":{"Func":"synth","A":0.15995785189304712,"B":0.4826123672769218,"ASlide":-0.5252949980079618,"BSlide":-0.720506290725186},"Guitar":{"A":0.26376978931430206,"B":0.9191230664957835,"C":0.4521463298105701},"Phaser":{"Offset":0,"Sweep":-0.61},"Volume":{"Master":0.4,"Attack":0.6258079433110993,"Sustain":1.877912696679962,"Punch":2.794075926428912,"Decay":1.8527269593245017}},"freeze2":{"Frequency":{"Start":242.31667764078972,"Min":1524.694537020016,"Max":1603.911308040573,"Slide":0.4287598898750109,"DeltaSlide":0.4495420723338399,"RepeatSpeed":1.5246908030943396,"ChangeAmount":2.2322994115414687,"ChangeSpeed":0.12389445705853919},"Vibrato":{"Depth":0.12046225739266436,"DepthSlide":-0.05,"Frequency":21.01,"FrequencySlide":-0.2},"Generator":{"Func":"sine","A":0.5604263639818596,"B":0.7483387944605602,"ASlide":-0.8235948958841464,"BSlide":-0.8068134580551054},"Guitar":{"A":0.7487069465854195,"B":0.3182362739352764,"C":0.34710223860056266},"Phaser":{"Offset":-0.77,"Sweep":-0.07},"Volume":{"Master":0.4,"Attack":0.071,"Sustain":0.14356821439301948,"Punch":0.23,"Decay":0.221}},"win":{"Frequency":{"Start":184,"Min":297,"Max":579,"Slide":0.48,"DeltaSlide":-0.17,"RepeatSpeed":3,"ChangeAmount":-12,"ChangeSpeed":0},"Vibrato":{"Depth":0.47,"DepthSlide":-0.03,"Frequency":1.01,"FrequencySlide":-0.20169023403657382},"Generator":{"Func":"synth","A":0.24094215779136285,"B":0.8047674164546779,"ASlide":-0.5746110122236354,"BSlide":-0.8234057866069842},"Guitar":{"A":0.8680376992535788,"B":0.787662149701966,"C":0.18344977594642198},"Phaser":{"Offset":0.82,"Sweep":-1},"Volume":{"Master":0.4,"Attack":0.10125296047186062,"Sustain":0.047382540142184126,"Punch":1.0075817094466677,"Decay":1.9227613181283023},"Filter":{"HP":0,"LP":0.98,"LPSlide":0.41}}};
+        game.sfx = jsfx.Sounds(lib)
     }
 }
 
+/*
+  fire gun
+    common code
+    throws fire at icediamond
+
+  guns
+    do not fire until rotated to goal.
+    rotate FAST
+
+  fire
+    make circle fire
+    temporary ignore mask for weather shader?
+
+ */
 
 class WinState {
     create() {
@@ -38,6 +64,100 @@ class WinState {
         bm.dirty = true;
 
         game.add.sprite(MAP_WIDTH_PIX/2, MAP_HEIGHT_PIX/2+20, "cat", 0);
+
+        /*let reverbSettings = {};
+        let synthSettings = {
+            oscillator: {
+                type: "square"  //sine, square, triangle, sawtooth
+            }, envelope  : {
+                attack  : 0.5 ,
+                decay  : 0.5 ,
+                sustain  : 0.3 ,
+                release  : 0.01
+            }
+        };
+        var reverb = new Tone.Freeverb(reverbSettings).toMaster();
+
+        var synth = new Tone.PolySynth(4, Tone.Synth,synthSettings).connect(reverb);
+
+        Tone.MultiPlayer = Tone.Expr = Tone.TimelineSignal = function() {};
+
+        Tone.Editor
+            .add({
+                reverb: reverb,
+                synth: synth
+            }).master();
+        Tone.Editor.options({
+            // Align the panel left or right
+            align: 'right'
+        });
+
+        /*let synt = new Tone.PolySynth(4, Tone.Synth, {
+            oscillator: {
+                type: "square"  //sine, square, triangle, sawtooth
+            }, envelope  : {
+                attack  : 0.5 ,
+                decay  : 0.5 ,
+                sustain  : 0.3 ,
+                release  : 0.01
+            }
+        });
+        let volume = new Tone.Volume(10);
+        let effect = new Tone.Reverb();
+        effect.generate();
+        synt.connect(volume.connect(effect));
+        effect.toMaster();
+        let metal = new Tone.MetalSynth({
+            frequency: 300,
+            resonance: 100,
+            envelope: {
+                attack: 0.5,
+                decay: 0.1,
+                release: 0.01
+            },
+            volume: -10
+        }).toMaster();
+        //synt.toMaster();
+        let notes = [["C1", "A1"], ["C1"], ["A1"], ["B1"]];
+        let loop = new Tone.Sequence(function(time, n){
+            if (n !== -1) {
+                metal.frequency.setValueAtTime(n * 100, time);
+                synt.triggerAttackRelease(notes[n], "8n", time);
+                metal.triggerAttackRelease("16n", time);
+            } else {
+            }
+        }, [0,-1,1,-1,2,-1,3,-1], "8n");
+        //loop.loop = false;
+
+        let mem = new Tone.MembraneSynth({
+            oscillator  : {
+                type  : "triangle"
+            },
+            envelope  : {
+                attack  : 0.5 ,
+                decay  : 0.4 ,
+                sustain  : 0.1 ,
+                release  : 0.01 ,
+            }
+        }).connect(new Tone.Chorus(1.1, 500,  1).toMaster());
+
+        new Tone.Sequence((time, note) => {
+            mem.triggerAttackRelease(note, "8n", time);
+        }, ["C3", "B2", "A2"], "4n").start().loop = false;
+        setTimeout(() => {
+            Tone.Transport.start();
+        }, 0);
+
+
+        //loop.start();*/
+
+        /*let library = {
+            "s1":{"Generator":{"Func":"sine","A":0,"B":0},"Volume":{"Attack":0.541,"Decay":0.121,"Master":0.53,"Punch":0.14},"Frequency":{"Start":430,"Min":30,"Max":1800,"Slide":-0.21},"Vibrato":{"Depth":1,"Frequency":6.01},"Phaser":{"Offset":-0.02,"Sweep":0.03}}
+        };
+        let sfx = jsfx.Sounds(library);
+
+        sfx.s1();*/
+
     }
 }
 
@@ -67,18 +187,215 @@ const USE_SHADER = true;
 
 //t. 0 = absolute cold (nothing to move out), 255 - absolute heat
 
-/*
+//todo[grishin]: so what I've learned: I cannot put filter over sprite with bitmapData and pass another bitmapData as texture
+class FireShader extends Phaser.Filter {
+    constructor(burnTexture, x, y, myTexture, burnedTexture) {
+        super(game);
 
-    lava/water
-        movements
+        this.uniforms.iChannel3.value = burnTexture;
+        this.uniforms.iChannel3.textureData = {nearest: true};
+        this.uniforms.iChannel1.value = myTexture;
+        this.uniforms.iChannel1.textureData = {nearest: true};
+        this.uniforms.iChannel2.value = burnedTexture;
+        this.uniforms.iChannel2.textureData = {nearest: true};
+        this.uniforms.offsetSize = {type: '4f', value: {x,y: y,z:burnTexture.width,w:burnTexture.height}};
 
-    add heat source
+        this.fragmentSrc = `
+        precision mediump float;
+        #define M_PI 3.141592653589793
+        #define M_PI2 6.283185307179586
+        
+        varying vec2       vTextureCoord;
+        uniform vec4       offsetSize;
+        uniform float      time;
+        uniform sampler2D  uSampler;    
+        uniform sampler2D  iChannel3;   //burn texture
+        uniform sampler2D  iChannel1;   //original sprite
+        uniform sampler2D  iChannel2;   //burned sprite
+        
+        float rand(float n){return fract(sin(n) * 43758.5453123);}
+        float rand(vec2 n) { 
+	        return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453);
+        }
 
-    balance first map
+        float noise(float p){
+	        float fl = floor(p);
+            float fc = fract(p);
+	        return mix(rand(fl), rand(fl + 1.0), fc);
+        }
+	
+        float noise(vec2 n) {
+	        const vec2 d = vec2(0.0, 1.0);
+            vec2 b = floor(n), f = smoothstep(vec2(0.0), vec2(1.0), fract(n));
+	        return mix(mix(rand(b), rand(b + d.yx), f.x), mix(rand(b + d.xy), rand(b + d.yy), f.x), f.y);
+        }
+        
+        vec4 fireColor(float sx, float sy) {
+            return vec4(0xb0, 0x12 * 2, 0x17, 255)/255. * (.5 + .2*rand(vec2(sx,sy)));
+        }
+        
+        vec4 smokeColor(float sx, float sy) {
+            return vec4(0x01, 0x01, 0x01, 255)/255. * (.5 + .2*rand(vec2(sx,sy)));
+        }
 
-    water/lava - collision? or it shall be after bg and before hero
+        vec4 getColor(vec2 xy, sampler2D channel) {
+            return texture2D(channel, vec2(xy.x - offsetSize.x, ${MAP_HEIGHT_PIX}. - xy.y - offsetSize.y)/offsetSize.zw);
+        }
+        
+        vec4 getOrigColor(vec2 xy) {
+            return getColor(xy, iChannel3);
+        }
+        
+        float particlePoint(float sx, float sy) {
+            vec2 xy = vec2(sx,sy);
+            return getColor(xy, iChannel3).a * getColor(xy, iChannel1).a;
+        }
+        
+        float particleCircle(float sx, float sy) {
+            vec4 color = getOrigColor(vec2(sx,sy));
+            float radius1 = particlePoint(sx,sy);
+            /*float radius2 = 0.5 * particlePoint(sx-1., sy)
+                          + 0.5 * particlePoint(sx+1., sy)
+                          + 0.5 * particlePoint(sx, sy-1.)
+                          + 0.5 * particlePoint(sx, sy+1.);*/
+                          
+            /*float radius3 = 0.2 * particlePoint(sx-2., sy)              
+                          + 0.2 * particlePoint(sx-1., sy-1.)
+                          + 0.2 * particlePoint(sx, sy-2.)
+                          + 0.2 * particlePoint(sx+1., sy-1.)
+                          + 0.2 * particlePoint(sx+2., sy)
+                          + 0.2 * particlePoint(sx+1., sy+1.)
+                          + 0.2 * particlePoint(sx, sy+2.)
+                          + 0.2 * particlePoint(sx-1., sy+1.);*/
+            return color.r * radius1;// + color.g * radius2;// + color.b * radius3;
+        }
+        
+        #define MAX_O 3.
+        #define fireHeight 9.
+        #define fireRadius 2.
+        
+      
+        vec4 fireParticle(vec2 xy, float timeline, float offsetSeed) { //timeline = 0..1, offsetSeed = 0..1
+            float dx = (2.*rand(xy) - 1.)*4.;
+            float dy = (1. + /*rand(xy.xy)*1. + */sin(dx+time*3.))*fireHeight;
+            float revtimeline = pow(1. - timeline, 1.);
+            
+            float sdx = /*rand*/(offsetSeed)*MAX_O;
+            float sdy = /*rand*/(sdx)*MAX_O;
+            
+            float sx = floor(xy.x - dx*timeline + sdx);
+            float sy = floor(xy.y - dy*timeline + sdy);
+            float r = 1. + /*rand(xy.xy)**/fireRadius;
+            float targetR = r*revtimeline;
+            vec4 baseColor = mix(fireColor(sx,sy), smokeColor(sx,sy), pow(timeline, 10.));
+            return baseColor * particleCircle(sx, sy) * revtimeline;// * (0.5 + 0.5*noise(vec2(sx,sy)));            
+        }
+        
+                
+        vec4 fireColor() {
+            float tl1 = (0.5 + 0.5*sin(time/1.));
+            tl1 = ceil(tl1*10.)/100.;
+            
+            return fireParticle(gl_FragCoord.xy, fract(tl1+0.0), fract(tl1-0.0))
+                         //+ fireParticle(gl_FragCoord.xy, fract(tl1+0.2), fract(tl1-0.2))
+                         + fireParticle(gl_FragCoord.xy, fract(tl1+0.4), fract(tl1-0.4))
+                         //+ fireParticle(gl_FragCoord.xy, fract(tl1+0.6), fract(tl1-0.6))
+                         + fireParticle(gl_FragCoord.xy, fract(tl1+0.8), fract(tl1-0.8));
+        }
+        
+        void main(void) {
+            vec4 data = texture2D(uSampler, vTextureCoord);
+            vec2 bxy = vec2(gl_FragCoord.x - offsetSize.x, ${MAP_HEIGHT_PIX}. - gl_FragCoord.y - offsetSize.y)/offsetSize.zw;
+            
+            //vec2 bxy = vec2(gl_FragCoord.x - 432., 500. - gl_FragCoord.y - 194.) / vec2(48., 106.);
+            
+            vec4 burn = texture2D(iChannel3, bxy);
+            vec4 orig = texture2D(iChannel1, bxy);
+            vec4 burnt = texture2D(iChannel2, bxy);
+            
+            if (burn.a > 0.) {
+                vec4 fc = fireColor();
+                gl_FragColor = burnt + fc;
+            } else {
+                gl_FragColor = orig;
+            }
+            //gl_FragColor = burn;
+            //gl_FragColor.r = bxy.y;
+            //gl_FragColor.g = 0.;
+            //gl_FragColor.b = 0.;
+        }
+        `;
+    }
+}
 
- */
+class FireProcess {
+    constructor(spriteNormal, spriteBurned) {
+        this.burnBitmap = game.add.bitmapData(spriteNormal.width, spriteNormal.height);
+        this.burnBitmap.sprite = game.add.sprite(-1000, -1000, this.burnBitmap);
+        this.burnBitmap.ctx.fillStyle="rgba(255,255,255,0)";
+        this.burnBitmap.ctx.fillRect(0,0,spriteNormal.width, spriteNormal.height);
+        this.burnBitmap.ctx.fillStyle = "black";
+        this.burnBitmap.ctx.strokeStyle = "red";
+        this.burnBitmap.ctx.lineWidth = 3;
+        this.spriteNormal = spriteNormal;
+        this.spriteBurned = spriteBurned;
+
+        this.burnBitmap.sprite.texture.baseTexture.scaleMode = PIXI.scaleModes.NEAREST;
+        window.bb = this.burnBitmap;
+
+
+    }
+
+    burn(x, y) {
+        this._burn = {
+            x: x - this.spriteNormal.left,
+            y: y - this.spriteNormal.top,
+            r: -10,
+            maxr: Math.max(this.burnBitmap.width, this.burnBitmap.height)
+        };
+        //this.tchanger = game.heatmap.addTchanger(game.heatmap.x(x), game.heatmap.y(y), 600);
+        this.spriteFake = game.add.sprite(this.spriteNormal.x, this.spriteNormal.y);
+        this.spriteFake.anchor.set(this.spriteNormal.anchor.x, this.spriteNormal.anchor.y);
+        this.spriteFake.width = this.spriteNormal.width;
+        this.spriteFake.height = this.spriteNormal.height;
+        this.spriteNormal.parent.add(this.spriteFake);
+        this.spriteNormal.visible = false;
+        this.spriteFake.filters = [
+            new FireShader(this.burnBitmap.sprite.texture, this.spriteNormal.left, this.spriteNormal.top, this.spriteNormal.texture, this.spriteBurned.texture)
+        ];
+    }
+
+    update() {
+        if (!this._burn) return;
+        this._burn.r += 1;
+        if (this._burn.r >= 1) {
+            let ctx = this.burnBitmap.ctx;
+            ctx.beginPath();
+            ctx.arc(this._burn.x, this._burn.y, this._burn.r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            this.burnBitmap.dirty = true;
+            this.spriteNormal.model.maskSprite._changed = true;
+            for (let x = this.spriteNormal.left; x < this.spriteNormal.right; x+=HEAT_PIX) {
+                for (let y = this.spriteNormal.top; y < this.spriteNormal.bottom; y+=HEAT_PIX) {
+                    game.heatmap.addT(game.heatmap.x(x), game.heatmap.y(y), 10);
+                }
+            }
+
+        }
+        if (this._burn.r >= this._burn.maxr) {
+            //game.heatmap.removeTchanger(this.tchanger);
+            this.spriteNormal.onBurnt();
+            this._burn = undefined;
+            this.spriteFake.filters = [];
+            this.spriteFake.destroy();
+            this.spriteNormal.model.maskSprite._changed = true;
+
+        }
+    }
+}
+
+
 
 class FlowShader extends Phaser.Filter {
     constructor(texture) {
@@ -187,22 +504,26 @@ class WaterShader extends FlowShader {
     }
 
     static prepareWaterTexture() {
+        if (WaterShader.texture) return WaterShader.texture;
         let bm = game.add.bitmapData(16,16);
         let tempSprite = game.add.sprite(-1000,-1000, "misc", 11);
         bm.draw(tempSprite, 0, 0);
         tempSprite.destroy();
         tempSprite = game.add.sprite(-1000,-1000, bm);
+        WaterShader.texture = tempSprite.texture;
         return tempSprite.texture;
     }
 }
 
 class Flow {
-    constructor() {
+    constructor(type) {
+        this.type = type;
         this.segments = [];
         this.line = [];
         this.bitmap = null;
         this.textureWidth = 16;
         this.textureHeight = 16;
+        this._clr = {};
     }
 
     destroyAt(x, y, radius) {
@@ -221,7 +542,6 @@ class Flow {
             ctx.globalCompositeOperation = null;
             this.bitmap.dirty = true;
         }
-
     }
 
     addSegment(from, to, width = 16, speed = 1) {
@@ -229,6 +549,7 @@ class Flow {
     }
 
     prepareLine(id) {
+        this.id = id;
         //line is pixel-by-pixel. initially draw it as is, next it could be rounded a bit
         this.line = [];
         if (this.segments.length === 0) return;
@@ -330,22 +651,21 @@ class Flow {
         this.y = this.sprite.y;
         this.originX = this.x + PAD;
         this.originY = this.y + PAD;
+
+        this.bitmap.update();
+    }
+
+    isOn(x, y) {
+        let relx = x - this.sprite.left, rely = y - this.sprite.top;
+        if (relx < 0 || rely < 0 || relx >= this.sprite.width || rely >= this.sprite.height) return false;
+        this.bitmap.getPixel(relx, rely, this._clr);
+        return this._clr.a > 0;
     }
 
     renderWith(shaderClass) {
         this.sprite.filters = [new shaderClass()];
     }
 
-    static demoFlow() {
-        let f = new Flow();
-        f.addSegment({x:550,y:50},  {x:500,y:100}, 5);
-        f.addSegment({x:500,y:100}, {x:500,y:120}, 5);
-        f.addSegment({x:500,y:120}, {x:500,y:160}, 10, 0.5);
-        f.addSegment({x:500,y:160}, {x:510,y:180}, 5,1);
-        f.addSegment({x:510,y:180}, {x:580,y:180}, 4,1.5);
-        f.prepareLine();
-        game.add.existing(f.sprite);
-    }
 }
 
 
@@ -390,16 +710,148 @@ function createMaskSpritesheet(key, addPixelsOnTop = true, ignoreMask = false) {
     game.cache.addSpriteSheet(key + ".mask", null, maskBm.canvas, 16, 16);
 }
 
+let heatmapWorker = new Worker("heatmapWorker.js");
+
+class HeatMapWorkerAPI {
+    constructor(width = MAP_WIDTH, height = MAP_HEIGHT, t = (x,y) => 200) {
+        heatmapWorker.postMessage({
+            method: "init",
+            args: [width, height, t(0,0)]
+        });
+        this.bitmap = game.add.bitmapData(HM_WIDTH, HM_HEIGHT);
+        this.width = width;
+        this.height = height;
+        this.bitmap.update();
+        this.sprite = game.add.sprite(-1000, -1000, this.bitmap);
+        this.sprite.texture.baseTexture.scaleMode = PIXI.scaleModes.LINEAR;
+
+        this.grid = [];
+        for (let y = 0; y < height; y++) {
+            let row = [];
+            for (let x = 0; x < width; x++) {
+                row.push(t);
+            }
+            this.grid.push(row);
+        }
+
+        heatmapWorker.onmessage = this.onMessage.bind(this);
+    }
+
+    onMessage(e) {
+        switch (e.data.method) {
+            case "update":
+                //console.log("update from workr");
+                this.grid = e.data.grid;
+                this.updateBitmap();
+                break;
+            default:
+                console.error("unknown method", e.data.method);
+        }
+    }
+
+    addT(x, y, t) {
+        heatmapWorker.postMessage({
+            method: "addT",
+            args: [x,y,t]
+        })
+    }
+
+    setT(x, y, t) {
+        heatmapWorker.postMessage({
+            method: "setT",
+            args: [x,y,t]
+        })
+    }
+
+    setSunT(t) {
+        heatmapWorker.postMessage({
+            method: "setSunT",
+            args: [t]
+        })
+    }
+
+    addFlow(flow, name) {
+
+        let lastPoint = undefined, i, pix, x, y;
+        for (i = 0; i < flow.line.length; i++) {
+            pix = flow.line[i];
+            x = Math.floor((flow.x + pix.x)/HEAT_PIX);
+            y = Math.floor((flow.y + pix.y)/HEAT_PIX);
+            if (lastPoint === undefined) {
+                lastPoint = {x,y};
+            } else if (lastPoint.x !== x || lastPoint.y !== y) {
+                this.addMovement({x: lastPoint.x, y: lastPoint.y}, {x,y}, pix.speed*0.1, {damageable: flow.damageable});
+                lastPoint.x = x;
+                lastPoint.y = y;
+            }
+        }
+    }
+
+    addMovement(from, to, speed, props) {
+        heatmapWorker.postMessage({
+            method: "addMovement",
+            args: [from, to, speed, props]
+        })
+    }
+
+    addTchanger(x, y, tconst) {
+        heatmapWorker.postMessage({
+            method: "addTchanger",
+            args: [x,y,tconst]
+        });
+        return {x,y,tconst}
+    }
+
+    removeTchanger(tchangerAt) {
+        heatmapWorker.postMessage({
+            method: "removeTchanger",
+            args: [tchangerAt.x, tchangerAt.y, tchangerAt.tconst]
+        })
+    }
+
+    destroyMovementAt(x, y, radius) {
+        heatmapWorker.postMessage({
+            method: "destroyMovementAt",
+            args: [x, y, radius]
+        });
+    }
+
+    updateBitmap(bitmap = this.bitmap) {
+        let x, y, width = this.width, height = this.height, cell;
+        for (x = 0; x < width; x++) {
+            for (y = 0; y < height; y++) {
+                cell = this.grid[y][x];
+                bitmap.setPixel(x, this.height - 1 - y, Math.min(255, cell), 0, 0, false);
+            }
+        }
+        bitmap.context.putImageData(bitmap.imageData, 0, 0);
+        bitmap.dirty = true;
+    }
+
+    t(x,y) {
+        return this.grid[this.y(y)][this.x(x)];
+    }
+    x(x) { return (Math.round(x/HEAT_PIX))}
+    y(y) { return (Math.round(y/HEAT_PIX))}
+
+    update() {
+        heatmapWorker.postMessage({
+            method: "update",
+            args: []
+        })
+    }
+
+}
+/*
 class HeatMap {
     constructor(width = MAP_WIDTH, height = MAP_HEIGHT, t = (x,y) => 200) {
         this.bitmap = game.add.bitmapData(HM_WIDTH, HM_HEIGHT);
-        this.bitmap2 = game.add.bitmapData(HM_WIDTH, HM_HEIGHT);
         this.grid = [];
         this.list = [];
         for (let y = 0; y < height; y++) {
             let row = [];
             for (let x = 0; x < width; x++) {
-                row.push({t: t(x,y), tspeed: 0.1, x, y, delta: 0, tstepsPerTick: 10}); //tspeed = "part of particles moving for 1 cell for 1 tick"
+                row.push({t: t(x,y), tspeed: 0.2, x, y, delta: 0, tstepsPerTick: 5}); //tspeed = "part of particles moving for 1 cell for 1 tick"
             }
             this.list.push(...row);
             this.grid.push(row);
@@ -410,13 +862,9 @@ class HeatMap {
         this.width = width;
         this.height = height;
         this.bitmap.update();
-        this.bitmap2.update();
         this.updateBitmap();
         this.sprite = game.add.sprite(-1000, -1000, this.bitmap);
         this.sprite.texture.baseTexture.scaleMode = PIXI.scaleModes.LINEAR;
-
-        this.sprite2 = game.add.sprite(-1000, -1000, this.bitmap2);
-        this.sprite2.texture.baseTexture.scaleMode = PIXI.scaleModes.LINEAR;
 
         this.tchangers = [];
         this.movements = [];
@@ -439,9 +887,15 @@ class HeatMap {
                 this.grid[y][x].around = cellsAround;
             }
         }
+        this.sunT = undefined;
+        this.sunTDelta = 0.1;
     }
 
-    addFlow(flow) {
+    setSunT(t) {
+        this.sunT = t;
+    }
+
+    addFlow(flow, name) {
         let lastPoint = undefined, i, pix, x, y;
         for (i = 0; i < flow.line.length; i++) {
             pix = flow.line[i];
@@ -453,6 +907,7 @@ class HeatMap {
                 this.addMovement({x: lastPoint.x, y: lastPoint.y}, {x,y}, pix.speed*0.1, {damageable: flow.damageable});
                 lastPoint.x = x;
                 lastPoint.y = y;
+                this.grid[y][x][name] = true;
             }
         }
     }
@@ -517,7 +972,6 @@ class HeatMap {
 
     updateBitmap() {
         this._updateBitmap(this.bitmap);
-        this._updateBitmap(this.bitmap2);
     }
 
     _updateBitmap(bitmap) {
@@ -573,7 +1027,8 @@ class HeatMap {
                 for (i = 0; i < thisCell.around.length; i++) {
                     cell = thisCell.around[i];
                     diff = thisCell.t - cell.cell.t;
-                    if (maxAround === undefined || maxAround.diff < diff /*|| maxAround.tspeed < cell.cell.tspeed*/) {
+                    if (diff === undefined || isNaN(diff) || diff === null || typeof diff !== "number") debugger;
+                    if (diff > 0 && (maxAround === undefined || maxAround.diff < diff) ) {
                         maxAround = {cell: cell.cell, tspeed: cell.cell.tspeed, dist: cell.dist, diff};
                     }
                 }
@@ -608,16 +1063,27 @@ class HeatMap {
         }
     }
 
+    updateSun() {
+        if (this.sunT === undefined) return;
+        let ci, clength = this.list.length, thisCell;
+        for (ci = 0; ci < clength; ci++) {
+            thisCell = this.list[ci];
+            if (!thisCell.const && thisCell.t < this.sunT) {
+                thisCell.t += this.sunTDelta;
+            }
+        }
+    }
+
     update() {
         if (this._dirtyMovements) this.prepareMovements();
         this.updateAll();
+        this.updateSun();
         this.updateBitmap();
         this.updateDebugImage();
-
     }
 
 }
-
+*/
 class WeatherDebugShader extends Phaser.Filter {
     constructor(heatmapTexture) {
         super(game);
@@ -772,46 +1238,53 @@ class ChangeWatchingTexture {
         this._maxRedrawn = 0;
     }
 
-    render() {
-        let changed = {
-            x0: undefined,
-            y0: undefined,
-            x1: undefined,
-            y1: undefined,
+    render(changed = undefined) {
+        //todo[grishin]: why to do this twice?
+        if (changed === undefined) {
+            changed = {
+                x0: undefined,
+                y0: undefined,
+                x1: undefined,
+                y1: undefined,
 
-            get width() { return this.x1 - this.x0},
-            get height() { return this.y1 - this.y0}
-        };
-        if (this._first) {
-            changed.x0 = changed.y0 = 0;
-            changed.x1 = this.renderTexture.width;
-            changed.y1 = this.renderTexture.height;
-        } else {
-            let ar = this.grp.children || this.grp, i = ar.length, sprite;
+                get width() {
+                    return this.x1 - this.x0
+                },
+                get height() {
+                    return this.y1 - this.y0
+                }
+            };
+            if (this._first) {
+                changed.x0 = changed.y0 = 0;
+                changed.x1 = this.renderTexture.width;
+                changed.y1 = this.renderTexture.height;
+            } else {
+                let ar = this.grp.children || this.grp, i = ar.length, sprite;
 
-            while (i-->0) {
-                sprite = ar[i];
-                if (sprite.ghost) {
-                    if (changed.x0 === undefined || changed.x0 > sprite.x) changed.x0 = sprite.x;
-                    if (changed.y0 === undefined || changed.y0 > sprite.y) changed.y0 = sprite.y;
-                    if (changed.x1 === undefined || changed.x1 < sprite.x) changed.x1 = sprite.x;
-                    if (changed.y1 === undefined || changed.y1 < sprite.y) changed.y1 = sprite.y;
-                    continue;
+                while (i-- > 0) {
+                    sprite = ar[i];
+                    if (sprite.ghost) {
+                        if (changed.x0 === undefined || changed.x0 > sprite.x) changed.x0 = sprite.x;
+                        if (changed.y0 === undefined || changed.y0 > sprite.y) changed.y0 = sprite.y;
+                        if (changed.x1 === undefined || changed.x1 < sprite.x) changed.x1 = sprite.x;
+                        if (changed.y1 === undefined || changed.y1 < sprite.y) changed.y1 = sprite.y;
+                        continue;
+                    }
+                    if (sprite.model && sprite.model.maskSprite && sprite.model.maskSprite._changed) {
+                        //sprite.model.maskSprite._changed = false;
+                        if (changed.x0 === undefined || changed.x0 > sprite.realBounds.left) changed.x0 = sprite.realBounds.left;
+                        if (changed.y0 === undefined || changed.y0 > sprite.realBounds.top) changed.y0 = sprite.realBounds.top;
+                        if (changed.x1 === undefined || changed.x1 < sprite.realBounds.right) changed.x1 = sprite.realBounds.right;
+                        if (changed.y1 === undefined || changed.y1 < sprite.realBounds.bottom) changed.y1 = sprite.realBounds.bottom;
+                    }
                 }
-                if (sprite.model && sprite.model.maskSprite && sprite.model.maskSprite._changed) {
-                    //sprite.model.maskSprite._changed = false;
-                    if (changed.x0 === undefined || changed.x0 > sprite.realBounds.left) changed.x0 = sprite.realBounds.left;
-                    if (changed.y0 === undefined || changed.y0 > sprite.realBounds.top) changed.y0 = sprite.realBounds.top;
-                    if (changed.x1 === undefined || changed.x1 < sprite.realBounds.right) changed.x1 = sprite.realBounds.right;
-                    if (changed.y1 === undefined || changed.y1 < sprite.realBounds.bottom) changed.y1 = sprite.realBounds.bottom;
+                if (changed.x0 !== undefined) {
+                    const PAD = 20;
+                    changed.x0 = Math.max(0, changed.x0 - PAD) | 0;
+                    changed.y0 = Math.max(0, changed.y0 - PAD) | 0;
+                    changed.x1 = Math.min(this.renderTexture.width, changed.x1 + PAD) | 0;
+                    changed.y1 = Math.min(this.renderTexture.height, changed.y1 + PAD) | 0;
                 }
-            }
-            if (changed.x0 !== undefined) {
-                const PAD = 20;
-                changed.x0 = Math.max(0, changed.x0 - PAD)|0;
-                changed.y0 = Math.max(0, changed.y0 - PAD)|0;
-                changed.x1 = Math.min(this.renderTexture.width, changed.x1 + PAD)|0;
-                changed.y1 = Math.min(this.renderTexture.height, changed.y1 + PAD)|0;
             }
         }
         if (changed.x0 === undefined) return;
@@ -836,6 +1309,7 @@ class ChangeWatchingTexture {
         this._maxRedrawn = Math.max(this._maxRedrawn, redrawn);
         this.renderTexture.dirty = true;
         this._first = false;
+        return changed;
     }
 }
 
@@ -886,8 +1360,8 @@ class Renduror {
             sprite.realBounds.top = sprite.position.y - sprite.anchor.y*sprite._frame.height;
             sprite.realBounds.bottom = sprite.position.y + (1 - sprite.anchor.y)*sprite._frame.height;
         }
-        this.textureMask.render();
-        this.textureReal.render();
+        let changed = this.textureMask.render();
+        this.textureReal.render(changed);
         i = ar.length;
         while (i-->0) {
             sprite = ar[i];
@@ -921,6 +1395,7 @@ class Hero extends Phaser.Sprite {
         game.physics.arcade.enable(this);
         this.iceCooldown = 0;
         this.active = true;
+        this.drops = new Drops(this);
     }
 
     restart({x,y}) {
@@ -1074,37 +1549,64 @@ function withMask(key, frame) {
 }
 
 class Rock {
-    constructor(x, y, width, height) {
+
+    getSprites() {
+        return [
+            withMask("grass", 21),
+            withMask("grass", 22),
+            withMask("grass", 23)
+        ]
+    }
+
+    get topPad() {
+        return 0;
+    }
+
+    constructor(x, y, width, height, circle = false, objectsMap = undefined) {
         width += 8;
-        height += 8;
+        height += 8 + this.topPad;
         x-=8;
-        y-=8;
+        y-= 8 + this.topPad;
         this.bitmap = game.add.bitmapData(width, height);
         this.maskBitmap = game.add.bitmapData(width, height);
-        Rock.rocks = Rock.rocks || (function() {
-            return [
-                withMask("grass", 21),
-                withMask("grass", 22),
-                withMask("grass", 23)
-            ]
+        let rocks = game.rocksCache.get(this.constructor.name) || (() => {
+            let r = this.getSprites();
+            game.rocksCache.set(this.constructor.name, r);
+            return r;
         })();
+
         //fill with rocks
-        for (let yy = 16;yy<height; yy+=8) {
-            for (let xx = 8; xx < width; xx+=8) {
-                let tx = xx + game.rnd.integerInRange(-2,2);
-                let ty = yy + game.rnd.integerInRange(-1,1);
-                let {sprite, mask} = game.rnd.pick(Rock.rocks);
-                sprite.anchor.set(0.5, 1);
-                mask.anchor.set(0.5, 1);
-                //let scale = game.rnd.realInRange(0.9, 1.1);
-                //sprite.scale.set(scale, scale);
-                //mask.scale.set(scale, scale);
-                this.bitmap.draw(sprite, tx|0, ty|0);
-                this.maskBitmap.draw(mask, tx|0, ty|0);
+        this.objectsMap = objectsMap;
+        if (!objectsMap) {
+            this.objectsMap = [];
+            for (let yy = 16;yy<height; yy+=8) {
+                for (let xx = 8; xx < width; xx+=8) {
+                    if (circle) {
+                        //let shallAdd = game.rnd.frac() > 1.5*(Math.hypot(xx-width/2, yy-height/2)/Math.hypot(width/2, height/2));
+                        let shallAdd = (Math.hypot(xx-width/2, yy-height/2)/Math.hypot(width/2, height/2)) < 0.5;
+                        if (!shallAdd) continue;
+                    }
+                    let tx = xx + game.rnd.integerInRange(-2,2);
+                    let ty = yy + game.rnd.integerInRange(-1,1);
+                    let sprites = game.rnd.pick(rocks);
+                    let {sprite, mask} = sprites;
+                    sprite.anchor.set(0.5, 1);
+                    mask.anchor.set(0.5, 1);
+                    this.objectsMap.push({tx,ty, si: rocks.indexOf(sprites)});
+                }
             }
         }
+
+        for (let {tx,ty,si} of this.objectsMap) {
+            let {sprite, mask} = rocks[si];
+            this.bitmap.draw(sprite, tx|0, this.topPad + ty|0);
+            this.maskBitmap.draw(mask, tx|0, this.topPad + ty|0);
+
+        }
+
         this.sprite = game.make.sprite(x, y+height, this.bitmap);
         this.sprite.anchor.set(0, 1);
+        this.sprite.texture.baseTexture.scaleMode = PIXI.scaleModes.NEAREST;
         this.sprite.model = {
             maskSprite: game.make.sprite(x, y+height, this.maskBitmap),
             noRender: true,
@@ -1113,10 +1615,72 @@ class Rock {
         this.sprite.model.maskSprite.anchor.set(0, 1);
         game.physics.arcade.enable(this.sprite);
         this.sprite.body.immovable = true;
-        this.sprite.rect = {x,y,width,height,right:x+width,bottom:y+height,left:x,top:y};
+        if (circle) {
+            this.sprite.body.setCircle(width/2-12, 12, 12)
+        } else {
+            this.sprite.body.setSize(width-8, height-8, 4, 4);
+        }
+        this.sprite.rect = new Phaser.Rectangle(x,y,width,height);//,right:x+width,bottom:y+height,left:x,top:y};
 
     }
 }
+
+
+class Trees extends Rock {
+
+    constructor(x, y, width, height, circle) {
+        super(x,y,width,height, circle);
+        this.burned = new TreesBurned(x, y, width, height, circle, this.objectsMap);
+        this.fireProcess = new FireProcess(this.sprite, this.burned.sprite);
+        this.sprite.update = () => {
+            this.fireProcess.update();
+            (this.sprite.filters || []).forEach(f => f.update());
+        };
+        this.sprite.burn = this.burn.bind(this);
+        this.sprite.burnable = true;
+        this.sprite.onBurnt = this.onBurnt.bind(this);
+    }
+
+    get topPad() {
+        return 0;
+    }
+
+    getSprites() {
+        return [
+            withMask("trees", 1),
+            withMask("trees", 3)
+        ]
+    }
+
+    onBurnt() {
+        this.sprite.loadTexture(this.burned.sprite.key);
+        this.sprite.visible = true;
+        this.burned.sprite.destroy();
+        this.sprite.body.enable = false;
+    }
+
+    burn(x = this.sprite.centerX, y = this.sprite.centerY) {
+        this.sprite.model.maskSprite = this.burned.sprite.model.maskSprite;
+        this.fireProcess.burn(x, y);
+    }
+}
+
+class TreesBurned extends Rock {
+
+    constructor(x, y, width, height) {
+        super(x, y, width, height, true);
+    }
+    get topPad() {
+        return 0;
+    }
+    getSprites() {
+        return [
+            withMask("trees", 4),
+            withMask("trees", 5)
+        ]
+    }
+}
+
 
 class Exit extends Phaser.Sprite {
     constructor(x, y) {
@@ -1133,7 +1697,7 @@ class Exit extends Phaser.Sprite {
 }
 
 class IceDiamond extends Phaser.Sprite {
-    constructor(x, y, heatmap) {
+    constructor(x, y, heatmap, onkill) {
         super(game, x, y, "misc", 14);
         this.animations.add("idle", [14,15,16,15], 12, true);
         this.anchor.set(0.5, 1);
@@ -1148,11 +1712,14 @@ class IceDiamond extends Phaser.Sprite {
         this.animations.play("idle");
         this.model.maskSprite.anchor.set(0.5, 1);
         this.model.maskSprite._changed = true;
+        this.onkill = onkill;
+        game.sfx.freeze();
     }
 
     update() {
         if (this.pendingDestroy) return this.destroy();
         if (!this.alive) {
+            this.removeChanger();
             this.pendingDestroy = true;
             this.model.maskSprite.pendingDestroy = true;
             this.model.maskSprite.alive = false;
@@ -1161,9 +1728,22 @@ class IceDiamond extends Phaser.Sprite {
         this.model.maskSprite.change('frame', this.animations.frame, this.model.maskSprite.animations);
     }
 
+    kill() {
+        super.kill();
+        this.removeChanger();
+    }
+
     destroy() {
         super.destroy();
-        this.heatmap.removeTchanger(this.tchanger);
+        this.removeChanger();
+    }
+
+    removeChanger() {
+        if (this.tchanger) {
+            this.heatmap.removeTchanger(this.tchanger);
+            this.tchanger = undefined;
+            this.onkill(this);
+        }
     }
 }
 
@@ -1186,8 +1766,12 @@ class Projectile extends Phaser.Sprite {
 
     }
 
+    get additionalDistance() {
+        return 32;
+    }
+
     flyTo(goal) {
-        let distance = Phaser.Point.distance(this, goal) + 32;
+        let distance = Phaser.Point.distance(this, goal) + this.additionalDistance;
         let angle = Phaser.Point.angle(goal, this);
         this.body.moveTo(300, distance, Phaser.Math.radToDeg(angle));
         this.body.onMoveComplete.addOnce(() => {
@@ -1198,6 +1782,7 @@ class Projectile extends Phaser.Sprite {
     onCollide() {
         this.body.velocity.set(0,0);
         game.onProjectileExplode(this);
+        game.sfx.explosion();
         this.animations.play('explosion').onComplete.addOnce(() => {
             this.destroy();
         });
@@ -1209,33 +1794,60 @@ class Projectile extends Phaser.Sprite {
     }
 }
 
+class FireProjectile extends Projectile {
+    constructor(x, y) {
+        super(x, y);
+        this.frame = 22;
+    }
 
-class Gun extends Phaser.Sprite {
-    constructor(x, y, heatmap) {
-        super(game, x, y, "misc", 0);
-        this.anchor.set(0.5, 0.5);
-        this.gunItself = game.add.sprite(0, 0, "misc", 1);
-        this.gunItself.anchor.set(0.5, 0.5);
-        this.gunItself.scale.set(2, 2);
+    get additionalDistance() { return 0; }
 
-        this.gunItself.rotation = 2;
+    get isFire() {
+        return true;
+    }
+}
 
-        this.heatmap = heatmap;
 
-        this.visionFn = tminmax(50, 50, 200, 150);
+class VisionBasedOnT {
+    constructor(fn) {
+        this.visionFn = fn;
 
         this.visionBitmap = game.add.bitmapData(400, 400);
-        this.visionBitmap.ctx.fillStyle = "rgba(255,0,0,0.1)";
-        this.visionBitmap.ctx.strokeStyle = "rgba(255,0,0,0.5)";
+        this.visionBitmap.ctx.fillStyle = "rgba(255,0,0,0.05)";
+        this.visionBitmap.ctx.strokeStyle = "rgba(255,0,0,0.2)";
         this.visionBitmap.ctx.lineWidth = 4;
         this.visionBitmap.ctx.beginPath();
         this.visionBitmap.ctx.arc(200,200,200,0,Math.PI*2);
         this.visionBitmap.ctx.fill();
         this.visionBitmap.ctx.stroke();
 
-        this.visionSprite = game.add.sprite(0, 0, this.visionBitmap);
+        this.visionSprite = game.make.sprite(0, 0, this.visionBitmap);
         this.visionSprite.anchor.set(0.5, 0.5);
-        this.addChild(this.visionSprite);
+        this.vision = fn(128);
+    }
+
+    get sprite() {
+        return this.visionSprite;
+    }
+
+    update(x, y) {
+        this.vision = this.visionFn(game.heatmap.t(x, y));
+        this.visionSprite.width = this.vision*2;
+        this.visionSprite.height = this.vision*2;
+    }
+
+}
+
+
+class BaseGun extends Phaser.Sprite {
+    constructor(x, y) {
+        super(game, x, y, "misc", 0); //base
+        this.anchor.set(0.5, 0.5);
+        this.gunItself = this.createGun();
+        this.gunItself.rotation = 2;
+        this.vision = new VisionBasedOnT(this.visionFn);
+
+        this.addChild(this.vision.sprite);
         this.addChild(this.gunItself);
 
         this.model = {
@@ -1245,35 +1857,104 @@ class Gun extends Phaser.Sprite {
         this.fireCooldown = 0;
     }
 
-    checkHero(hero) {
+    get cooldown() { return 1000; }
+
+    get visionFn() {}
+
+    createGun() {}
+
+    update() {
+        this.fireCooldown -= game.time.physicsElapsedMS;
+        this.vision.update(this.x, this.y);
+        this.checkGoal();
+    }
+
+    canFireTo(sprite) {
+        return this.fireCooldown <= 0 && game.hasNoObstacles(this, sprite) && Phaser.Point.distance(this, sprite) < this.vision.vision;
+    }
+
+    doFireWith(projectile, to) {
+        this.fireCooldown = this.cooldown;
+        this.doFireSound();
+        projectile = game.addProjectile(projectile);
+        projectile.flyTo(to);
+    }
+
+    doFireSound() {
+        game.sfx.fire();
+    }
+
+    doRotateTo(sprite, speed = 0.05) {
+        let ang = normalizeAngle(this.gunItself.rotation);
+        let goal = normalizeAngle(Phaser.Point.angle(this, sprite)-Math.PI/2);
+        if (goal - ang > Math.PI) {
+            goal += 2*Math.PI;
+        } else if (ang - goal > Math.PI) {
+            goal -= 2*Math.PI;
+        }
+        this.gunItself.rotation = reach(ang, goal, speed);
+        return Math.abs(goal - ang);
+    }
+}
+
+class Gun extends BaseGun {
+
+    createGun() {
+        let gun = game.add.sprite(0, 0, "misc", 1);
+        gun.anchor.set(0.5, 0.5);
+        gun.scale.set(2, 2);
+        return gun;
+    }
+
+    get visionFn() {return tminmax(50, 50, 200, 150)}
+
+    checkGoal(hero = this.hero) {
         if (!hero) throw new Error("no hero?");
         let distance = Phaser.Point.distance(hero, this);
-        if (distance < this.vision && game.hasNoObstacles(this, hero) && this.fireCooldown <= 0) {
-            this.fireCooldown = 1000;
-            let projectile = game.addProjectile(new Projectile(this.x, this.y));
-            projectile.flyTo(this.hero);
+        if (this.canFireTo(hero)) {
+            this.doFireWith(new Projectile(this.x, this.y), hero);
         }
-        if (distance < this.vision * 2) {
-            let ang = (this.gunItself.rotation);
-            let goal = (Phaser.Point.angle(this, this.hero)-Math.PI/2);
-            if (Math.abs(goal - ang) > Math.PI) {
-                goal += Math.PI;
-            }
-            this.gunItself.rotation = reach(ang, goal, 0.05);
+        if (distance < this.vision.vision * 2) {
+            this.doRotateTo(hero);
         } else {
             this.gunItself.rotation += 0.02;
         }
     }
 
-    update() {
-        this.vision = this.visionFn(this.heatmap.t(this.x, this.y));
-        this.visionSprite.width = this.vision*2;
-        this.visionSprite.height = this.vision*2;
-        this.fireCooldown -= game.time.physicsElapsedMS;
-        this.checkHero(this.hero);
-    }
 }
 
+class FireGun extends BaseGun {
+
+    constructor(x, y, diamonds) {
+        super(x, y);
+        this.diamonds = diamonds;
+    }
+
+    createGun() {
+        let gun = game.add.sprite(0, 0, "misc", 20);
+        gun.animations.add("idle", [20,21], 12, true);
+        gun.animations.play("idle");
+        gun.anchor.set(0.5, 0.5);
+        gun.scale.set(2, 2);
+        return gun;
+    }
+
+    get visionFn() {return tminmax(100, 100, 200, 100)}
+
+    checkGoal() {
+        for (let di = 0; di < this.diamonds.children.length; di++) {
+            let diamond = this.diamonds.children[di];
+            if (diamond instanceof IceDiamond) {
+                if (this.canFireTo(diamond)) {
+                    if (this.doRotateTo(diamond, 0.1) < 0.1) {
+                        this.doFireWith(new FireProjectile(this.x, this.y), diamond);
+                    }
+                    break;
+                }
+            }
+        }
+    }
+}
 
 class HeatSource extends Phaser.Sprite {
     constructor(x,y, heatmap) {
@@ -1291,6 +1972,30 @@ class HeatSource extends Phaser.Sprite {
     }
 }
 
+class Drops extends Phaser.Sprite {
+    constructor(hero) {
+        super(game, hero.x, hero.y, "misc");
+        this.hero = hero;
+        this.kill();
+        this.anchor.set(0.5, 1);
+        this.animations.add("main", [23,24,25], 12);
+    }
+
+    walkOnWater() {
+        if (this.animations.currentAnim.isPlaying) return;
+        this.revive(100);
+        this.x = this.hero.x;
+        this.y = this.hero.y;
+        this.animations.play("main", null, false, true);
+    }
+
+    update() {
+        if (game.isOnWater(this.hero.x, this.hero.y)) {
+            this.walkOnWater();
+        }
+    }
+}
+
 class BaseLevel {
     create() {
         game.physics.startSystem(Phaser.Physics.ARCADE);
@@ -1299,6 +2004,7 @@ class BaseLevel {
             space: game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR),
             z: game.input.keyboard.addKey(Phaser.Keyboard.Z),
         };
+        this.rocksCache = game.rocksCache = new Map();
         this.maskedGrp = [];
         this.invisibleHero = game.add.group();
         this.landscape = game.add.group();
@@ -1311,9 +2017,11 @@ class BaseLevel {
         this.flows = [];
 
         this.tilemap = game.add.tilemap(this.levelKey);
-        let t = (this.tilemap.properties || {}).t || 200;
-        this.heatmap = game.heatmap =  new HeatMap(MAP_WIDTH, MAP_HEIGHT, (x,y) => t);
+        let props = (this.tilemap.properties || {});
+        let t = props.t || 200;
+        this.heatmap = game.heatmap =  new HeatMapWorkerAPI(MAP_WIDTH, MAP_HEIGHT, (x,y) => t);
         this.renduror = new Renduror(this.maskedGrp, this.heatmap);
+        if (!props.noSun) this.heatmap.setSunT(t);
 
 
         for (let obj of this.tilemap.objects.objects) {
@@ -1322,6 +2030,15 @@ class BaseLevel {
                     let rock = new Rock(obj.x, obj.y, obj.width, obj.height);
                     this.walls.add(rock.sprite);
                     binaryInsertSortY(rock.sprite, this.maskedGrp);
+                    break;
+                case "trees":
+                    let trees = new Trees(obj.x, obj.y, obj.width, obj.height, obj.ellipse || (obj.properties || {}).circle);
+                    this.walls.add(trees.sprite);
+                    this.invisibleHero.add(trees.burned.sprite);
+                    binaryInsertSortY(trees.sprite, this.maskedGrp);
+                    /*if (obj.properties && obj.properties.burn) {
+                        setTimeout(() => trees.burn(), 1000);
+                    }*/
                     break;
                 case "start":
                     this.hero = new Hero(obj.x, obj.y);
@@ -1337,10 +2054,15 @@ class BaseLevel {
                     this.guns.add(gun);
                     binaryInsertSortY(gun, this.maskedGrp);
                     break;
+                case "firegun":
+                    let firegun = new FireGun(obj.x, obj.y, this.invisibleHero);
+                    this.guns.add(firegun);
+                    binaryInsertSortY(firegun, this.maskedGrp);
+                    break;
                 case "water":
                 case "lava":
                 case "pipe":
-                    let flow = new Flow();
+                    let flow = new Flow(obj.name);
                     flow.damageable = obj.name === "pipe";
                     let props = obj.properties || {};
                     for (let i = 0; i < obj.polyline.length-1; i++) {
@@ -1351,9 +2073,9 @@ class BaseLevel {
                         let speed = props[`speed-${segmentSuffix}`] || props.speed || 1;
                         flow.addSegment({x: obj.x+p1[0], y:obj.y+p1[1]}, {x: obj.x+p2[0], y:obj.y+p2[1]}, width, speed);
                     }
-                    flow.prepareLine(props.id);
+                    flow.prepareLine(props.id, this.flows.find(flow => flow.id === props["display-only"]));
                     flow.renderWith({"lava": LavaShader, "water": WaterShader, "pipe": PipeShader}[obj.name]);
-                    this.heatmap.addFlow(flow);
+                    this.heatmap.addFlow(flow, obj.name);
                     this.landscape.add(flow.sprite);
 
                     let originT = props.t || {"lava": 255, "water": 128, "pipe": undefined}[obj.name];
@@ -1384,6 +2106,7 @@ class BaseLevel {
         }
         binaryInsertSortY(this.hero, this.maskedGrp);
         this.invisibleHero.add(this.hero);
+        this.other.add(this.hero.drops);
         this.invisibleHero.alpha = 0.01;
 
         let bg = game.add.bitmapData(MAP_WIDTH_PIX, MAP_HEIGHT_PIX);
@@ -1405,9 +2128,17 @@ class BaseLevel {
         game.onProjectileExplode = this.onProjectileExplode.bind(this);
         game.addProjectile = this.addProjectile.bind(this);
         game.hasNoObstacles = this.hasNoObstacles.bind(this);
+        game.isOnWater = this.isOnWater.bind(this);
 
         //Flow.demoFlow();
 
+    }
+
+    isOnWater(x, y) {
+        for (let f of this.flows) {
+            if (f.type === "water" && f.isOn(x,y)) return true;
+        }
+        return false;
     }
 
     addProjectile(projectile) {
@@ -1421,8 +2152,8 @@ class BaseLevel {
     }
 
     onProjectileExplode(projectile) {
-        if (Phaser.Point.distance(projectile, this.hero) < 32) {
-            this.maskedGrp.push({ghost: true, x: this.hero.x, y: this.hero.y})
+        if (!projectile.isFire && Phaser.Point.distance(projectile, this.hero) < 32) {
+            this.maskedGrp.push({ghost: true, x: this.hero.x, y: this.hero.y});
             this.hero.restart(this.heroStart);
         }
         for (let g of this.grass) {
@@ -1433,13 +2164,32 @@ class BaseLevel {
             flow.destroyAt(projectile.x, projectile.y, 32);
         }
 
+        if (projectile.isFire) {
+            let projectileRect = new Phaser.Rectangle(
+              projectile.x - 16,
+                projectile.y - 16,
+                32, 32
+            );
+            for (let d of this.invisibleHero.children) {
+                if (d instanceof IceDiamond && Phaser.Point.distance(d, projectile) < 16) {
+                    d.kill();
+                    this.hero.iceCooldown = 0;
+                }
+            }
+            for (let wall of this.walls.children) {
+                if (wall.burnable && wall.rect.intersects(projectileRect)) {
+                    wall.burn(projectile.x, projectile.y);
+                }
+            }
+        }
+
     }
 
     hasNoObstacles(p1, p2) {
         let line = new Phaser.Line(p1.x, p1.y, p2.x, p2.y), wall;
         for (let wi = 0; wi < this.walls.children.length; wi++) {
             wall = this.walls.children[wi];
-            if (Phaser.Line.intersectsRectangle(line, wall.rect)) return false;
+            if (wall.rect && Phaser.Line.intersectsRectangle(line, wall.rect)) return false;
         }
         return true;
     }
@@ -1480,7 +2230,7 @@ class BaseLevel {
     update() {
         game.physics.arcade.collide(this.hero, this.walls);
         if (game.physics.arcade.overlap(this.hero, this.exit)) {
-            console.log("you win!");
+            game.sfx.win();
             game.state.start(this.nextState);
         }
         game.physics.arcade.overlap(this.hero, this.projectiles, this.onCollideProjectileWithHero.bind(this));
@@ -1493,7 +2243,9 @@ class BaseLevel {
             this.hero.doMove(vx, vy);
 
             if (this.keys.space.isDown && this.hero.placeIce()) {
-                let ice = new IceDiamond(this.hero.x, this.hero.y - 2, this.heatmap);
+                let ice = new IceDiamond(this.hero.x, this.hero.y - 2, this.heatmap, (ice) => {
+                    this.maskedGrp.push({ghost: true, x: ice.x, y: ice.y});
+                });
                 this.invisibleHero.add(ice);
                 binaryInsertSortY(ice, this.maskedGrp);
                 ice.events.onDestroy.addOnce(() => {
@@ -1517,11 +2269,20 @@ class BaseLevel {
         this.renduror.renderMask();
         if (!DEBUG_HEATMAP || this.keys.z.isDown) this.heatmap.update();
 
+        if (!DEBUG_HEATMAP && this.keys.z.isDown) game.state.start(this.nextState);
+
         (game.world.filters || []).forEach(f => f.update());
     }
 
     render() {
         fpsEl.innerText = game.time.fps;
+        let temp = this.heatmap.t(this.hero.x, this.hero.y);//.grid[this.heatmap.y(this.hero.y)][this.heatmap.x(this.hero.x)].t;
+        //0..255
+        temp = ((temp-128) / 3)|0;
+        if (temp > 0) temp = "+" + temp + "C"; else temp = temp + "C";
+        game.debug.text(temp, 16, 16);
+
+        //this.walls.forEach(w => game.debug.body(w));
     }
 }
 
@@ -1545,6 +2306,12 @@ class Level1 extends BaseLevel {
 
 class Level2 extends BaseLevel {
     get levelKey() { return "level2"; }
+
+    get nextState() { return "Level3"}
+}
+
+class Level3 extends BaseLevel {
+    get levelKey() { return "level3"; }
 
     get nextState() { return "Win"}
 }

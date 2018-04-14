@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8" />
     <title>Demo 14</title>
-    <script src="../game6/phaser.js"></script>
+    <script src="./Tone.js"></script>
+    <script src="./Tone.Editor.js"></script>
+    <script src="./jsfx.js"></script>
+    <script src="./phaser.js"></script>
     <script src="../common/opts.js"></script>
 
 </head>
@@ -24,6 +27,7 @@
     game.state.add("Load", LoadState);
     game.state.add("Level1", Level1);
     game.state.add("Level2", Level2);
+    game.state.add("Level3", Level3);
     game.state.add("Win", WinState);
 
     game.state.start("Load");

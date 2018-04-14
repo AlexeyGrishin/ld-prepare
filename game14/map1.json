@@ -23,8 +23,8 @@
                  "type":"",
                  "visible":true,
                  "width":30,
-                 "x":140,
-                 "y":1
+                 "x":120,
+                 "y":0
                 }, 
                 {
                  "height":250,
@@ -45,7 +45,7 @@
                  "type":"",
                  "visible":true,
                  "width":50,
-                 "x":170,
+                 "x":150,
                  "y":300
                 }, 
                 {
@@ -56,7 +56,7 @@
                  "type":"",
                  "visible":true,
                  "width":30,
-                 "x":170,
+                 "x":150,
                  "y":260
                 }, 
                 {
@@ -103,7 +103,7 @@
                  "type":"",
                  "visible":true,
                  "width":16,
-                 "x":190,
+                 "x":160,
                  "y":200
                 }, 
                 {
@@ -263,6 +263,123 @@
                  "width":0,
                  "x":0,
                  "y":320
+                }, 
+                {
+                 "height":90,
+                 "id":18,
+                 "name":"trees",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":40,
+                 "x":10,
+                 "y":410
+                }, 
+                {
+                 "height":30,
+                 "id":19,
+                 "name":"trees",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":40,
+                 "x":180,
+                 "y":470
+                }, 
+                {
+                 "height":30,
+                 "id":21,
+                 "name":"trees",
+                 "properties":
+                    {
+                     "circle":true
+                    },
+                 "propertytypes":
+                    {
+                     "circle":"bool"
+                    },
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":30,
+                 "x":110,
+                 "y":400
+                }, 
+                {
+                 "height":30,
+                 "id":22,
+                 "name":"trees",
+                 "properties":
+                    {
+                     "circle":true
+                    },
+                 "propertytypes":
+                    {
+                     "circle":"bool"
+                    },
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":30,
+                 "x":140,
+                 "y":450
+                }, 
+                {
+                 "height":30,
+                 "id":23,
+                 "name":"trees",
+                 "properties":
+                    {
+                     "circle":true
+                    },
+                 "propertytypes":
+                    {
+                     "circle":"bool"
+                    },
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":30,
+                 "x":90,
+                 "y":460
+                }, 
+                {
+                 "height":30,
+                 "id":24,
+                 "name":"trees",
+                 "properties":
+                    {
+                     "circle":true
+                    },
+                 "propertytypes":
+                    {
+                     "circle":"bool"
+                    },
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":30,
+                 "x":70,
+                 "y":430
+                }, 
+                {
+                 "height":30,
+                 "id":25,
+                 "name":"trees",
+                 "properties":
+                    {
+                     "circle":true
+                    },
+                 "propertytypes":
+                    {
+                     "circle":"bool"
+                    },
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":30,
+                 "x":50,
+                 "y":470
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -279,7 +396,7 @@
          "x":0,
          "y":0
         }],
- "nextobjectid":17,
+ "nextobjectid":26,
  "orientation":"orthogonal",
  "properties":
     {
@@ -297,12 +414,12 @@
          "columns":4,
          "firstgid":1,
          "image":"meteo-misc.png",
-         "imageheight":80,
+         "imageheight":112,
          "imagewidth":64,
          "margin":0,
          "name":"meteo-misc",
          "spacing":0,
-         "tilecount":20,
+         "tilecount":28,
          "tileheight":16,
          "tilewidth":16
         }],

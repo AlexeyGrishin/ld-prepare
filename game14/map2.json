@@ -376,6 +376,108 @@
                  "width":0,
                  "x":100,
                  "y":0
+                }, 
+                {
+                 "height":0,
+                 "id":33,
+                 "name":"water",
+                 "polyline":[
+                        {
+                         "x":20,
+                         "y":-10
+                        }, 
+                        {
+                         "x":10,
+                         "y":0
+                        }, 
+                        {
+                         "x":-10,
+                         "y":30
+                        }],
+                 "properties":
+                    {
+                     "display-only":"water-2",
+                     "width":6
+                    },
+                 "propertytypes":
+                    {
+                     "display-only":"string",
+                     "width":"int"
+                    },
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":110,
+                 "y":10
+                }, 
+                {
+                 "height":0,
+                 "id":34,
+                 "name":"water",
+                 "polyline":[
+                        {
+                         "x":-10,
+                         "y":-10
+                        }, 
+                        {
+                         "x":10,
+                         "y":20
+                        }],
+                 "properties":
+                    {
+                     "display-only":"water-2",
+                     "width":4
+                    },
+                 "propertytypes":
+                    {
+                     "display-only":"string",
+                     "width":"int"
+                    },
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":90,
+                 "y":10
+                }, 
+                {
+                 "height":0,
+                 "id":35,
+                 "name":"water",
+                 "polyline":[
+                        {
+                         "x":-10,
+                         "y":-10
+                        }, 
+                        {
+                         "x":0,
+                         "y":10
+                        }, 
+                        {
+                         "x":10,
+                         "y":20
+                        }, 
+                        {
+                         "x":20,
+                         "y":40
+                        }],
+                 "properties":
+                    {
+                     "display-only":"water-2",
+                     "width":4
+                    },
+                 "propertytypes":
+                    {
+                     "display-only":"string",
+                     "width":"int"
+                    },
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":80,
+                 "y":10
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -392,7 +494,7 @@
          "x":0,
          "y":0
         }],
- "nextobjectid":33,
+ "nextobjectid":36,
  "orientation":"orthogonal",
  "properties":
     {
@@ -405,7 +507,20 @@
  "renderorder":"left-up",
  "tiledversion":"1.0.3",
  "tileheight":10,
- "tilesets":[],
+ "tilesets":[
+        {
+         "columns":6,
+         "firstgid":1,
+         "image":"meteo-misc.png",
+         "imageheight":112,
+         "imagewidth":64,
+         "margin":0,
+         "name":"meteo-misc",
+         "spacing":0,
+         "tilecount":66,
+         "tileheight":10,
+         "tilewidth":10
+        }],
  "tilewidth":10,
  "type":"map",
  "version":1,
