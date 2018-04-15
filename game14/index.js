@@ -29,9 +29,10 @@ class LoadState {
         createMaskSpritesheet('trees');
         createMaskSpritesheet('cat', false, true);
         createMaskSpritesheet('misc', false, true);
-        game.state.start("Level1");
+        game.state.start("Level2");
         game.add.sound("music1").play(undefined, undefined, 0.6, true);
         let lib = {"explosion":{"Frequency":{"Start":44,"Slide":-0.71,"RepeatSpeed":0.07,"ChangeSpeed":0.6767148937582615,"ChangeAmount":11.496596211476469,"Max":220,"Min":153},"Generator":{"Func":"noise","B":0},"Volume":{"Sustain":0.14,"Decay":0.251,"Punch":0.11,"Attack":0.011,"Master":0.52},"Filter":{"LP":0.99,"HP":0,"LPSlide":1,"HPSlide":-0.11,"LPResonance":0.89},"Vibrato":{"Frequency":0.01,"Depth":0.08,"FrequencySlide":0.01},"Phaser":{"Offset":0.75,"Sweep":-0.65}},"fire":{"Frequency":{"Start":76,"Slide":-0.01,"RepeatSpeed":0,"Min":113,"Max":251,"ChangeAmount":-12,"DeltaSlide":-1},"Generator":{"Func":"triangle","ASlide":-0.5,"BSlide":1,"B":1,"A":0},"Phaser":{"Offset":-0.03,"Sweep":-0.82},"Volume":{"Sustain":0.17,"Decay":0.471,"Punch":0.19,"Attack":0.001,"Master":1},"Vibrato":{"Frequency":1.01,"Depth":0.18,"FrequencySlide":0.6,"DepthSlide":0.83},"Filter":{"HP":0,"LP":1}},"freeze":{"Frequency":{"Start":200,"Slide":0.1,"Min":278,"Max":398},"Vibrato":{"Depth":0.2,"Frequency":3.01,"DepthSlide":-0.03,"FrequencySlide":0.83},"Generator":{"Func":"synth"},"Volume":{"Sustain":0.31795825857994836,"Decay":1.331,"Attack":0.091}},"cool":{"Frequency":{"Start":184.21439605070142,"Min":530.993599988916,"Max":1447.1188719523338,"Slide":0.17936147773177602,"DeltaSlide":-0.45662796368987024,"RepeatSpeed":2.112301481170091,"ChangeAmount":3.9970456539836476,"ChangeSpeed":0.7917707252304746},"Vibrato":{"Depth":0.686114126329183,"DepthSlide":0.5874120889378238,"Frequency":42.91891942369315,"FrequencySlide":-0.4637672665849397},"Generator":{"Func":"synth","A":0.15995785189304712,"B":0.4826123672769218,"ASlide":-0.5252949980079618,"BSlide":-0.720506290725186},"Guitar":{"A":0.26376978931430206,"B":0.9191230664957835,"C":0.4521463298105701},"Phaser":{"Offset":0,"Sweep":-0.61},"Volume":{"Master":0.4,"Attack":0.6258079433110993,"Sustain":1.877912696679962,"Punch":2.794075926428912,"Decay":1.8527269593245017}},"freeze2":{"Frequency":{"Start":242.31667764078972,"Min":1524.694537020016,"Max":1603.911308040573,"Slide":0.4287598898750109,"DeltaSlide":0.4495420723338399,"RepeatSpeed":1.5246908030943396,"ChangeAmount":2.2322994115414687,"ChangeSpeed":0.12389445705853919},"Vibrato":{"Depth":0.12046225739266436,"DepthSlide":-0.05,"Frequency":21.01,"FrequencySlide":-0.2},"Generator":{"Func":"sine","A":0.5604263639818596,"B":0.7483387944605602,"ASlide":-0.8235948958841464,"BSlide":-0.8068134580551054},"Guitar":{"A":0.7487069465854195,"B":0.3182362739352764,"C":0.34710223860056266},"Phaser":{"Offset":-0.77,"Sweep":-0.07},"Volume":{"Master":0.4,"Attack":0.071,"Sustain":0.14356821439301948,"Punch":0.23,"Decay":0.221}},"win":{"Frequency":{"Start":184,"Min":297,"Max":579,"Slide":0.48,"DeltaSlide":-0.17,"RepeatSpeed":3,"ChangeAmount":-12,"ChangeSpeed":0},"Vibrato":{"Depth":0.47,"DepthSlide":-0.03,"Frequency":1.01,"FrequencySlide":-0.20169023403657382},"Generator":{"Func":"synth","A":0.24094215779136285,"B":0.8047674164546779,"ASlide":-0.5746110122236354,"BSlide":-0.8234057866069842},"Guitar":{"A":0.8680376992535788,"B":0.787662149701966,"C":0.18344977594642198},"Phaser":{"Offset":0.82,"Sweep":-1},"Volume":{"Master":0.4,"Attack":0.10125296047186062,"Sustain":0.047382540142184126,"Punch":1.0075817094466677,"Decay":1.9227613181283023},"Filter":{"HP":0,"LP":0.98,"LPSlide":0.41}}};
+        lib = Object.assign(lib, {"cannot":{"Frequency":{"Start":96,"Min":30,"Max":96,"Slide":1,"RepeatSpeed":0.11,"DeltaSlide":-0.69,"ChangeSpeed":0,"ChangeAmount":-11},"Vibrato":{"Frequency":1.01,"Depth":0,"FrequencySlide":-0.03},"Generator":{"Func":"saw"},"Filter":{"LP":1,"HP":0.05,"LPSlide":0.03,"LPResonance":0},"Phaser":{"Offset":-0.03,"Sweep":-0.01},"Volume":{"Punch":0,"Decay":0.001,"Master":0.25,"Sustain":0.32,"Attack":0.001}}});
         game.sfx = jsfx.Sounds(lib)
     }
 }
@@ -2141,6 +2142,13 @@ class BaseLevel {
         return false;
     }
 
+    isOnFlow(x, y) {
+        for (let f of this.flows) {
+            if (f.isOn(x,y)) return true;
+        }
+        return false;
+    }
+
     addProjectile(projectile) {
         this.projectiles.add(projectile);
         projectile.model = {
@@ -2242,15 +2250,19 @@ class BaseLevel {
             if (this.cursors.down.isDown) vy = 1;
             this.hero.doMove(vx, vy);
 
-            if (this.keys.space.isDown && this.hero.placeIce()) {
-                let ice = new IceDiamond(this.hero.x, this.hero.y - 2, this.heatmap, (ice) => {
-                    this.maskedGrp.push({ghost: true, x: ice.x, y: ice.y});
-                });
-                this.invisibleHero.add(ice);
-                binaryInsertSortY(ice, this.maskedGrp);
-                ice.events.onDestroy.addOnce(() => {
-                    this.maskedGrp.splice(this.maskedGrp.indexOf(ice), 1);
-                });
+            if (this.keys.space.isDown) {
+                if (this.isOnFlow(this.hero.x, this.hero.y)) {
+                    game.sfx.cannot();
+                } else if (this.hero.placeIce()) {
+                    let ice = new IceDiamond(this.hero.x, this.hero.y - 2, this.heatmap, (ice) => {
+                        this.maskedGrp.push({ghost: true, x: ice.x, y: ice.y});
+                    });
+                    this.invisibleHero.add(ice);
+                    binaryInsertSortY(ice, this.maskedGrp);
+                    ice.events.onDestroy.addOnce(() => {
+                        this.maskedGrp.splice(this.maskedGrp.indexOf(ice), 1);
+                    });
+                }
             }
         }
 

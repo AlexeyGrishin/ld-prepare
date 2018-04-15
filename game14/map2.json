@@ -44,9 +44,9 @@
                  "rotation":0,
                  "type":"",
                  "visible":true,
-                 "width":160,
-                 "x":440,
-                 "y":270
+                 "width":140,
+                 "x":460,
+                 "y":260
                 }, 
                 {
                  "height":160,
@@ -93,7 +93,7 @@
                  "y":400
                 }, 
                 {
-                 "height":110,
+                 "height":100,
                  "id":12,
                  "name":"rocks",
                  "rotation":0,
@@ -104,7 +104,7 @@
                  "y":160
                 }, 
                 {
-                 "height":30,
+                 "height":20,
                  "id":13,
                  "name":"rocks",
                  "rotation":0,
@@ -259,7 +259,7 @@
                  "rotation":0,
                  "type":"",
                  "visible":true,
-                 "width":80,
+                 "width":100,
                  "x":200,
                  "y":90
                 }, 
@@ -292,8 +292,8 @@
                  "rotation":0,
                  "type":"",
                  "visible":true,
-                 "width":160,
-                 "x":380,
+                 "width":150,
+                 "x":390,
                  "y":100
                 }, 
                 {
@@ -478,6 +478,17 @@
                  "width":0,
                  "x":80,
                  "y":10
+                }, 
+                {
+                 "height":120,
+                 "id":36,
+                 "name":"trees",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":80,
+                 "x":520,
+                 "y":140
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -494,7 +505,7 @@
          "x":0,
          "y":0
         }],
- "nextobjectid":36,
+ "nextobjectid":38,
  "orientation":"orthogonal",
  "properties":
     {
