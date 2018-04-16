@@ -9,6 +9,8 @@ class LoadState {
         game.load.spritesheet("grass", "meteo-grass.png", 16, 16);
         game.load.spritesheet("misc", "meteo-misc.png", 16, 16);
         game.load.spritesheet("trees", "meteo-trees.png", 16, 16);
+        game.load.spritesheet("fire", "fire.png", 16, 16);
+        game.load.image("firetexture", "firetexture.png");
         game.load.image("lava-1", "lava-1.png");
         game.load.image("water-1", "water-1.png");
         game.load.image("pipe-2", "pipe-2.png");
@@ -25,30 +27,42 @@ class LoadState {
     }
 
     create() {
-        createMaskSpritesheet('grass');
+        createMaskSpritesheet('grass', true, false, (fi) => fi < 21);
+        createMaskSpritesheet('fire', false, true);
         createMaskSpritesheet('trees');
         createMaskSpritesheet('cat', false, true);
         createMaskSpritesheet('misc', false, true);
-        game.state.start("Level1");
         game.add.sound("music1").play(undefined, undefined, 0.6, true);
         let lib = {"explosion":{"Frequency":{"Start":44,"Slide":-0.71,"RepeatSpeed":0.07,"ChangeSpeed":0.6767148937582615,"ChangeAmount":11.496596211476469,"Max":220,"Min":153},"Generator":{"Func":"noise","B":0},"Volume":{"Sustain":0.14,"Decay":0.251,"Punch":0.11,"Attack":0.011,"Master":0.52},"Filter":{"LP":0.99,"HP":0,"LPSlide":1,"HPSlide":-0.11,"LPResonance":0.89},"Vibrato":{"Frequency":0.01,"Depth":0.08,"FrequencySlide":0.01},"Phaser":{"Offset":0.75,"Sweep":-0.65}},"fire":{"Frequency":{"Start":76,"Slide":-0.01,"RepeatSpeed":0,"Min":113,"Max":251,"ChangeAmount":-12,"DeltaSlide":-1},"Generator":{"Func":"triangle","ASlide":-0.5,"BSlide":1,"B":1,"A":0},"Phaser":{"Offset":-0.03,"Sweep":-0.82},"Volume":{"Sustain":0.17,"Decay":0.471,"Punch":0.19,"Attack":0.001,"Master":1},"Vibrato":{"Frequency":1.01,"Depth":0.18,"FrequencySlide":0.6,"DepthSlide":0.83},"Filter":{"HP":0,"LP":1}},"freeze":{"Frequency":{"Start":200,"Slide":0.1,"Min":278,"Max":398},"Vibrato":{"Depth":0.2,"Frequency":3.01,"DepthSlide":-0.03,"FrequencySlide":0.83},"Generator":{"Func":"synth"},"Volume":{"Sustain":0.31795825857994836,"Decay":1.331,"Attack":0.091}},"cool":{"Frequency":{"Start":184.21439605070142,"Min":530.993599988916,"Max":1447.1188719523338,"Slide":0.17936147773177602,"DeltaSlide":-0.45662796368987024,"RepeatSpeed":2.112301481170091,"ChangeAmount":3.9970456539836476,"ChangeSpeed":0.7917707252304746},"Vibrato":{"Depth":0.686114126329183,"DepthSlide":0.5874120889378238,"Frequency":42.91891942369315,"FrequencySlide":-0.4637672665849397},"Generator":{"Func":"synth","A":0.15995785189304712,"B":0.4826123672769218,"ASlide":-0.5252949980079618,"BSlide":-0.720506290725186},"Guitar":{"A":0.26376978931430206,"B":0.9191230664957835,"C":0.4521463298105701},"Phaser":{"Offset":0,"Sweep":-0.61},"Volume":{"Master":0.4,"Attack":0.6258079433110993,"Sustain":1.877912696679962,"Punch":2.794075926428912,"Decay":1.8527269593245017}},"freeze2":{"Frequency":{"Start":242.31667764078972,"Min":1524.694537020016,"Max":1603.911308040573,"Slide":0.4287598898750109,"DeltaSlide":0.4495420723338399,"RepeatSpeed":1.5246908030943396,"ChangeAmount":2.2322994115414687,"ChangeSpeed":0.12389445705853919},"Vibrato":{"Depth":0.12046225739266436,"DepthSlide":-0.05,"Frequency":21.01,"FrequencySlide":-0.2},"Generator":{"Func":"sine","A":0.5604263639818596,"B":0.7483387944605602,"ASlide":-0.8235948958841464,"BSlide":-0.8068134580551054},"Guitar":{"A":0.7487069465854195,"B":0.3182362739352764,"C":0.34710223860056266},"Phaser":{"Offset":-0.77,"Sweep":-0.07},"Volume":{"Master":0.4,"Attack":0.071,"Sustain":0.14356821439301948,"Punch":0.23,"Decay":0.221}},"win":{"Frequency":{"Start":184,"Min":297,"Max":579,"Slide":0.48,"DeltaSlide":-0.17,"RepeatSpeed":3,"ChangeAmount":-12,"ChangeSpeed":0},"Vibrato":{"Depth":0.47,"DepthSlide":-0.03,"Frequency":1.01,"FrequencySlide":-0.20169023403657382},"Generator":{"Func":"synth","A":0.24094215779136285,"B":0.8047674164546779,"ASlide":-0.5746110122236354,"BSlide":-0.8234057866069842},"Guitar":{"A":0.8680376992535788,"B":0.787662149701966,"C":0.18344977594642198},"Phaser":{"Offset":0.82,"Sweep":-1},"Volume":{"Master":0.4,"Attack":0.10125296047186062,"Sustain":0.047382540142184126,"Punch":1.0075817094466677,"Decay":1.9227613181283023},"Filter":{"HP":0,"LP":0.98,"LPSlide":0.41}}};
         lib = Object.assign(lib, {"cannot":{"Frequency":{"Start":96,"Min":30,"Max":96,"Slide":1,"RepeatSpeed":0.11,"DeltaSlide":-0.69,"ChangeSpeed":0,"ChangeAmount":-11},"Vibrato":{"Frequency":1.01,"Depth":0,"FrequencySlide":-0.03},"Generator":{"Func":"saw"},"Filter":{"LP":1,"HP":0.05,"LPSlide":0.03,"LPResonance":0},"Phaser":{"Offset":-0.03,"Sweep":-0.01},"Volume":{"Punch":0,"Decay":0.001,"Master":0.25,"Sustain":0.32,"Attack":0.001}}});
-        game.sfx = jsfx.Sounds(lib)
+        game.sfx = jsfx.Sounds(lib);
+        game.state.start("Level1");
     }
 }
 
 /*
-  fire gun
-    common code
-    throws fire at icediamond
-
-  guns
-    do not fire until rotated to goal.
-    rotate FAST
-
   fire
-    make circle fire
-    temporary ignore mask for weather shader?
+
+    sprite for burnt grass (1 for all)
+    burning mask (maybe not needed)
+    burning map (as heatmap, but burning)
+
+    so when fire projectile flies
+        get cell /10 in burning map
+        if not burning -> burn
+
+    update of grassmodel
+        if my grass is on burning cell in burning map
+            make it burn (actually do nothing, shader shall do things)
+            when burning stops - replace grass with burnt one and do not interact it anymore
+
+    shader
+        gets burning map as well
+        if this pixel is of burning sprite
+            draw fire (need to try)
+
+    firegun
+        throws multiple fire projectiles - I think 1 is real, other are just effects
 
  */
 
@@ -186,12 +200,80 @@ const MAP_HEIGHT_PIX = HEAT_PIX*MAP_HEIGHT;
 const DEBUG_HEATMAP = false;
 const USE_SHADER = true;
 
+const FireShaderParts = `
+            #define HEIGHT 3.
+            #define SMOKE_HEIGHT 5.
+            //#define DX(dy) dy*pow(abs(dy)/(HEIGHT+SMOKE_HEIGHT), 5.)
+            #define DX(dy) floor(abs(dy) > HEIGHT ? -(abs(dy)/(HEIGHT+SMOKE_HEIGHT)*2.) : 0.)
+            //#define DX(dy) 0.
+            #ifndef GET_BY_OFFSET
+            #define GET_BY_OFFSET(dx, dy) getByOffset(dx, dy)
+            #endif
+            
+            float rand(vec2 n) { 
+                return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453);
+            }
+        
+            vec4 getByOffset(float dx, float dy) {
+                vec2 xy = gl_FragCoord.xy + vec2(dx,dy);
+                xy.y = ${MAP_HEIGHT_PIX}. - xy.y;
+                vec2 uv = xy / vec2(${MAP_WIDTH_PIX}., ${MAP_HEIGHT_PIX}.);
+                return texture2D(MAIN_TEXTURE, uv);
+            }
+            
+            vec4 getFlameFor(float dy, float seed) {
+                vec4 clr = GET_BY_OFFSET(DX(dy), dy);
+                float randomU = fract(seed + (time*4.));
+                float a = mix(0.5, 1.0, seed*fract(time*seed));
+                return clr.a * texture2D(FIRE_TEXTURE, vec2(randomU, abs(dy)/HEIGHT * 0.6))*a;
+            }
+            
+            vec4 getSmokeFor(float dy, float seed) {
+                vec4 clr = GET_BY_OFFSET(DX(dy), dy);
+                float randomU = 0.5;//seed;
+                float v = fract(abs(seed-time*5.))*(abs(dy)-HEIGHT)/SMOKE_HEIGHT * 0.3 + 0.8;
+                float a = mix(0.4, 0.7, seed*fract(time)/10.);
+                return clr.a * texture2D(FIRE_TEXTURE, vec2(randomU, v)) * a;
+            }
+            
+            
+            vec4 getFireColor(vec4 result) {
+                float seed = rand(gl_FragCoord.xy);// * vec2(time, -time));
+                vec4 flame1 = getFlameFor(0., seed);
+                vec4 flame2 = getFlameFor(-1., seed);
+                vec4 flame3 = getFlameFor(-2., seed);
+                vec4 flame4 = getFlameFor(-3., seed);
+                vec4 flame5 = getSmokeFor(-5., seed);
+                vec4 flame6 = getSmokeFor(-6., seed);
+                vec4 flame7 = getSmokeFor(-7., seed);
+                vec4 flame8 = getSmokeFor(-8., seed);
+                
+                result = mix(result, flame1, flame1.a);
+                result = mix(result, flame2, flame2.a);
+                result = mix(result, flame3, flame3.a);
+                result = mix(result, flame4, flame4.a);
+                result = mix(result, flame5, flame5.a);
+                result = mix(result, flame6, flame6.a);
+                result = mix(result, flame7, flame7.a);
+                result = mix(result, flame8, flame8.a);
+                
+                return result;           
+            }
+            
+            vec4 getFireColor() {
+                return getFireColor(getByOffset(0., 0.));
+            }
+`;
+
+
 //t. 0 = absolute cold (nothing to move out), 255 - absolute heat
 
 //todo[grishin]: so what I've learned: I cannot put filter over sprite with bitmapData and pass another bitmapData as texture
 class FireShader extends Phaser.Filter {
     constructor(burnTexture, x, y, myTexture, burnedTexture) {
         super(game);
+
+        this.uniforms.iChannel4 = { type: 'sampler2D', value: burnTexture, textureData: { nearest: true } };
 
         this.uniforms.iChannel3.value = burnTexture;
         this.uniforms.iChannel3.textureData = {nearest: true};
@@ -210,9 +292,11 @@ class FireShader extends Phaser.Filter {
         uniform vec4       offsetSize;
         uniform float      time;
         uniform sampler2D  uSampler;    
-        uniform sampler2D  iChannel3;   //burn texture
+        uniform sampler2D  iChannel4;   //burn texture
         uniform sampler2D  iChannel1;   //original sprite
         uniform sampler2D  iChannel2;   //burned sprite
+        
+        #define iChannel3 iChannel4
         
         float rand(float n){return fract(sin(n) * 43758.5453123);}
         float rand(vec2 n) { 
@@ -671,13 +755,14 @@ class Flow {
 
 
 
-function createMaskSpritesheet(key, addPixelsOnTop = true, ignoreMask = false) {
+function createMaskSpritesheet(key, addPixelsOnTop = true, ignoreMask = false, burnable = () => false) {
     let img = game.cache.getImage(key);
     let fd = game.cache.getFrameData(key);
     let maskBm = game.add.bitmapData(img.width, img.height);
     //maskBm.fill(0,0,0);
     maskBm.draw(img, 0, 0);
     maskBm.update();
+    let fi = 0;
     for (let f of fd.getFrames()) {
         //1. find "origin"
         let oy = f.y + f.height-1;
@@ -689,7 +774,7 @@ function createMaskSpritesheet(key, addPixelsOnTop = true, ignoreMask = false) {
         //2. process all pixels. set r = (x-ox) if > 0, g = (ox-x) if > 0, b = (oy-y)
         maskBm.processPixelRGB((color, x, y) => {
             out.a = 255;
-            out.g = 255;
+            out.g = 240;
             if (color.a === 0) {
                 if (addPixelsOnTop && y < f.height-1) {
                     maskBm.getPixel(x, y+1, pix);
@@ -702,13 +787,69 @@ function createMaskSpritesheet(key, addPixelsOnTop = true, ignoreMask = false) {
                 } else return;
             }
             if (ignoreMask) out.g = 32;
+            if (burnable(fi)) out.g += 1;
             out.r = ox-x+128;// Math.max(0, x-ox);
             //out.g = Math.max(0, ox-x);
             out.b = oy-y;
             return out;
         }, this, f.x, f.y, f.width, f.height);
+        fi++;
     }
     game.cache.addSpriteSheet(key + ".mask", null, maskBm.canvas, 16, 16);
+}
+
+class Firemap {
+    constructor(width = MAP_WIDTH, height = MAP_HEIGHT) {
+        this.fireBitmap = game.add.bitmapData(HM_WIDTH, HM_HEIGHT);
+        this.width = width;
+        this.height = height;
+        this.sprite = game.add.sprite(-1000, -1000, this.fireBitmap);
+        this.sprite.texture.baseTexture.scaleMode = PIXI.scaleModes.NEAREST;
+        this.grid = [];
+        this.burning = [];
+        for (let y = 0; y < height; y++) {
+            let row = [];
+            for (let x = 0; x < width; x++) {
+                row.push(false);
+            }
+            this.grid.push(row);
+        }
+        this.fireBitmap.update();
+    }
+
+    x(x) { return (Math.floor(x/HEAT_PIX))}
+    y(y) { return (Math.floor(y/HEAT_PIX))}
+
+    burn(x, y, lifespan = 2000) {
+        let burncell = {left: lifespan, x, y};
+        this.burning.push(burncell);
+        this.grid[y][x] = burncell;
+        this.fireBitmap.setPixel32(x, this.height - 1 - y, 255, 0, 0, 255, false);
+        this.dirty = true;
+    }
+
+    isBurning(x, y) {
+        if (y >= this.grid.length || y < 0) return false;
+        return !!this.grid[y][x];
+    }
+
+    update() {
+        for (let i = this.burning.length-1; i >= 0; i--) {
+            let bcell = this.burning[i];
+            bcell.left -= game.time.physicsElapsedMS;
+            if (bcell.left <= 0) {
+                this.grid[bcell.y][bcell.x] = false;
+                this.burning.splice(i, 1);
+                this.fireBitmap.setPixel32(bcell.x, this.height - 1 -bcell.y, 0,0,0,0,false);
+                this.dirty = true;
+            }
+        }
+        if (this.dirty) {
+            this.fireBitmap.context.putImageData(this.fireBitmap.imageData, 0, 0);
+            this.fireBitmap.dirty = true;
+            this.dirty = false;
+        }
+    }
 }
 
 let heatmapWorker = new Worker("heatmapWorker.js");
@@ -843,253 +984,13 @@ class HeatMapWorkerAPI {
     }
 
 }
-/*
-class HeatMap {
-    constructor(width = MAP_WIDTH, height = MAP_HEIGHT, t = (x,y) => 200) {
-        this.bitmap = game.add.bitmapData(HM_WIDTH, HM_HEIGHT);
-        this.grid = [];
-        this.list = [];
-        for (let y = 0; y < height; y++) {
-            let row = [];
-            for (let x = 0; x < width; x++) {
-                row.push({t: t(x,y), tspeed: 0.2, x, y, delta: 0, tstepsPerTick: 5}); //tspeed = "part of particles moving for 1 cell for 1 tick"
-            }
-            this.list.push(...row);
-            this.grid.push(row);
-        }
-        this.list.sort((a,b) => {
-            return b.tstepsPerTick - a.tstepsPerTick;
-        });
-        this.width = width;
-        this.height = height;
-        this.bitmap.update();
-        this.updateBitmap();
-        this.sprite = game.add.sprite(-1000, -1000, this.bitmap);
-        this.sprite.texture.baseTexture.scaleMode = PIXI.scaleModes.LINEAR;
 
-        this.tchangers = [];
-        this.movements = [];
-
-        for (let x = 0; x < width; x++) {
-            for (let y = 0; y < height; y++) {
-                let cellsAround = [];
-                for (let dx = -1; dx <= 1; dx++) {
-                    for (let dy = -1; dy <= 1; dy++) {
-                        let ax = x + dx;
-                        let ay = y + dy;
-                        if ((ax !== x || ay !== y) && ax >= 0 && ay >= 0 && ax < this.width && ay < this.height) {
-                            cellsAround.push({
-                                cell: this.grid[ay][ax],
-                                dist: Math.hypot(ax-x, ay-y)
-                            });
-                        }
-                    }
-                }
-                this.grid[y][x].around = cellsAround;
-            }
-        }
-        this.sunT = undefined;
-        this.sunTDelta = 0.1;
-    }
-
-    setSunT(t) {
-        this.sunT = t;
-    }
-
-    addFlow(flow, name) {
-        let lastPoint = undefined, i, pix, x, y;
-        for (i = 0; i < flow.line.length; i++) {
-            pix = flow.line[i];
-            x = Math.floor((flow.x + pix.x)/HEAT_PIX);
-            y = Math.floor((flow.y + pix.y)/HEAT_PIX);
-            if (lastPoint === undefined) {
-                lastPoint = {x,y};
-            } else if (lastPoint.x !== x || lastPoint.y !== y) {
-                this.addMovement({x: lastPoint.x, y: lastPoint.y}, {x,y}, pix.speed*0.1, {damageable: flow.damageable});
-                lastPoint.x = x;
-                lastPoint.y = y;
-                this.grid[y][x][name] = true;
-            }
-        }
-    }
-
-    t(x,y) {
-        return this.grid[this.y(y)][this.x(x)].t;
-    }
-    x(x) { return (Math.round(x/HEAT_PIX))}
-    y(y) { return (Math.round(y/HEAT_PIX))}
-
-
-    //cellParams = {tspeed, tstepsPerTick}
-    setGridParams(x, y, cellParams) {
-        this.grid[y][x] = Object.assign(this.grid[y][x], cellParams);
-    }
-
-    addTchanger(x, y, tconst) {
-        let tc = {x, y, tconst};
-        this.tchangers.push(tc);
-        this.grid[y][x].t = tconst;
-        this.grid[y][x].const = true;
-        return tc;
-    }
-
-    removeTchanger(tchanger) {
-        this.tchangers = this.tchangers.filter(t => t !== tchanger);
-        this.grid[tchanger.y][tchanger.x].const = false;
-    }
-
-    addMovement(from, to, speed, props = {}) {
-        if (!this.valid(from.x, from.y) || !this.valid(to.x, to.y)) return;
-        this.movements.push({from, to, speed, props});
-        this._dirtyMovements = true;
-    }
-
-    destroyMovementAt(x, y, radius) {
-        let mi = this.movements.length, mvm;
-        while (mi-->0) {
-            mvm = this.movements[mi];
-            if (mvm.props.damageable && Math.hypot(x - mvm.from.x*HEAT_PIX, y - mvm.from.y*HEAT_PIX) <= radius) {
-                this.movements.splice(mi, 1);
-                console.log('destroyed mvm at', mvm.from.x, mvm.from.y);
-            }
-        }
-    }
-
-    valid(x ,y) {
-        return x >= 0 && x < this.width && y >= 0 && y < this.height;
-    }
-
-    prepareMovements() {
-        for (let m of this.movements) {
-            m.to = this.grid[m.to.y][m.to.x];
-            m.from = this.grid[m.from.y][m.from.x];
-        }
-        if (this.movements.length) {
-            this.movements.sort((a, b) => b.from.tstepsPerTick - a.from.tstepsPerTick);
-        }
-        this._dirtyMovements = false;
-
-    }
-
-    updateBitmap() {
-        this._updateBitmap(this.bitmap);
-    }
-
-    _updateBitmap(bitmap) {
-        let i = this.list.length, cell;
-        while (i-->0) {
-            cell = this.list[i];
-            bitmap.setPixel(cell.x, this.height - 1 - cell.y, Math.min(255, cell.t), 0, 0, false);
-        }
-        bitmap.context.putImageData(bitmap.imageData, 0, 0);
-        bitmap.dirty = true;
-    }
-
-    addDebugImage() {
-        this.debugImage = game.add.bitmapData(MAP_WIDTH_PIX, MAP_HEIGHT_PIX);
-        let sprite = game.add.sprite(0, 0, this.debugImage);
-        sprite.name = "debug heatmap";
-        this.updateDebugImage();
-    }
-
-    updateDebugImage() {
-        if (!this.debugImage) return;
-        this.debugImage.clear();
-        this.debugImage.fill(255,255,255);
-        let ctx = this.debugImage.ctx;
-        ctx.strokeStyle = "black";
-        ctx.font = "7px Arial";
-        ctx.lineWidth = 1;
-        for (let x = 0; x < this.width; x++) {
-            for (let y = 0; y < this.height; y++) {
-                let cell = this.grid[y][x];
-                if (cell.t < 128) {
-                    ctx.fillStyle = `rgba(0,0,255,${((255-2*cell.t)/255).toFixed(2)})`;
-                } else {
-                    ctx.fillStyle = `rgba(255,0,0,${((2*(cell.t-128))/255).toFixed(2)})`;
-                }
-                ctx.fillRect(x*HEAT_PIX, y*HEAT_PIX, HEAT_PIX, HEAT_PIX);
-                //ctx.strokeRect(x*HEAT_PIX, y*HEAT_PIX, HEAT_PIX, HEAT_PIX);
-                ctx.strokeStyle = cell.delta === 0 ? "black" : "purple";
-                ctx.strokeText((cell.t|0).toString(16), x*HEAT_PIX, y*HEAT_PIX+HEAT_PIX);
-            }
-        }
-        this.debugImage.dirty = true;
-    }
-
-    updateAll() {
-        let maxAround, diff, ci, clength = this.list.length, cell, delta, i, thisCell, step, mi, mlength = this.movements.length, mvm;
-        let maxSteps = this.list[0].tstepsPerTick;
-        for (step = 0; step < maxSteps; step++) {
-            for (ci = 0; ci < clength; ci++) {
-                thisCell = this.list[ci];
-                if (thisCell.tstepsPerTick < step) break;
-                maxAround = undefined;
-                for (i = 0; i < thisCell.around.length; i++) {
-                    cell = thisCell.around[i];
-                    diff = thisCell.t - cell.cell.t;
-                    if (diff === undefined || isNaN(diff) || diff === null || typeof diff !== "number") debugger;
-                    if (diff > 0 && (maxAround === undefined || maxAround.diff < diff) ) {
-                        maxAround = {cell: cell.cell, tspeed: cell.cell.tspeed, dist: cell.dist, diff};
-                    }
-                }
-                if (maxAround !== undefined) {
-                    delta = maxAround.diff/2 * thisCell.tspeed / Math.pow(maxAround.dist,6);
-                    maxAround.cell.delta += delta;
-                    thisCell.delta -= delta;
-                }
-            }
-            for (ci = 0; ci < clength; ci++) {
-                thisCell = this.list[ci];
-                if (thisCell.tstepsPerTick < step) break;
-                if (thisCell.delta === 0) continue;
-                if (!thisCell.const) {
-                    thisCell.t = Math.max(0, Math.min(255, thisCell.t + thisCell.delta));
-                }
-                thisCell.delta = 0;
-            }
-            for (mi = 0; mi < mlength; mi++) {
-               mvm = this.movements[mi];
-               if (mvm.from.tstepsPerTick < step) break;
-               mvm.to.delta = mvm.speed*(mvm.from.t - mvm.to.t)
-            }
-            for (mi = 0; mi < mlength; mi++) {
-                mvm = this.movements[mi];
-                if (mvm.from.tstepsPerTick < step) break;
-                if (!mvm.to.const) {
-                    mvm.to.t = Math.max(0, Math.min(255, mvm.to.t + mvm.to.delta));
-                }
-                mvm.to.delta = 0;
-            }
-        }
-    }
-
-    updateSun() {
-        if (this.sunT === undefined) return;
-        let ci, clength = this.list.length, thisCell;
-        for (ci = 0; ci < clength; ci++) {
-            thisCell = this.list[ci];
-            if (!thisCell.const && thisCell.t < this.sunT) {
-                thisCell.t += this.sunTDelta;
-            }
-        }
-    }
-
-    update() {
-        if (this._dirtyMovements) this.prepareMovements();
-        this.updateAll();
-        this.updateSun();
-        this.updateBitmap();
-        this.updateDebugImage();
-    }
-
-}
-*/
 class WeatherDebugShader extends Phaser.Filter {
     constructor(heatmapTexture) {
         super(game);
         this.uniforms.iChannel0.value = heatmapTexture;
         this.uniforms.iChannel0.textureData = {repeat: false};
+        this.uniforms.iChannel1.value = game.firemap.sprite.texture;
         this.fragmentSrc = `
         precision mediump float;
         
@@ -1098,7 +999,7 @@ class WeatherDebugShader extends Phaser.Filter {
         uniform float      time;
         uniform sampler2D  uSampler;    //render
         uniform sampler2D  iChannel0;   //heatmap
-        uniform sampler2D  iChannel1;   //mask
+        uniform sampler2D  iChannel1;   //firemap
         
         #define R1 0.45
         #define M 0.5
@@ -1113,14 +1014,19 @@ class WeatherDebugShader extends Phaser.Filter {
             return getTextureT(tt.x, tt.y);
         }
         
+        float getFire(float x, float y) {
+            return texture2D(iChannel1, vec2(gl_FragCoord.x / ${HEAT_PIX}.,gl_FragCoord.y / ${HEAT_PIX}.) / vec2(${HM_WIDTH}.,${HM_HEIGHT}.)).r;
+        }
+        
         
         void main(void) {
             
             float t = getT(gl_FragCoord.x, gl_FragCoord.y);
+            float g = getFire(gl_FragCoord.x, gl_FragCoord.y);
             if (t < 0.5) {
-                gl_FragColor = vec4(0,0,1,1)*2.*(0.5-t);
+                gl_FragColor = vec4(0,g,1,1)*2.*(0.5-t);
             } else {
-                gl_FragColor = vec4(1,0,0,1)*2.*(t-0.5);
+                gl_FragColor = vec4(1,g,0,1)*2.*(t-0.5);
             }
             
         }
@@ -1137,8 +1043,9 @@ class WeatherShader extends Phaser.Filter {
         this.uniforms.iChannel0.textureData = {nearest: true};
         this.uniforms.iChannel1.value = maskTexture;
         this.uniforms.iChannel1.textureData = {nearest: true};
-        this.heatmapTexture = heatmapTexture;
-        this.maskTexture = maskTexture;
+        this.uniforms.iChannel2.value = game.firemap.sprite.texture;
+        this.uniforms.iChannel2.textureData = {nearest: true};
+        this.uniforms.iChannel3.value = game.fireTexture.texture;
         this.fragmentSrc = `
         precision mediump float;
         
@@ -1148,19 +1055,48 @@ class WeatherShader extends Phaser.Filter {
         uniform sampler2D  uSampler;    //render
         uniform sampler2D  iChannel0;   //heatmap
         uniform sampler2D  iChannel1;   //mask
+        uniform sampler2D  iChannel2;   //firemap
+        uniform sampler2D  iChannel3;   //firetexture
         
         #define R1 0.45
         #define M 0.5
         #define R2 0.55
+        
+        #define MAIN_TEXTURE iChannel1
+        #define FIRE_TEXTURE iChannel3
+        
+                
+        float getFire(float x, float y) {
+            vec2 tt = vec2(x / ${HEAT_PIX}., y / ${HEAT_PIX}.);
+            return texture2D(iChannel2, tt / vec2(${HM_WIDTH}.,${HM_HEIGHT}.)).r;
+        }
+                
+        vec4 getFiredColor(float dx, float dy) {
+            vec4 maskCoords = texture2D(iChannel1, vec2(gl_FragCoord.x+dx, ${MAP_HEIGHT_PIX}.-gl_FragCoord.y-dy)/vec2(${MAP_WIDTH_PIX}., ${MAP_HEIGHT_PIX}));
+            float x = gl_FragCoord.x + dx + (maskCoords.r*255.-128.);
+            float y = gl_FragCoord.y + dy + maskCoords.b;
+            int a = int(maskCoords.g*255.);
+            float fireable = 0.;
+            if (fract(maskCoords.g*255. / 2.) != 0.) {
+                a -= 1;
+                fireable = (a == 240 || a == 128 || a == 32) ? 1. : 0.;
+            }
+            return vec4(0,0,0,fireable) * getFire(x, y);
+        }
+        
+        #define GET_BY_OFFSET(dx,dy) getFiredColor(dx,dy)
+        ${FireShaderParts}
         
         float getTextureT(float tx, float ty) { //tx,ty = 0..MAP_WIDTH. but we have texture = HM_WIDTH*HM_HEIGHT. 
             return texture2D(iChannel0, vec2(tx,ty) / vec2(${HM_WIDTH}.,${HM_HEIGHT}.)).r;
         }
         
         float getT(float x, float y) {
-            vec2 tt = vec2(gl_FragCoord.x / ${HEAT_PIX}., gl_FragCoord.y / ${HEAT_PIX}.);
+            vec2 tt = vec2(x / ${HEAT_PIX}., y / ${HEAT_PIX}.);
             return getTextureT(tt.x, tt.y);
         }
+
+
         
         
         void main(void) {
@@ -1172,13 +1108,23 @@ class WeatherShader extends Phaser.Filter {
             float y = gl_FragCoord.y + maskCoords.b;
             
             float t = getT(x, y);
+            float fire = getFire(x, y);
             
             vec4 origColor = texture2D(uSampler, vTextureCoord);
             vec4 realColor = origColor;
             int a = int(maskCoords.g*255.);
+            float fireable = 0.;
+            if (fract(maskCoords.g*255. / 2.) != 0.) {
+                a -= 1;
+                fireable = 1.;
+            }
             vec4 middleColor = vec4(vec3(0.2126 * realColor.r + 0.7152 * realColor.g + 0.0722 * realColor.b), 1.);
             middleColor.r = (middleColor.r + realColor.r)/2.;
-            if (a == 255) {  //apply fully
+            realColor = getFireColor(origColor);
+            if (realColor != origColor) {
+                //do nothing
+                //realColor = getFireColor(vec4(1,0,0,1));
+            } else if (a == 240) {  //apply fully
                     if (t < R1) {
                         //cold
                         realColor = mix(middleColor, vec4(0.4,0.8,1.0,1.0), 1. - t / R1);
@@ -1196,23 +1142,19 @@ class WeatherShader extends Phaser.Filter {
             } else if (a == 32) { //ignore
                     realColor.a = 1.;
             } else if (a == 0) { //bg
+                    t = getT(gl_FragCoord.x, gl_FragCoord.y);
                     //middleColor *= 0.7;
                     if (t < M) {
                         realColor = mix(middleColor, vec4(0.8,0.8,1.,1.), pow(1. - t / R1, 0.5));
-                    //} else if (t < R2) {
-                    //    realColor = middleColor;
                     } else {
                         realColor = mix(middleColor, clamp(realColor, 0., 1.), pow((t-R2)/(1.-R2), 0.5));
                     }  
-                    //realColor *= 0.8;
             } else {
                     realColor = vec4(1,0,1,0.5); //error                   
             }
 
-            
             //gl_FragColor = maskCoords;
-            gl_FragColor = realColor;
-            
+            gl_FragColor = realColor;  
         }
 
         `;
@@ -1486,6 +1428,7 @@ class GrassModel {
     }
 
     applyAngle() {
+        if (this.died) return;
         //angle - from -Math.PI/4 to Math.PI/4;
         let frame = this.type + Math.abs(Math.round(3*this.angle / (Math.PI/4)));
         if (this.angle < 0 && frame !== this.type) {
@@ -1497,6 +1440,7 @@ class GrassModel {
     }
 
     checkProjectile(sprite) {
+        if (this.died) return;
         let dist = Phaser.Point.distance(this, sprite);
         const MAX = 48;
         if (dist < MAX) {
@@ -1518,6 +1462,7 @@ class GrassModel {
     }
 
     checkCollisionWith(sprite) {
+        if (this.died) return;
         //compare our y with sprite's y
         if (sprite.left < this.x && sprite.right > this.x && Math.abs(sprite.y - this.y) < 5) {
             if (this.wave) return;
@@ -1540,7 +1485,20 @@ class GrassModel {
         }
     }
 
+    checkBurn() {
+        if (game.firemap.isBurning(game.firemap.x(this.x), game.firemap.y(this.y))) {
+            this.isBurning = true;
+        } else if (this.isBurning) {
+            this.died = true;
+            this.sprite.loadTexture("fire", 4);
+            this.maskSprite.loadTexture("fire.mask", 4);
+            this.maskSprite._changed = true;
+        }
+    }
+
     update() {
+        if (this.died) return;
+        this.checkBurn();
         this.applyAngle();
     }
 }
@@ -1774,11 +1732,13 @@ class Projectile extends Phaser.Sprite {
     flyTo(goal) {
         let distance = Phaser.Point.distance(this, goal) + this.additionalDistance;
         let angle = Phaser.Point.angle(goal, this);
-        this.body.moveTo(300, distance, Phaser.Math.radToDeg(angle));
+        this.body.moveTo(this.flyTime, distance, Phaser.Math.radToDeg(angle));
         this.body.onMoveComplete.addOnce(() => {
            this.onCollide();
         });
     }
+
+    get flyTime() { return 300;}
 
     onCollide() {
         this.body.velocity.set(0,0);
@@ -1801,10 +1761,17 @@ class FireProjectile extends Projectile {
         this.frame = 22;
     }
 
+    get flyTime() { return 500; }
+
     get additionalDistance() { return 0; }
 
     get isFire() {
         return true;
+    }
+
+    update() {
+        super.update();
+        game.firemap.burn(game.firemap.x(this.x), game.firemap.y(this.y));
     }
 }
 
@@ -2000,6 +1967,7 @@ class Drops extends Phaser.Sprite {
 class BaseLevel {
     create() {
         game.physics.startSystem(Phaser.Physics.ARCADE);
+        game.fireTexture = game.add.sprite(-1000, -1000, 'firetexture');
         this.cursors = game.input.keyboard.createCursorKeys();
         this.keys = {
             space: game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR),
@@ -2020,9 +1988,12 @@ class BaseLevel {
         this.tilemap = game.add.tilemap(this.levelKey);
         let props = (this.tilemap.properties || {});
         let t = props.t || 200;
-        this.heatmap = game.heatmap =  new HeatMapWorkerAPI(MAP_WIDTH, MAP_HEIGHT, (x,y) => t);
+        this.heatmap = game.heatmap = new HeatMapWorkerAPI(MAP_WIDTH, MAP_HEIGHT, (x,y) => t);
+        this.firemap = game.firemap = new Firemap(MAP_WIDTH, MAP_HEIGHT);
         this.renduror = new Renduror(this.maskedGrp, this.heatmap);
         if (!props.noSun) this.heatmap.setSunT(t);
+
+        this.firemap.burn(10, 10);
 
 
         for (let obj of this.tilemap.objects.objects) {
@@ -2178,6 +2149,11 @@ class BaseLevel {
                 projectile.y - 16,
                 32, 32
             );
+            for (let px = projectileRect.x; px <= projectileRect.right; px+=HEAT_PIX/2) {
+                for (let py = projectileRect.y; py <= projectileRect.bottom; py+=HEAT_PIX/2) {
+                    game.firemap.burn(game.firemap.x(px), game.firemap.y(py));
+                }
+            }
             for (let d of this.invisibleHero.children) {
                 if (d instanceof IceDiamond && Phaser.Point.distance(d, projectile) < 16) {
                     d.kill();
@@ -2279,7 +2255,10 @@ class BaseLevel {
         //this.maskedGrp.sort((a, b) => a.y-b.y);
         this.renduror.grp = this.maskedGrp;
         this.renduror.renderMask();
-        if (!DEBUG_HEATMAP || this.keys.z.isDown) this.heatmap.update();
+        if (!DEBUG_HEATMAP || this.keys.z.isDown) {
+            this.heatmap.update();
+            this.firemap.update();
+        }
 
         if (!DEBUG_HEATMAP && this.keys.z.isDown) game.state.start(this.nextState);
 
