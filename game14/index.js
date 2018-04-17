@@ -1131,7 +1131,7 @@ class WeatherShader extends Phaser.Filter {
 
 }
 
-console.log("VERSION 0.2");
+console.log("VERSION 0.3");
 
 Phaser.Sprite.prototype.getRealLeft = function() {
     return this.x - this.width*this.anchor.x;
@@ -1550,7 +1550,7 @@ class Rock {
         } else {
             this.sprite.body.setSize(width-8, height-8, 4, 4);
         }
-        this.sprite.rect = new Phaser.Rectangle(x,y,width,height);//,right:x+width,bottom:y+height,left:x,top:y};
+        this.sprite.rect = new Phaser.Rectangle(x+8,y+8,width-16,height-16);//,right:x+width,bottom:y+height,left:x,top:y};
 
     }
 }

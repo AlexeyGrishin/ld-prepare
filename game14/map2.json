@@ -46,10 +46,10 @@
                  "visible":true,
                  "width":140,
                  "x":460,
-                 "y":260
+                 "y":240
                 }, 
                 {
-                 "height":160,
+                 "height":170,
                  "id":5,
                  "name":"rocks",
                  "rotation":0,
@@ -57,7 +57,7 @@
                  "visible":true,
                  "width":250,
                  "x":350,
-                 "y":340
+                 "y":330
                 }, 
                 {
                  "height":140,
@@ -104,17 +104,6 @@
                  "y":160
                 }, 
                 {
-                 "height":20,
-                 "id":13,
-                 "name":"rocks",
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":20,
-                 "x":450,
-                 "y":240
-                }, 
-                {
                  "height":10,
                  "id":15,
                  "name":"gun",
@@ -145,7 +134,7 @@
                  "visible":true,
                  "width":0,
                  "x":580,
-                 "y":320
+                 "y":300
                 }, 
                 {
                  "height":10,
@@ -480,7 +469,7 @@
                  "y":10
                 }, 
                 {
-                 "height":120,
+                 "height":100,
                  "id":36,
                  "name":"trees",
                  "rotation":0,
@@ -489,6 +478,28 @@
                  "width":80,
                  "x":520,
                  "y":140
+                }, 
+                {
+                 "height":50,
+                 "id":38,
+                 "name":"rocks",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":10,
+                 "x":260,
+                 "y":0
+                }, 
+                {
+                 "height":30,
+                 "id":39,
+                 "name":"rocks",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":10,
+                 "x":250,
+                 "y":60
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -505,7 +516,7 @@
          "x":0,
          "y":0
         }],
- "nextobjectid":38,
+ "nextobjectid":40,
  "orientation":"orthogonal",
  "properties":
     {
