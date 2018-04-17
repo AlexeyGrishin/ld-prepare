@@ -1121,6 +1121,7 @@ class WeatherShader extends Phaser.Filter {
                     realColor = vec4(1,0,1,0.5); //error                   
             }
 
+            realColor = clamp(realColor, 0., 1.);
             //gl_FragColor = maskCoords;
             gl_FragColor = realColor;  
         }
