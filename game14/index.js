@@ -29,10 +29,10 @@ class LoadState {
     create() {
         createMaskSpritesheet('grass', true, false, (fi) => fi < 21);
         createMaskSpritesheet('fire', false, true);
-        createMaskSpritesheet('trees');
+        createMaskSpritesheet('trees', true, false, () => true);
         createMaskSpritesheet('cat', false, true);
         createMaskSpritesheet('misc', false, true);
-        game.add.sound("music1").play(undefined, undefined, 0.6, true);
+        game.music = game.add.sound("music1").play(undefined, undefined, 0.6, true);
         let lib = {"explosion":{"Frequency":{"Start":44,"Slide":-0.71,"RepeatSpeed":0.07,"ChangeSpeed":0.6767148937582615,"ChangeAmount":11.496596211476469,"Max":220,"Min":153},"Generator":{"Func":"noise","B":0},"Volume":{"Sustain":0.14,"Decay":0.251,"Punch":0.11,"Attack":0.011,"Master":0.52},"Filter":{"LP":0.99,"HP":0,"LPSlide":1,"HPSlide":-0.11,"LPResonance":0.89},"Vibrato":{"Frequency":0.01,"Depth":0.08,"FrequencySlide":0.01},"Phaser":{"Offset":0.75,"Sweep":-0.65}},"fire":{"Frequency":{"Start":76,"Slide":-0.01,"RepeatSpeed":0,"Min":113,"Max":251,"ChangeAmount":-12,"DeltaSlide":-1},"Generator":{"Func":"triangle","ASlide":-0.5,"BSlide":1,"B":1,"A":0},"Phaser":{"Offset":-0.03,"Sweep":-0.82},"Volume":{"Sustain":0.17,"Decay":0.471,"Punch":0.19,"Attack":0.001,"Master":1},"Vibrato":{"Frequency":1.01,"Depth":0.18,"FrequencySlide":0.6,"DepthSlide":0.83},"Filter":{"HP":0,"LP":1}},"freeze":{"Frequency":{"Start":200,"Slide":0.1,"Min":278,"Max":398},"Vibrato":{"Depth":0.2,"Frequency":3.01,"DepthSlide":-0.03,"FrequencySlide":0.83},"Generator":{"Func":"synth"},"Volume":{"Sustain":0.31795825857994836,"Decay":1.331,"Attack":0.091}},"cool":{"Frequency":{"Start":184.21439605070142,"Min":530.993599988916,"Max":1447.1188719523338,"Slide":0.17936147773177602,"DeltaSlide":-0.45662796368987024,"RepeatSpeed":2.112301481170091,"ChangeAmount":3.9970456539836476,"ChangeSpeed":0.7917707252304746},"Vibrato":{"Depth":0.686114126329183,"DepthSlide":0.5874120889378238,"Frequency":42.91891942369315,"FrequencySlide":-0.4637672665849397},"Generator":{"Func":"synth","A":0.15995785189304712,"B":0.4826123672769218,"ASlide":-0.5252949980079618,"BSlide":-0.720506290725186},"Guitar":{"A":0.26376978931430206,"B":0.9191230664957835,"C":0.4521463298105701},"Phaser":{"Offset":0,"Sweep":-0.61},"Volume":{"Master":0.4,"Attack":0.6258079433110993,"Sustain":1.877912696679962,"Punch":2.794075926428912,"Decay":1.8527269593245017}},"freeze2":{"Frequency":{"Start":242.31667764078972,"Min":1524.694537020016,"Max":1603.911308040573,"Slide":0.4287598898750109,"DeltaSlide":0.4495420723338399,"RepeatSpeed":1.5246908030943396,"ChangeAmount":2.2322994115414687,"ChangeSpeed":0.12389445705853919},"Vibrato":{"Depth":0.12046225739266436,"DepthSlide":-0.05,"Frequency":21.01,"FrequencySlide":-0.2},"Generator":{"Func":"sine","A":0.5604263639818596,"B":0.7483387944605602,"ASlide":-0.8235948958841464,"BSlide":-0.8068134580551054},"Guitar":{"A":0.7487069465854195,"B":0.3182362739352764,"C":0.34710223860056266},"Phaser":{"Offset":-0.77,"Sweep":-0.07},"Volume":{"Master":0.4,"Attack":0.071,"Sustain":0.14356821439301948,"Punch":0.23,"Decay":0.221}},"win":{"Frequency":{"Start":184,"Min":297,"Max":579,"Slide":0.48,"DeltaSlide":-0.17,"RepeatSpeed":3,"ChangeAmount":-12,"ChangeSpeed":0},"Vibrato":{"Depth":0.47,"DepthSlide":-0.03,"Frequency":1.01,"FrequencySlide":-0.20169023403657382},"Generator":{"Func":"synth","A":0.24094215779136285,"B":0.8047674164546779,"ASlide":-0.5746110122236354,"BSlide":-0.8234057866069842},"Guitar":{"A":0.8680376992535788,"B":0.787662149701966,"C":0.18344977594642198},"Phaser":{"Offset":0.82,"Sweep":-1},"Volume":{"Master":0.4,"Attack":0.10125296047186062,"Sustain":0.047382540142184126,"Punch":1.0075817094466677,"Decay":1.9227613181283023},"Filter":{"HP":0,"LP":0.98,"LPSlide":0.41}}};
         lib = Object.assign(lib, {"cannot":{"Frequency":{"Start":96,"Min":30,"Max":96,"Slide":1,"RepeatSpeed":0.11,"DeltaSlide":-0.69,"ChangeSpeed":0,"ChangeAmount":-11},"Vibrato":{"Frequency":1.01,"Depth":0,"FrequencySlide":-0.03},"Generator":{"Func":"saw"},"Filter":{"LP":1,"HP":0.05,"LPSlide":0.03,"LPResonance":0},"Phaser":{"Offset":-0.03,"Sweep":-0.01},"Volume":{"Punch":0,"Decay":0.001,"Master":0.25,"Sustain":0.32,"Attack":0.001}}});
         game.sfx = jsfx.Sounds(lib);
@@ -40,31 +40,6 @@ class LoadState {
     }
 }
 
-/*
-  fire
-
-    sprite for burnt grass (1 for all)
-    burning mask (maybe not needed)
-    burning map (as heatmap, but burning)
-
-    so when fire projectile flies
-        get cell /10 in burning map
-        if not burning -> burn
-
-    update of grassmodel
-        if my grass is on burning cell in burning map
-            make it burn (actually do nothing, shader shall do things)
-            when burning stops - replace grass with burnt one and do not interact it anymore
-
-    shader
-        gets burning map as well
-        if this pixel is of burning sprite
-            draw fire (need to try)
-
-    firegun
-        throws multiple fire projectiles - I think 1 is real, other are just effects
-
- */
 
 class WinState {
     create() {
@@ -77,101 +52,79 @@ class WinState {
         bm.ctx.strokeStyle = "white";
         bm.ctx.fillText("You won!", 0, 100);
         bm.dirty = true;
+        game.music.fadeOut(500);
 
         game.add.sprite(MAP_WIDTH_PIX/2, MAP_HEIGHT_PIX/2+20, "cat", 0);
 
-        /*let reverbSettings = {};
-        let synthSettings = {
+
+        let membraneSettings = {
+            pitchDelay: 0.5,
+            octaves: 5,
             oscillator: {
-                type: "square"  //sine, square, triangle, sawtooth
-            }, envelope  : {
-                attack  : 0.5 ,
-                decay  : 0.5 ,
-                sustain  : 0.3 ,
-                release  : 0.01
-            }
-        };
-        var reverb = new Tone.Freeverb(reverbSettings).toMaster();
-
-        var synth = new Tone.PolySynth(4, Tone.Synth,synthSettings).connect(reverb);
-
-        Tone.MultiPlayer = Tone.Expr = Tone.TimelineSignal = function() {};
-
-        Tone.Editor
-            .add({
-                reverb: reverb,
-                synth: synth
-            }).master();
-        Tone.Editor.options({
-            // Align the panel left or right
-            align: 'right'
-        });
-
-        /*let synt = new Tone.PolySynth(4, Tone.Synth, {
-            oscillator: {
-                type: "square"  //sine, square, triangle, sawtooth
-            }, envelope  : {
-                attack  : 0.5 ,
-                decay  : 0.5 ,
-                sustain  : 0.3 ,
-                release  : 0.01
-            }
-        });
-        let volume = new Tone.Volume(10);
-        let effect = new Tone.Reverb();
-        effect.generate();
-        synt.connect(volume.connect(effect));
-        effect.toMaster();
-        let metal = new Tone.MetalSynth({
-            frequency: 300,
-            resonance: 100,
-            envelope: {
-                attack: 0.5,
-                decay: 0.1,
-                release: 0.01
-            },
-            volume: -10
-        }).toMaster();
-        //synt.toMaster();
-        let notes = [["C1", "A1"], ["C1"], ["A1"], ["B1"]];
-        let loop = new Tone.Sequence(function(time, n){
-            if (n !== -1) {
-                metal.frequency.setValueAtTime(n * 100, time);
-                synt.triggerAttackRelease(notes[n], "8n", time);
-                metal.triggerAttackRelease("16n", time);
-            } else {
-            }
-        }, [0,-1,1,-1,2,-1,3,-1], "8n");
-        //loop.loop = false;
-
-        let mem = new Tone.MembraneSynth({
-            oscillator  : {
-                type  : "triangle"
+                type: 'sine',
+                volume: +5
             },
             envelope  : {
                 attack  : 0.5 ,
                 decay  : 0.4 ,
-                sustain  : 0.1 ,
-                release  : 0.01 ,
-            }
-        }).connect(new Tone.Chorus(1.1, 500,  1).toMaster());
+                sustain  : 0.01 ,
+                release  : 1.4 ,
+            },
+        }
 
-        new Tone.Sequence((time, note) => {
-            mem.triggerAttackRelease(note, "8n", time);
-        }, ["C3", "B2", "A2"], "4n").start().loop = false;
+        let drum = new Tone.MembraneSynth(membraneSettings).toMaster();
+
+        let stringSettings = {
+            attackNoise  : 16 ,
+            dampening  : 1000 ,
+            resonance  : 1
+        };
+
+        let vibratoSettings = {
+            type: 'square'
+        };
+        let vibrato = new Tone.Vibrato(vibratoSettings).toMaster();
+
+        let strings = new Tone.PluckSynth(stringSettings).connect(vibrato);
+
+        Tone.MultiPlayer = Tone.Expr = Tone.TimelineSignal = function() {};
+
+        /*Tone.Editor
+            .add({drum, strings, vibrato}).master();
+        Tone.Editor.options({
+            // Align the panel left or right
+            align: 'right'
+        });*/
+
+        let stringNotes = ["C1", "E1", "A1", "B1", "C1", "F1", "B1", "A1"];
+        let stringsLoop = new Tone.Sequence(function(time, n){
+            if (n !== -1) {
+                //metal.frequency.setValueAtTime(n * 100, time);
+                //synt.triggerAttackRelease(notes[n], "8n", time);
+                strings.triggerAttackRelease(stringNotes[n], "16n", time);
+            } else {
+            }
+        }, [0,-1,1,-1,2,-1,3,-1,4,-1,5,-1,6,-1,7,-1], "8n");
+
+        let drumNotes = ["C2", "E2", "A2", "B2"];
+        let drumsLoop = new Tone.Sequence(function(time, n) {
+            if (n !== -1) {
+                drum.triggerAttackRelease(drumNotes[n], "16n", time);
+            }
+        }, [0,0,-1,-1,2,3,-1,-1,0,0,-1,-1,1,-1, 1,-1], "8n")
+
+        drumsLoop.start();
+        stringsLoop.start();
         setTimeout(() => {
             Tone.Transport.start();
         }, 0);
 
+        Tone.Transport.schedule(() => {
+            console.log("ramping down");
+            Tone.Transport.bpm.rampTo(10, 120);
+            Tone.Master.volume.rampTo(-100, 200);
 
-        //loop.start();*/
-
-        /*let library = {
-            "s1":{"Generator":{"Func":"sine","A":0,"B":0},"Volume":{"Attack":0.541,"Decay":0.121,"Master":0.53,"Punch":0.14},"Frequency":{"Start":430,"Min":30,"Max":1800,"Slide":-0.21},"Vibrato":{"Depth":1,"Frequency":6.01},"Phaser":{"Offset":-0.02,"Sweep":0.03}}
-        };
-        let sfx = jsfx.Sounds(library);
-
-        sfx.s1();*/
+        }, "4:0")
 
     }
 }
@@ -224,7 +177,7 @@ const FireShaderParts = `
             vec4 getFlameFor(float dy, float seed) {
                 vec4 clr = GET_BY_OFFSET(DX(dy), dy);
                 float randomU = fract(seed + (time*4.));
-                float a = mix(0.5, 1.0, seed*fract(time*seed));
+                float a = mix(0., 1.0, seed*fract(time*seed*4.));
                 return clr.a * texture2D(FIRE_TEXTURE, vec2(randomU, abs(dy)/HEIGHT * 0.6))*a;
             }
             
@@ -232,7 +185,7 @@ const FireShaderParts = `
                 vec4 clr = GET_BY_OFFSET(DX(dy), dy);
                 float randomU = 0.5;//seed;
                 float v = fract(abs(seed-time*5.))*(abs(dy)-HEIGHT)/SMOKE_HEIGHT * 0.3 + 0.8;
-                float a = mix(0.4, 0.7, seed*fract(time)/10.);
+                float a = mix(0., 0.7, seed*fract(time)/10.);
                 return clr.a * texture2D(FIRE_TEXTURE, vec2(randomU, v)) * a;
             }
             
@@ -243,6 +196,7 @@ const FireShaderParts = `
                 vec4 flame2 = getFlameFor(-1., seed);
                 vec4 flame3 = getFlameFor(-2., seed);
                 vec4 flame4 = getFlameFor(-3., seed);
+                vec4 flame44 = getFlameFor(-4., seed);
                 vec4 flame5 = getSmokeFor(-5., seed);
                 vec4 flame6 = getSmokeFor(-6., seed);
                 vec4 flame7 = getSmokeFor(-7., seed);
@@ -252,6 +206,7 @@ const FireShaderParts = `
                 result = mix(result, flame2, flame2.a);
                 result = mix(result, flame3, flame3.a);
                 result = mix(result, flame4, flame4.a);
+                result = mix(result, flame44, flame44.a);
                 result = mix(result, flame5, flame5.a);
                 result = mix(result, flame6, flame6.a);
                 result = mix(result, flame7, flame7.a);
@@ -269,6 +224,8 @@ const FireShaderParts = `
 //t. 0 = absolute cold (nothing to move out), 255 - absolute heat
 
 //todo[grishin]: so what I've learned: I cannot put filter over sprite with bitmapData and pass another bitmapData as texture
+//not used
+
 class FireShader extends Phaser.Filter {
     constructor(burnTexture, x, y, myTexture, burnedTexture) {
         super(game);
@@ -413,6 +370,7 @@ class FireShader extends Phaser.Filter {
     }
 }
 
+//not used
 class FireProcess {
     constructor(spriteNormal, spriteBurned) {
         this.burnBitmap = game.add.bitmapData(spriteNormal.width, spriteNormal.height);
@@ -821,6 +779,10 @@ class Firemap {
     y(y) { return (Math.floor(y/HEAT_PIX))}
 
     burn(x, y, lifespan = 2000) {
+        if (this.grid[y][x]) {
+            this.grid[y][x].left = lifespan;
+            return;
+        }
         let burncell = {left: lifespan, x, y};
         this.burning.push(burncell);
         this.grid[y][x] = burncell;
@@ -833,10 +795,16 @@ class Firemap {
         return !!this.grid[y][x];
     }
 
+    getBurningLifespan(x, y) {
+        if (y >= this.grid.length || y < 0) return false;
+        return this.grid[y][x].left;
+    }
+
     update() {
         for (let i = this.burning.length-1; i >= 0; i--) {
             let bcell = this.burning[i];
             bcell.left -= game.time.physicsElapsedMS;
+            game.heatmap.setT(bcell.x, bcell.y, 400);
             if (bcell.left <= 0) {
                 this.grid[bcell.y][bcell.x] = false;
                 this.burning.splice(i, 1);
@@ -1549,8 +1517,6 @@ class Rock {
                     let ty = yy + game.rnd.integerInRange(-1,1);
                     let sprites = game.rnd.pick(rocks);
                     let {sprite, mask} = sprites;
-                    sprite.anchor.set(0.5, 1);
-                    mask.anchor.set(0.5, 1);
                     this.objectsMap.push({tx,ty, si: rocks.indexOf(sprites)});
                 }
             }
@@ -1558,6 +1524,8 @@ class Rock {
 
         for (let {tx,ty,si} of this.objectsMap) {
             let {sprite, mask} = rocks[si];
+            sprite.anchor.set(0.5, 1);
+            mask.anchor.set(0.5, 1);
             this.bitmap.draw(sprite, tx|0, this.topPad + ty|0);
             this.maskBitmap.draw(mask, tx|0, this.topPad + ty|0);
 
@@ -1584,24 +1552,83 @@ class Rock {
     }
 }
 
+const PASS_TS = 40;
+const TREE_BURN_MIN = 4000;
 
 class Trees extends Rock {
 
     constructor(x, y, width, height, circle) {
         super(x,y,width,height, circle);
         this.burned = new TreesBurned(x, y, width, height, circle, this.objectsMap);
-        this.fireProcess = new FireProcess(this.sprite, this.burned.sprite);
         this.sprite.update = () => {
-            this.fireProcess.update();
-            (this.sprite.filters || []).forEach(f => f.update());
+            this.update();
         };
-        this.sprite.burn = this.burn.bind(this);
         this.sprite.burnable = true;
-        this.sprite.onBurnt = this.onBurnt.bind(this);
+        this.miniFireMap = [];
+        for (let cx = game.firemap.x(x-8); cx <= game.firemap.x(x+width); cx++) {
+            for (let cy = game.firemap.y(y-8); cy <= game.firemap.y(y+height); cy++) {
+                this.miniFireMap.push({x:cx,y:cy})
+            }
+        }
+        this.isBurning = false;
+        this.isBurnt = false;
+        this.burningTime = 0;
     }
 
     get topPad() {
         return 0;
+    }
+
+    update() {
+        if (this.isBurnt) return;
+        if (!this.isBurning) {
+            for (let cell of this.miniFireMap) {
+                if (game.firemap.isBurning(cell.x,cell.y)) {
+                    this.isBurning = true;
+                    game.firemap.burn(cell.x, cell.y, TREE_BURN_MIN);
+                    this.fireOrigin = {x: cell.x, y: cell.y, ls: game.firemap.getBurningLifespan(cell.x, cell.y)};
+                    this.switchSpriteIn = game.firemap.getBurningLifespan(cell.x, cell.y) * 0.6;
+                    cell.burning = true;
+                    cell.passTs = PASS_TS;
+                    cell.passed = false;
+                    break;
+                }
+            }
+        }
+        if (this.isBurning) {
+            this.switchSpriteIn -= game.time.physicsElapsedMS;
+            this.fireOrigin.ls -= game.time.physicsElapsedMS;
+            if (this.switchSpriteIn <= 0 && this.burned) {
+                this.sprite.loadTexture(this.burned.sprite.key);
+                this.sprite.model.maskSprite.loadTexture(this.burned.sprite.model.maskSprite.key);
+                this.sprite.model.maskSprite._changed = true;
+                this.burned.sprite.model.maskSprite.destroy();
+                this.burned.sprite.destroy();
+                this.burned = null;
+            }
+            if (!game.firemap.isBurning(this.fireOrigin.x, this.fireOrigin.y)) {
+                this.isBurning = false;
+                this.isBurnt = true;
+                this.sprite.body.enable = false;
+                return;
+            }
+            for (let cell of this.miniFireMap) {
+                if (cell.burning && !cell.passed) {
+                    cell.passTs -= game.time.physicsElapsedMS;
+                    if (cell.passTs <= 0) {
+                        [{x:+1,y:0},{x:-1,y:0},{x:0,y:-1},{x:0,y:+1}]
+                            .map(({x,y}) => this.miniFireMap.find(c => c.x === cell.x+x && c.y === cell.y+y))
+                            .filter(c => c && !c.burning)
+                            .forEach(c => {
+                                game.firemap.burn(c.x, c.y, this.fireOrigin.ls);
+                                c.burning = true;
+                                c.passTs = PASS_TS;
+                            });
+                        cell.passed = true;
+                    }
+                }
+            }
+        }
     }
 
     getSprites() {
@@ -1626,9 +1653,6 @@ class Trees extends Rock {
 
 class TreesBurned extends Rock {
 
-    constructor(x, y, width, height) {
-        super(x, y, width, height, true);
-    }
     get topPad() {
         return 0;
     }
@@ -1738,7 +1762,7 @@ class Projectile extends Phaser.Sprite {
         });
     }
 
-    get flyTime() { return 300;}
+    get flyTime() { return 200;}
 
     onCollide() {
         this.body.velocity.set(0,0);
@@ -1759,9 +1783,36 @@ class FireProjectile extends Projectile {
     constructor(x, y) {
         super(x, y);
         this.frame = 22;
+        this.fakeProjectiles = [];
+        for (let i = 0; i < 50; i++) {
+            let fakeProjectile = game.addProjectile(game.add.sprite(x, y, "misc", 22));
+            let sc = game.rnd.realInRange(0.5, 0.8);
+            fakeProjectile.anchor.set(0.5, 0.5);
+            fakeProjectile.scale.set(sc, sc);
+            fakeProjectile.rotation = game.rnd.realInRange(0, Math.PI*2);
+            fakeProjectile.tint = 0xffff00;
+            fakeProjectile.rndSpeed = game.rnd.realInRange(1.05, 2);
+            fakeProjectile.rndDistance = game.rnd.realInRange(0.95, 1.05);
+            fakeProjectile.rndAngle = game.rnd.realInRange(0.99, 1.1);
+            game.physics.arcade.enable(fakeProjectile);
+            fakeProjectile.body.checkCollision.none = true;
+            this.fakeProjectiles.push(fakeProjectile);
+        }
     }
 
-    get flyTime() { return 500; }
+    flyTo(goal) {
+        super.flyTo(goal);
+        for (let fk of this.fakeProjectiles) {
+            let distance = Phaser.Point.distance(fk, goal)*fk.rndDistance;
+            let angle = Phaser.Point.angle(goal, this)*fk.rndAngle;
+            fk.body.moveTo(this.flyTime * fk.rndSpeed, distance, Phaser.Math.radToDeg(angle));
+            fk.body.onMoveComplete.addOnce(() => {
+                fk.pendingDestroy = true;
+            });
+        }
+    }
+
+    get flyTime() { return 900; }
 
     get additionalDistance() { return 0; }
 
@@ -1993,8 +2044,6 @@ class BaseLevel {
         this.renduror = new Renduror(this.maskedGrp, this.heatmap);
         if (!props.noSun) this.heatmap.setSunT(t);
 
-        this.firemap.burn(10, 10);
-
 
         for (let obj of this.tilemap.objects.objects) {
             switch (obj.name) {
@@ -2131,7 +2180,7 @@ class BaseLevel {
     }
 
     onProjectileExplode(projectile) {
-        if (!projectile.isFire && Phaser.Point.distance(projectile, this.hero) < 32) {
+        if (Phaser.Point.distance(projectile, this.hero) < 32) {
             this.maskedGrp.push({ghost: true, x: this.hero.x, y: this.hero.y});
             this.hero.restart(this.heroStart);
         }
@@ -2160,11 +2209,7 @@ class BaseLevel {
                     this.hero.iceCooldown = 0;
                 }
             }
-            for (let wall of this.walls.children) {
-                if (wall.burnable && wall.rect.intersects(projectileRect)) {
-                    wall.burn(projectile.x, projectile.y);
-                }
-            }
+
         }
 
     }
