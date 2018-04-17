@@ -1113,9 +1113,9 @@ class WeatherShader extends Phaser.Filter {
                     t = getT(gl_FragCoord.x, gl_FragCoord.y);
                     //middleColor *= 0.7;
                     if (t < M) {
-                        realColor = mix(middleColor, vec4(0.8,0.8,1.,1.), pow(1. - t / R1, 0.5));
+                        realColor = mix(middleColor, vec4(0.8,0.8,1.,1.), pow(1. - t / M, 0.5));
                     } else {
-                        realColor = mix(middleColor, clamp(realColor, 0., 1.), pow((t-R2)/(1.-R2), 0.5));
+                        realColor = mix(middleColor, clamp(realColor, 0., 1.), pow((t-M)/(1.-M), 0.5));
                     }  
             } else {
                     realColor = vec4(1,0,1,0.5); //error                   
@@ -1130,6 +1130,8 @@ class WeatherShader extends Phaser.Filter {
     }
 
 }
+
+console.log("VERSION 0.2");
 
 Phaser.Sprite.prototype.getRealLeft = function() {
     return this.x - this.width*this.anchor.x;
