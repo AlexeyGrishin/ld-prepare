@@ -1,0 +1,9 @@
+{
+  "presets": [
+    "env"
+  ],
+  "plugins": [
+    "transform-function-parameter-decorators", //that's for me
+    "transform-object-rest-spread"     //that's for {...something}
+  ]
+}
