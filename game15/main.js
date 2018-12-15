@@ -35,6 +35,7 @@ const Main = {
     addWalls() {
         let tilemap = game.add.tilemap("Walls");
         for (let {x, y, properties, polyline} of tilemap.objects.walls) {
+            //if (!properties || !properties.only) continue;
             let color = properties && properties.color;
             for (let i = 0; i < polyline.length-1; i++) {
                 let wall = new Wall(x + polyline[i][0], y + polyline[i][1], x + polyline[i+1][0], y + polyline[i+1][1], color);
