@@ -5,7 +5,22 @@
     <title>Demo 15</title>
 </head>
 <body>
-<div id="fps"></div>
+<div>
+    FPS: <span id="fps"></span> |
+    <a href="?">Default</a> |
+    <a href="?showSegmentsDebug=true&mode=simple&lightDecay=false&smoothShadow=false&floatingBulbs=false">Initial</a> |
+    <a href="?showRaycastDebug=true&steps=64&mode=simple&lightDecay=false&smoothShadow=false&floatingBulbs=false">Raycast</a> |
+    <a href="?showRaycastDebug=true&steps=64&mode=simple&lightDecay=false&smoothShadow=false&floatingBulbs=false&showRaycastShaderDebug=true">Raycast Output</a> |
+    <a href="?lightDecay=false&smoothShadow=false&floatingBulbs=false">Render shadows</a> |
+    <a href="?floatingBulbs=false">Improved shadows</a> |
+    <a href="?floatingBulbs=false&bulbRadius=500&randomLightsOnStart=4">Improved long shadows</a> |
+    <a href="?randomLightsOnStart=63">Stress test</a> |
+    <a href="?randomLightsOnStart=63&steps=1024">Stress test + 1024 steps</a> |
+    <a href="?randomLightsOnStart=63&steps=1024&bulbRadius=520">Stress test + 1024 steps + 520 radius</a> |
+    <a href="?steps=1024&randomLightsOnStart=4&pseudo3d=true&pseudo3dTexture=false&pseudo3dLights=false">3D test</a> |
+    <a href="?steps=1024&randomLightsOnStart=4&pseudo3d=true">Improved 3D test</a> |
+    <a href="?gameplay=true&hidden=true&collideWalls=true">Game for Valera</a> |
+</div>
 <div id="container"></div>
 
 <script src="./phaser.js"></script>

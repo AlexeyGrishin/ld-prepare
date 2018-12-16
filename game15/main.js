@@ -12,11 +12,13 @@ const FLOOR_FRAME_NR = 8;
 const CEIL_FRAME_NR = 16;
 const PAD = 32;
 
+const fpsEl = document.querySelector("#fps");
+
 var options = window.initOptions({
     showSegmentsDebug: ["boolean", false],
     showRaycastDebug: ["boolean", false],
     showRaycastShaderDebug: ["boolean", false],
-    collideWalls: ["boolean", true],
+    collideWalls: ["boolean", false],
 
     steps: ["int", 512],
     mode: ["select", MODE_SHADOWS, [MODE_SIMPLE, MODE_SHADOWS]],
@@ -24,12 +26,13 @@ var options = window.initOptions({
     smoothShadow: ["boolean", true],
     randomLightsOnStart: ["int", 1],
     floatingBulbs: ["boolean", true],
+    bulbRadius: ["int", 140],
 
     pseudo3d: ["boolean", false],
     pseudo3dTexture: ["boolean", true],
     pseudo3dLights: ["boolean", true],
 
-    gameplay: ["boolean", true],
+    gameplay: ["boolean", false],
 
     hidden: ["boolean", false]
 });
@@ -109,10 +112,11 @@ const Main = {
             let y = game.rnd.integerInRange(PAD, game.world.height-PAD*2);
             this.addLight(x, y);
         }
+        game.rnd.sow([2]);
     },
 
     addLight(x, y) {
-        let bulb = game.gameplay ? new Firefly(x, y, undefined, true) : new Bulb(x, y, undefined, options.floatingBulbs);
+        let bulb = game.gameplay ? new Firefly(x, y, undefined, true) : new Bulb(x, y, options.bulbRadius, options.floatingBulbs);
         this.lightsGrp.add(bulb);
         this.shadows.addLight(bulb)
     },
@@ -175,14 +179,18 @@ const Main = {
         } else {
             this.isMouseDown = false;
         }
+        if (this.keys.space.justDown && !game.gameplay) {
+            this.addLight(this.hero.x, this.hero.y);
 
-        let rotspeed = 1;
+        }
+
+        let rotspeed = 2;
         if (this.cursors.up.isDown || this.cursors.down.isDown) {
             let speed = this.cursors.up.isDown ? 4 : -4;
             this.moveByIfCan(this.hero, speed);
             this.hero.onWalk(speed)
         } else {
-            rotspeed = 2;
+            rotspeed = 4;
             this.hero.onWalk(0);
         }
         if (this.cursors.left.isDown) {
@@ -232,7 +240,7 @@ const Main = {
             this.lastFlowersCount = grownFlowersCount;
             if (this.fireflyTimeout < 0) {
                 let x = game.rnd.integerInRange(PAD, game.world.width - PAD * 2);
-                let y = game.rnd.integerInRange(PAD, game.world.height - PAD * 2);
+                let y = game.rnd.integerInRange(PAD, game.world.height - PAD * 6);
                 this.addLight(x, y);
                 this.fireflyTimeout = 4000;
             }
@@ -242,16 +250,16 @@ const Main = {
     },
 
     render() {
-        game.debug.text('FPS: ' + (game.time.fps || '--'), 4, 24);
+        fpsEl.innerText = game.time.fps || '--';
         if (options.showSegmentsDebug) {
             for (let sc of this.shadows.shadowCasters) {
                 if (sc._intersectionPoints.length === 0) continue;
-                game.debug.geom(new Phaser.Line(sc._intersectionPoints[0].x, sc._intersectionPoints[0].y, sc._intersectionPoints[1].x, sc._intersectionPoints[1].y), "red");
+                game.debug.geom(new Phaser.Line(sc._intersectionPoints[0].x, sc._intersectionPoints[0].y, sc._intersectionPoints[1].x, sc._intersectionPoints[1].y), "white");
             }
         }
         if (options.showRaycastDebug) {
             for (let {angle, distance} of this.shadows.lightSources[0].distancesMap.getAngles()) {
-                game.debug.geom(new Phaser.Line(this.hero.x, this.hero.y, this.hero.x + Math.cos(angle) * distance, this.hero.y + Math.sin(angle) * distance), "rgba(0,255,0,0.1)")
+                game.debug.geom(new Phaser.Line(this.hero.x, this.hero.y, this.hero.x + Math.cos(angle) * distance, this.hero.y + Math.sin(angle) * distance), "rgba(0,0,255,0.4)")
             }
         }
     }

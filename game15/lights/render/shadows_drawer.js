@@ -188,6 +188,12 @@ export default class ShadowsDrawer {
     showRaycastDebug() {
         this.distancesBitmap.sprite.x = this.distancesBitmap.sprite.y = 0;
         this.distancesBitmap.sprite.scale.y = 8;
+        if (this.steps < 256) {
+            this.distancesBitmap.sprite.scale.x = 4;
+        }
+        if (this.steps < 128) {
+            this.distancesBitmap.sprite.scale.x = 8;
+        }
     }
 
     addCamera(sprite, ...args) {
