@@ -8,6 +8,7 @@ const extractStyles = new ExtractTextPlugin("styles.css");
 module.exports = {
     entry: './main.js',
     devtool: 'source-map',
+    mode: 'development',
     output: {
         filename: 'bundle.js',
         path: path.resolve(__dirname),

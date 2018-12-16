@@ -4,7 +4,8 @@ export default class LightSource {
         this.x = sprite.x;
         this.y = sprite.y;
 
-        this.radius = 200;
+        this.radius = sprite.lightRadius || 200;
+        this.activeLight = true;
     }
 
     update() {
@@ -14,5 +15,9 @@ export default class LightSource {
 
     setDistancesMap(map) {
         this.distancesMap = map;
+    }
+
+    fillDistancesForArc(ai1, ai2, normalFromLight) {
+        this.distancesMap.fillDistancesForArc(ai1, ai2, normalFromLight);
     }
 }

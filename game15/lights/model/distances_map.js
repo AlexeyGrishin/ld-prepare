@@ -9,18 +9,18 @@ export default class DistancesMap {
         this.stepAngle = angle;
 
         this.textureOffsets = new Array(steps);
-        this.textureOffsets.fill(0, 0, steps);
+        this.textureOffsets.fill(-1, 0, steps);
 
         this.catets = catets || new HypTable(steps, angle);
     }
 
     erase() {
         this.distances.fill(this.maxDistance, 0, this.steps);
-        this.textureOffsets.fill(0, 0, this.steps);
+        this.textureOffsets.fill(-1, 0, this.steps);
     }
 
-    fillDistancesForArc(ai1, ai2, normal) {
-        this.catets.fillDistancesForArc(this, ai1, ai2, normal);
+    fillDistancesForArc(ai1, ai2, normal, onSetCallback) {
+        this.catets.fillDistancesForArc(this, ai1, ai2, normal, onSetCallback);
     }
 
     minus(ai1, ai2) {
@@ -29,12 +29,16 @@ export default class DistancesMap {
         return diff;
     }
 
-    set(index, newValue, textureOffset) {
+    set(index, newValue, onSetCallback) {
         index = (index)%this.steps;
         if (newValue < this.distances[index]) {
             this.distances[index] = newValue;
-            this.textureOffsets[index] = textureOffset;
+            if (onSetCallback) onSetCallback(index);
         }
+    }
+
+    setTextureOffset(index, textureOffset) {
+        this.textureOffsets[index] = textureOffset;
     }
 
     angle2index(ang) {
@@ -42,8 +46,8 @@ export default class DistancesMap {
     }
 
     angles2indexes(ang1, ang2) {
-        let ai1 = this.angle2index(ang1);
-        let ai2 = this.angle2index(ang2);
+        let ai1 = Math.round(Phaser.Math.normalizeAngle(ang1) / this.stepAngle);
+        let ai2 = Math.round(Phaser.Math.normalizeAngle(ang2) / this.stepAngle);
         if (ai2 < ai1) ai2 += this.steps;
         return [ai1, ai2]
     }
@@ -67,7 +71,8 @@ export default class DistancesMap {
             d2 = (d1*128)|0;
             data[index+1] = d2;
 
-            data[index+2] = this.textureOffsets[i];
+            data[index+2] = this.textureOffsets[i] === -1 ? 255 : this.textureOffsets[i];
+            data[index+3] = 255;
         }
     }
 
