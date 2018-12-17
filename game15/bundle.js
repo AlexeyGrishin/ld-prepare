@@ -116,9 +116,6 @@ function initOptions(config) {
             inp.addEventListener("change", function () {
                 parsedConfig[key] = !parsedConfig[key];
             });
-            if (key === "hidden") {
-                inp.style.color = "grey";
-            }
             return inp;
         },
         int: function (key) {
@@ -198,6 +195,9 @@ function initOptions(config) {
                 label.style.display = "block";
                 var span = document.createElement("span");
                 span.style.marginRight = "10px";
+                if (key === "hidden") {
+                    span.style.color = "#554444";
+                }
                 span.innerHTML = key;
                 var input = controls[config[key][0]](key);
                 input.style.maxWidth = "100px";
@@ -239,13 +239,13 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var VIEWPORT_ANGLE = Phaser.Math.degToRad(30);
+var VIEWPORT_ANGLE = Phaser.Math.degToRad(60);
 var HALF_VIEWPORT_ANGLE = VIEWPORT_ANGLE / 2;
 
 var Pseudo3dShader = function (_Phaser$Filter) {
     _inherits(Pseudo3dShader, _Phaser$Filter);
 
-    function Pseudo3dShader(shadowsDrawer, width, height, useColor) {
+    function Pseudo3dShader(shadowsDrawer, width, height, useColor, useLights) {
         _classCallCheck(this, Pseudo3dShader);
 
         var _this = _possibleConstructorReturn(this, (Pseudo3dShader.__proto__ || Object.getPrototypeOf(Pseudo3dShader)).call(this, game));
@@ -277,7 +277,7 @@ var Pseudo3dShader = function (_Phaser$Filter) {
             };
         }
 
-        _this.fragmentSrc = '\n\n            precision highp float;\n            \n            uniform int lightsCount;\n            uniform vec4 lights[' + _shadows_drawer.MAX_LIGHTS + ']; \n            uniform sampler2D  uSampler;\n            uniform sampler2D  iChannel0;\n            uniform sampler2D  iChannel1;\n            \n            uniform vec4 hero;\n            \n            #define M_PI 3.141592653589793\n            #define M_PI2 6.283185307179586\n            \n            #define W ' + width + '.\n            #define H ' + height + '.\n            \n            #define ANGLE ' + HALF_VIEWPORT_ANGLE.toFixed(8) + '\n            #define ANGLE_COS ' + Math.cos(HALF_VIEWPORT_ANGLE).toFixed(8) + '\n            \n            float decodeDist(vec4 color) {\n                return color.r*255.*2. + color.g*2.;\n            }         \n            \n            vec4 decodeTexture(vec4 color) {\n                return texture2D(iChannel1, vec2(color.b, 0.));\n            }\n            \n            vec4 getDistanceAndTexture(int i, float angle) {\n                float u = mod(angle/M_PI2, 1.);\n                float v = float(i)/' + _shadows_drawer.MAX_LIGHTS + '.;\n                return texture2D(iChannel0, vec2(u, v));\n            }            \n                \n        \n            void main() {\n                //normalize - 0-1\n                vec2 xy = vec2(gl_FragCoord.x/W, (' + game.camera.height + '. - gl_FragCoord.y)/H);\n                \n                //x -> -1 - 1\n                float relx = 2.*(xy.x - 0.5);\n                //float angle = hero.z + acos(relx*ANGLE_COS);\n                float angle = hero.z + (relx*ANGLE);\n                \n                //y -> -1 - 1\n                float rely = 2.*(xy.y - 0.5);\n                float maybeFloor = step(rely, 0.);\n                \n                vec4 dnt = getDistanceAndTexture(0, angle);\n                float distance = decodeDist(dnt);\n                \n                float z = pow(distance/100., 1.);\n                vec2 wallY = vec2(-1., 1.);\n                wallY /= z;\n                \n                float isInsideWall = step(wallY.x, rely)*step(rely, wallY.y);\n                \n                \n                float isFar = step(1., dnt.b);\n                \n                vec4 color = decodeTexture(dnt);\n                vec4 floorColor = texture2D(iChannel1, vec2(0., 1.));\n                vec4 ceilColor = texture2D(iChannel1, vec2(1., 1.));\n                \n                vec4 defaultColor = mix(floorColor, ceilColor, maybeFloor);\n                \n                vec4 outColor = mix(defaultColor, color, isInsideWall);\n                \n                gl_FragColor = outColor;\n            }\n        \n        \n        \n        ';
+        _this.fragmentSrc = '\n\n            precision highp float;\n            \n            uniform int lightsCount;\n            uniform vec4 lights[' + _shadows_drawer.MAX_LIGHTS + ']; \n            uniform sampler2D  uSampler;\n            uniform sampler2D  iChannel0;\n            uniform sampler2D  iChannel1;\n            \n            uniform vec4 hero;\n            \n            #define M_PI 3.141592653589793\n            #define M_PI2 6.283185307179586\n            \n            #define W ' + width + '.\n            #define H ' + height + '.\n            \n            #define ANGLE ' + HALF_VIEWPORT_ANGLE.toFixed(8) + '\n            #define ANGLE_COS ' + Math.cos(HALF_VIEWPORT_ANGLE).toFixed(8) + '\n            #define STRENGTH 0.3\n            #define TEX_IN_HEIGHT 4.\n            #define TEX_IN_WIDTH 4.\n        \n           \n            ' + (useColor ? "#define USE_COLOR" : "") + '\n            ' + (useLights ? "#define USE_LIGHTS" : "") + '\n            \n            float decodeDist(vec4 color) {\n                return color.r*255.*2. + color.g*2.;\n            }         \n            \n            vec4 decodeTexture(vec4 color, float v) {\n                #ifdef USE_COLOR\n                return texture2D(iChannel1, vec2(color.b, 0.));\n                #else\n                return texture2D(iChannel1, vec2(color.b, v*0.5)); //first row only, and 1 tile in height\n                #endif\n            }\n            \n            vec4 getDistanceAndTexture(int i, float angle) {\n                float u = mod(angle/M_PI2, 1.);\n                float v = float(i)/' + _shadows_drawer.MAX_LIGHTS + '.;\n                return texture2D(iChannel0, vec2(u, v));\n            }            \n                \n                \n            vec2 getNormalizedCoords() {\n                //normalize - 0-1\n                vec2 xy = vec2(gl_FragCoord.x/W, (' + game.camera.height + '. - gl_FragCoord.y)/H);\n                return (xy - 0.5)*2.;\n            }\n            \n            float distance2z(float d) { return d / 100.; }\n            float z2distance(float z) { return z * 100.; }\n            \n            \n            vec2 getWorldXY(float angle, vec2 screenCoords, float distance, float isInsideWall) {\n                float z = screenCoords.y == 0. ? 1000. : 1./abs(screenCoords.y);\n                float actualDistance = mix(z2distance(z), distance-4., isInsideWall);  //-4 for wall width\n                \n                return vec2(cos(angle), sin(angle))*actualDistance + hero.xy;\n                \n            }\n            \n            float applyHeroVisibility(vec2 worldCoords) {\n                float d = length(worldCoords - hero.xy);\n                return mix(0.1, 0.5, pow(clamp(1. - d/400., 0., 1.), 2.));\n            }\n            \n            float getShadow(int i, float angle, float distance) {\n                float u = angle/M_PI2;\n                float v = float(i)/' + _shadows_drawer.MAX_LIGHTS + '.;\n                float shadowAfterDistance = decodeDist(texture2D(iChannel0, vec2(u, v)));\n                return step(shadowAfterDistance, distance);\n            }        \n                     \n            //todo: this is copy-paste from shadows_drawer. here shall be reusing instead\n            float applyLights(float lightness, vec2 worldCoords) {\n                for (int i = 0; i < ' + _shadows_drawer.MAX_LIGHTS + '; i++) {\n                    if (i >= lightsCount) break;\n                    vec4 light = lights[i];\n                    if (light.w == 0.) continue;\n                    vec2 light2point = worldCoords.xy - light.xy;\n                    \n                    float radius = light.z;\n                    float distance = length(light2point);\n                    float inLight = step(distance, radius);\n                    if (inLight == 0.) continue;\n                    float angle = mod(atan(light2point.y, light2point.x), M_PI2);\n                    \n                    float thisLightness = (1. - getShadow(i, angle, distance));\n\n                    thisLightness = thisLightness*smoothstep(0., 1., pow(1.-distance/radius, 0.5));\n                    \n                    lightness += thisLightness*STRENGTH;\n                }\n                return clamp(0., 1., lightness);     \n            }\n            \n            void main() {\n            \n                vec4 floorColor = texture2D(iChannel1, vec2(0., 1.));\n                vec4 ceilColor = texture2D(iChannel1, vec2(1., 1.));\n            \n                //x,y -> -1 - 1\n                vec2 screenCoords = getNormalizedCoords();\n                \n                //float angle = hero.z + acos(screenCoords.x*ANGLE_COS);\n                float angle = hero.z + (screenCoords.x * ANGLE);\n                float maybeFloor = step(screenCoords.y, 0.);\n                \n                vec4 dnt = getDistanceAndTexture(0, angle);\n                float distance = decodeDist(dnt);\n                \n                float z = distance2z(distance);\n                vec2 wallY = vec2(-1., 1.);\n                wallY /= z;\n                \n                float isInsideWall = step(wallY.x, screenCoords.y)*step(screenCoords.y, wallY.y);\n                float v = mod((screenCoords.y - wallY.x)/wallY.y/2. * TEX_IN_HEIGHT, 1.);\n                \n                //vec4 color = vec4(dnt.b, 0, 0, 1);\n                vec4 wallColor = decodeTexture(dnt, v);\n                \n                #ifdef USE_LIGHTS\n                vec2 worldCoords = getWorldXY(angle, screenCoords, distance, isInsideWall);\n                float lightness = applyHeroVisibility(worldCoords);\n                lightness = applyLights(lightness, worldCoords);\n                #else\n                float lightness = 1.;\n                #endif\n                \n                vec4 defaultColor = mix(floorColor, ceilColor, maybeFloor);\n                vec4 outColor = mix(vec4(0., 0., 0., 1.), mix(defaultColor, wallColor, isInsideWall), lightness);\n                \n                gl_FragColor = outColor;\n            }\n        \n        \n        \n        ';
         return _this;
     }
 
@@ -298,7 +298,7 @@ var Pseudo3dShader = function (_Phaser$Filter) {
                     array[i++] = light.x;
                     array[i++] = light.y;
                     array[i++] = light.radius;
-                    i++;
+                    array[i++] = light.activeLight ? 1 : 0;
                 }
             } catch (err) {
                 _didIteratorError = true;
@@ -331,21 +331,22 @@ var Pseudo3dShader = function (_Phaser$Filter) {
 }(Phaser.Filter);
 
 var Pseudo3d = function () {
-    function Pseudo3d(width, height, group) {
+    function Pseudo3d(width, height, group, useColor, useLights) {
         _classCallCheck(this, Pseudo3d);
 
         this.sprite = game.add.sprite(0, 0, undefined, undefined, group);
         this.sprite.width = width;
         this.sprite.height = height;
+        this.useColor = useColor;
+        this.useLights = useLights;
     }
 
     _createClass(Pseudo3d, [{
         key: 'init',
-        value: function init(hero, shadowsDrawer, useColor) {
+        value: function init(hero, shadowsDrawer) {
             this.hero = hero;
             this.shadowsDrawer = shadowsDrawer;
-            this.sprite.filters = [this.shader = new Pseudo3dShader(this.shadowsDrawer, this.sprite.width, this.sprite.height, useColor)];
-            this.useColor = useColor;
+            this.sprite.filters = [this.shader = new Pseudo3dShader(this.shadowsDrawer, this.sprite.width, this.sprite.height, this.useColor, this.useLights)];
         }
     }, {
         key: 'update',
@@ -374,7 +375,7 @@ var Pseudo3d = function () {
     }, {
         key: 'getTextureOffsetTex',
         value: function getTextureOffsetTex(textureNr, width) {
-            return (textureNr * 16 + width % 16) / 128 | 0;
+            return (textureNr * 16 + (width + 16) * 2 % 16) * 2 | 0;
         }
     }]);
 
@@ -492,6 +493,176 @@ exports.default = Bulb;
 
 /***/ }),
 
+/***/ "./gameobjects/Firefly.js":
+/*!********************************!*\
+  !*** ./gameobjects/Firefly.js ***!
+  \********************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _Bitmaps = __webpack_require__(/*! ./Bitmaps */ "./gameobjects/Bitmaps.js");
+
+var _Bitmaps2 = _interopRequireDefault(_Bitmaps);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var SLOWDOWN = 100;
+var RADIUS = 140;
+
+var Firefly = function (_Phaser$Sprite) {
+    _inherits(Firefly, _Phaser$Sprite);
+
+    function Firefly(x, y) {
+        var baseRadius = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : RADIUS;
+        var floating = arguments[3];
+
+        _classCallCheck(this, Firefly);
+
+        var _this = _possibleConstructorReturn(this, (Firefly.__proto__ || Object.getPrototypeOf(Firefly)).call(this, game, x, y, (0, _Bitmaps2.default)("yellow", 8)));
+
+        _this.anchor.set(0.5, 0.5);
+        _this.lightRadius = baseRadius;
+        _this.baseRadius = baseRadius;
+
+        _this.cx = x;
+        _this.cy = y;
+        _this.t = game.rnd.realInRange(0, 10);
+        _this.floating = floating;
+        _this.grabbed = false;
+        return _this;
+    }
+
+    _createClass(Firefly, [{
+        key: "update",
+        value: function update() {
+            if (this.floating && !this.grabbed) {
+                this.t += game.time.physicsElapsedMS / SLOWDOWN;
+                this.x = this.cx + Math.sin(this.t / 4) * 2;
+                this.y = this.cy + Math.cos(this.t) * Math.cos(this.t / 2) * 1;
+                this.lightRadius = this.baseRadius + Math.sin(this.t) * 2;
+            }
+        }
+    }]);
+
+    return Firefly;
+}(Phaser.Sprite);
+
+exports.default = Firefly;
+
+/***/ }),
+
+/***/ "./gameobjects/Flower.js":
+/*!*******************************!*\
+  !*** ./gameobjects/Flower.js ***!
+  \*******************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var Flower = function (_Phaser$Sprite) {
+    _inherits(Flower, _Phaser$Sprite);
+
+    function Flower(x, y) {
+        _classCallCheck(this, Flower);
+
+        var _this = _possibleConstructorReturn(this, (Flower.__proto__ || Object.getPrototypeOf(Flower)).call(this, game, x, y, "env", 4));
+
+        _this.anchor.set(0.5, 0.5);
+        _this.animations.add("grow", [5, 6, 7, 8, 9], 8, false);
+        _this.animations.add("ungrow", [8, 7, 6, 5, 4], 8, false);
+        _this.grown = false;
+        _this.grownAnytime = false;
+        return _this;
+    }
+
+    _createClass(Flower, [{
+        key: "grow",
+        value: function grow() {
+            if (this.grown) return;
+
+            this.animations.play("grow");
+            this.grown = true;
+            this.grownAnytime = true;
+        }
+    }, {
+        key: "ungrow",
+        value: function ungrow() {
+            if (!this.grown) return;
+            this.animations.play("ungrow");
+            this.grown = false;
+        }
+    }, {
+        key: "update",
+        value: function update() {
+            var anyNear = false;
+            var _iteratorNormalCompletion = true;
+            var _didIteratorError = false;
+            var _iteratorError = undefined;
+
+            try {
+                for (var _iterator = game.level.lightsGrp.children[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                    var light = _step.value;
+
+                    if (Phaser.Point.distance(this, light) < light.lightRadius) {
+                        anyNear = true;
+                        break;
+                    }
+                }
+            } catch (err) {
+                _didIteratorError = true;
+                _iteratorError = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion && _iterator.return) {
+                        _iterator.return();
+                    }
+                } finally {
+                    if (_didIteratorError) {
+                        throw _iteratorError;
+                    }
+                }
+            }
+
+            anyNear ? this.grow() : this.ungrow();
+        }
+    }]);
+
+    return Flower;
+}(Phaser.Sprite);
+
+exports.default = Flower;
+
+/***/ }),
+
 /***/ "./gameobjects/Hero.js":
 /*!*****************************!*\
   !*** ./gameobjects/Hero.js ***!
@@ -505,6 +676,8 @@ exports.default = Bulb;
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 var _Bitmaps = __webpack_require__(/*! ./Bitmaps */ "./gameobjects/Bitmaps.js");
 
@@ -521,41 +694,70 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 var Hero = function (_Phaser$Sprite) {
     _inherits(Hero, _Phaser$Sprite);
 
-    function Hero(x, y, pseudo3d) {
+    function Hero(x, y) {
         _classCallCheck(this, Hero);
 
         var _this = _possibleConstructorReturn(this, (Hero.__proto__ || Object.getPrototypeOf(Hero)).call(this, game, x, y, (0, _Bitmaps2.default)("black", 16)));
 
         _this.anchor.set(0.5, 0.5);
-        _this.addChild(game.add.sprite(-4, -4, (0, _Bitmaps2.default)("white", 4)));
-        _this.addChild(game.add.sprite(4, -4, (0, _Bitmaps2.default)("white", 4)));
-        var _iteratorNormalCompletion = true;
-        var _didIteratorError = false;
-        var _iteratorError = undefined;
+        if (game.gameplay) {
+            _this.loadTexture("env", 0);
+            _this.animations.add("walk", [0, 1, 2, 3], 12, true);
+            _this.animations.add("idle", [0], 12, false);
+            _this.walking = false;
+            _this.lightRadius = 50;
+        } else {
+            _this.addChild(game.add.sprite(-4, -4, (0, _Bitmaps2.default)("white", 4)));
+            _this.addChild(game.add.sprite(4, -4, (0, _Bitmaps2.default)("white", 4)));
+            var _iteratorNormalCompletion = true;
+            var _didIteratorError = false;
+            var _iteratorError = undefined;
 
-        try {
-            for (var _iterator = _this.children[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-                var c = _step.value;
-                c.anchor.set(0.5, 0.5);
-            }
-        } catch (err) {
-            _didIteratorError = true;
-            _iteratorError = err;
-        } finally {
             try {
-                if (!_iteratorNormalCompletion && _iterator.return) {
-                    _iterator.return();
+                for (var _iterator = _this.children[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                    var c = _step.value;
+                    c.anchor.set(0.5, 0.5);
                 }
+            } catch (err) {
+                _didIteratorError = true;
+                _iteratorError = err;
             } finally {
-                if (_didIteratorError) {
-                    throw _iteratorError;
+                try {
+                    if (!_iteratorNormalCompletion && _iterator.return) {
+                        _iterator.return();
+                    }
+                } finally {
+                    if (_didIteratorError) {
+                        throw _iteratorError;
+                    }
+                }
+            }
+
+            _this.lightRadius = 200;
+        }
+
+        _this.colliderRadius = 16;
+        _this.colliderRadius2 = _this.colliderRadius * _this.colliderRadius;
+
+        _this.hasFirefly = 0;
+        return _this;
+    }
+
+    _createClass(Hero, [{
+        key: "onWalk",
+        value: function onWalk(speed) {
+            if (game.gameplay) {
+                if (speed !== 0 && !this.walking) {
+                    this.walking = true;
+                    this.animations.play("walk");
+                }
+                if (speed === 0 && this.walking) {
+                    this.walking = false;
+                    this.animations.play("idle");
                 }
             }
         }
-
-        _this.lightRadius = pseudo3d ? game.world.width / 2 : 200;
-        return _this;
-    }
+    }]);
 
     return Hero;
 }(Phaser.Sprite);
@@ -644,7 +846,7 @@ var Camera = function () {
         this.x = sprite.x;
         this.y = sprite.y;
 
-        this.radius = game.world.width / 2;
+        this.radius = game.world.width;
         this.activeLight = false;
 
         this.pseudo3d = pseudo3d;
@@ -666,8 +868,8 @@ var Camera = function () {
         value: function fillDistancesForArc(ai1, ai2, normalFromLight, getU) {
             var _this = this;
 
-            this.distancesMap.fillDistancesForArc(ai1, ai2, normalFromLight, function (index, angleFromNormal) {
-                _this.distancesMap.setTextureOffset(index, getU(_this, normalFromLight, angleFromNormal));
+            this.distancesMap.fillDistancesForArc(ai1, ai2, normalFromLight, function (index, minusNormalWidth, angle, normalAngle) {
+                _this.distancesMap.setTextureOffset(index, getU(_this, normalFromLight, minusNormalWidth, angle, normalAngle));
             });
         }
     }]);
@@ -876,7 +1078,7 @@ var HypTable = function () {
                 ai = ai1 + dai;
                 if (onSetCallback) {
                     onDistanceSetCallback = function onDistanceSetCallback(index) {
-                        return onSetCallback(index, D * Math.tan(ai * _this.stepAngle - normalAngle));
+                        return onSetCallback(index, D * Math.tan(ai * _this.stepAngle - normalAngle), ai * _this.stepAngle, normalAngle);
                     };
                 }
                 distancesMap.set(ai, D * this.perAngleStep[Math.abs(distancesMap.minus(ai, normalAngleI))], onDistanceSetCallback);
@@ -964,6 +1166,8 @@ var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = [
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
+var _math = __webpack_require__(/*! ../../math */ "./math.js");
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var LineShadowCaster = function () {
@@ -1027,20 +1231,23 @@ var LineShadowCaster = function () {
         }
     }, {
         key: "getUFromStart",
-        value: function getUFromStart(point, normalFromLight, angle) {
-            return this.getTextureOffsetFromWidth(this.getWidthFromStart(point, normalFromLight, angle));
+        value: function getUFromStart(point, normalFromLight, minusNormalWidth, angle, normalAngle) {
+            return this.getTextureOffsetFromWidth(this.getWidthFromStart(point, normalFromLight, minusNormalWidth, angle, normalAngle));
         }
     }, {
         key: "getWidthFromStart",
-        value: function getWidthFromStart(point, normalFromLight, angle) {
-            this._tmpPoint.set(normalFromLight.x, normalFromLight.y);
-            this._tmpPoint.rotate(0, 0, angle, false);
-            this._tmpPoint.add(point.x, point.y);
+        value: function getWidthFromStart(point, normalFromLight, minusNormalWidth, angle, normalAngle) {
 
-            //tmpPoint = point on line
+            this._tmpPoint.set(point.x, point.y);
+            this._tmpPoint.add(normalFromLight.x, normalFromLight.y);
+            //this._tmpPoint.rotate(0, 0, angle - normalAngle, false);
             this._tmpPoint.subtract(this.line.start.x, this.line.start.y);
+            var w1 = this._tmpPoint.getMagnitude();
+            var w2 = this.line.length - w1;
 
-            return this._tmpPoint.getMagnitude();
+            var width = Math.max(w1 - minusNormalWidth, w2 - minusNormalWidth);
+
+            return width;
         }
     }]);
 
@@ -1092,17 +1299,17 @@ function intersectWithCircle(line, x, y, radius, tmpLine) {
     tmpLine.end.set(x2, y2);
 
     var outside = true;
-    if (pointOnSegment(tmpLine, line.start.x, line.start.y)) {
+    if ((0, _math.pointOnSegment)(tmpLine, line.start.x, line.start.y)) {
         x1 = line.start.x;
         y1 = line.start.y;
         outside = false;
     }
-    if (pointOnSegment(tmpLine, line.end.x, line.end.y)) {
+    if ((0, _math.pointOnSegment)(tmpLine, line.end.x, line.end.y)) {
         x2 = line.end.x;
         y2 = line.end.y;
         outside = false;
     }
-    if (pointOnSegment(line, x1, y1) || pointOnSegment(line, x2, y2)) {
+    if ((0, _math.pointOnSegment)(line, x1, y1) || (0, _math.pointOnSegment)(line, x2, y2)) {
         outside = false;
     }
     /*if (!window.d) {
@@ -1112,22 +1319,9 @@ function intersectWithCircle(line, x, y, radius, tmpLine) {
         console.log(x1, y1, x2, y2);
         console.log(distanceFromLightToLine);
     }*/
-
     if (outside) return null;
 
     return { x1: x1, y1: y1, x2: x2, y2: y2, distanceFromLightToLine: distanceFromLightToLine };
-}
-
-//Phaser's pointOnSegment does not use epsilon for range checks
-function pointOnSegment(line, x, y) {
-    var epsilon = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0.01;
-
-    var xMin = Math.min(line.start.x, line.end.x);
-    var xMax = Math.max(line.start.x, line.end.x);
-    var yMin = Math.min(line.start.y, line.end.y);
-    var yMax = Math.max(line.start.y, line.end.y);
-
-    return line.pointOnLine(x, y, epsilon) && x >= xMin - epsilon && x <= xMax + epsilon && y >= yMin - epsilon && y <= yMax + epsilon;
 }
 
 /***/ }),
@@ -1263,7 +1457,7 @@ var ShadowsShader = function (_Phaser$Filter3) {
 
         _this2.uniforms.iChannel0.value = sprite.texture;
 
-        _this2.fragmentSrc = "\n            precision highp float;\n            \n            uniform int lightsCount;\n            uniform vec4 lights[" + MAX_LIGHTS + "]; \n            uniform sampler2D  uSampler;\n            uniform sampler2D  iChannel0;\n            \n            #define STRENGTH 0.3\n            #define M_PI 3.141592653589793\n            #define M_PI2 6.283185307179586\n            \n            " + (lightDecay ? "#define DECAY" : "") + "\n            " + (smoothShadow ? "#define SMOOTH" : "") + "\n            \n            #define SMOOTH_STEP 0.02\n            \n            float decodeDist(vec4 color) {\n                return color.r*255.*2. + color.g*2.;\n            }            \n            \n            float getShadow(int i, float angle, float distance) {\n                float u = angle/M_PI2;\n                float v = float(i)/" + MAX_LIGHTS + ".;\n                float shadowAfterDistance = decodeDist(texture2D(iChannel0, vec2(u, v)));\n                return step(shadowAfterDistance, distance);\n            }            \n        \n        \n            void main() {\n                float lightness = 0.;\n                for (int i = 0; i < " + MAX_LIGHTS + "; i++) {\n                    if (i >= lightsCount) break;\n                    vec4 light = lights[i];\n                    if (light.w == 0.) continue;\n                    vec2 light2point = gl_FragCoord.xy - light.xy;\n                    \n                    float radius = light.z;\n                    float distance = length(light2point);\n                    float inLight = step(distance, radius);\n                    if (inLight == 0.) continue;\n                    float angle = mod(-atan(light2point.y, light2point.x), M_PI2);\n                    \n                    float thisLightness = (1. - getShadow(i, angle, distance));\n\n                    #ifdef SMOOTH\n                    thisLightness = thisLightness * 0.4 \n                        + (1. - getShadow(i, angle-SMOOTH_STEP, distance)) * 0.2   \n                        + (1. - getShadow(i, angle+SMOOTH_STEP, distance)) * 0.2\n                        + (1. - getShadow(i, angle-SMOOTH_STEP*2., distance)) * 0.1   \n                        + (1. - getShadow(i, angle+SMOOTH_STEP*2., distance)) * 0.1;\n                       \n                    #endif\n                    \n                    #ifdef DECAY\n                    thisLightness = thisLightness*smoothstep(0., 1., pow(1.-distance/radius, 0.5));\n                    #endif\n                    \n                    lightness += thisLightness*STRENGTH;\n                }\n                lightness = clamp(0., 1., lightness);\n            \n                gl_FragColor = mix(vec4(0,0,0,0.7), vec4(0,0,0,0), lightness);\n            }\n        \n        ";
+        _this2.fragmentSrc = "\n            precision highp float;\n            \n            uniform int lightsCount;\n            uniform vec4 lights[" + MAX_LIGHTS + "]; \n            uniform sampler2D  uSampler;\n            uniform sampler2D  iChannel0;\n            \n            #define STRENGTH " + (game.gameplay ? "0.2" : "0.3") + "\n            #define MAX_DARK " + (game.gameplay ? "0.9" : "0.7") + "\n\n            #define M_PI 3.141592653589793\n            #define M_PI2 6.283185307179586\n            \n            " + (lightDecay ? "#define DECAY" : "") + "\n            " + (smoothShadow ? "#define SMOOTH" : "") + "\n            \n            #define SMOOTH_STEP 0.02\n            \n            float decodeDist(vec4 color) {\n                return color.r*255.*2. + color.g*2.;\n            }            \n            \n            float getShadow(int i, float angle, float distance) {\n                float u = angle/M_PI2;\n                float v = float(i)/" + MAX_LIGHTS + ".;\n                float shadowAfterDistance = decodeDist(texture2D(iChannel0, vec2(u, v)));\n                return step(shadowAfterDistance, distance);\n            }            \n        \n        \n            void main() {\n                float lightness = 0.;\n                for (int i = 0; i < " + MAX_LIGHTS + "; i++) {\n                    if (i >= lightsCount) break;\n                    vec4 light = lights[i];\n                    if (light.w == 0.) continue;\n                    vec2 light2point = gl_FragCoord.xy - light.xy;\n                    \n                    float radius = light.z;\n                    float distance = length(light2point);\n                    float inLight = step(distance, radius);\n                    if (inLight == 0.) continue;\n                    float angle = mod(-atan(light2point.y, light2point.x), M_PI2);\n                    \n                    float thisLightness = (1. - getShadow(i, angle, distance));\n\n                    #ifdef SMOOTH\n                    thisLightness = thisLightness * 0.4 \n                        + (1. - getShadow(i, angle-SMOOTH_STEP, distance)) * 0.2   \n                        + (1. - getShadow(i, angle+SMOOTH_STEP, distance)) * 0.2\n                        + (1. - getShadow(i, angle-SMOOTH_STEP*2., distance)) * 0.1   \n                        + (1. - getShadow(i, angle+SMOOTH_STEP*2., distance)) * 0.1;\n                       \n                    #endif\n                    \n                    #ifdef DECAY\n                    thisLightness = thisLightness*smoothstep(0., 1., pow(1.-distance/radius, 0.5));\n                    #endif\n                    \n                    lightness += thisLightness*STRENGTH;\n                }\n                lightness = clamp(0., 1., lightness);\n            \n                gl_FragColor = mix(vec4(0,0,0,MAX_DARK), vec4(0,0,0,0), lightness);\n            }\n        \n        ";
         return _this2;
     }
 
@@ -1352,6 +1546,12 @@ var ShadowsDrawer = function () {
         value: function showRaycastDebug() {
             this.distancesBitmap.sprite.x = this.distancesBitmap.sprite.y = 0;
             this.distancesBitmap.sprite.scale.y = 8;
+            if (this.steps < 256) {
+                this.distancesBitmap.sprite.scale.x = 4;
+            }
+            if (this.steps < 128) {
+                this.distancesBitmap.sprite.scale.x = 8;
+            }
         }
     }, {
         key: "addCamera",
@@ -1457,26 +1657,43 @@ var _render_pseudo_3d = __webpack_require__(/*! ./3d/render_pseudo_3d */ "./3d/r
 
 var _render_pseudo_3d2 = _interopRequireDefault(_render_pseudo_3d);
 
+var _math = __webpack_require__(/*! ./math */ "./math.js");
+
+var _Flower = __webpack_require__(/*! ./gameobjects/Flower */ "./gameobjects/Flower.js");
+
+var _Flower2 = _interopRequireDefault(_Flower);
+
+var _Firefly = __webpack_require__(/*! ./gameobjects/Firefly */ "./gameobjects/Firefly.js");
+
+var _Firefly2 = _interopRequireDefault(_Firefly);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var FLOOR_FRAME_NR = 8;
 var CEIL_FRAME_NR = 16;
+var PAD = 32;
+
+var fpsEl = document.querySelector("#fps");
 
 var options = window.initOptions({
     showSegmentsDebug: ["boolean", false],
     showRaycastDebug: ["boolean", false],
     showRaycastShaderDebug: ["boolean", false],
-    steps: ["int", 512],
+    collideWalls: ["boolean", false],
 
+    steps: ["int", 512],
     mode: ["select", _shadows_drawer.MODE_SHADOWS, [_shadows_drawer.MODE_SIMPLE, _shadows_drawer.MODE_SHADOWS]],
     lightDecay: ["boolean", true],
     smoothShadow: ["boolean", true],
-
     randomLightsOnStart: ["int", 1],
     floatingBulbs: ["boolean", true],
+    bulbRadius: ["int", 140],
 
-    pseudo3d: ["boolean", true],
-    pseudo3dTexture: ["boolean", false],
+    pseudo3d: ["boolean", false],
+    pseudo3dTexture: ["boolean", true],
+    pseudo3dLights: ["boolean", true],
+
+    gameplay: ["boolean", false],
 
     hidden: ["boolean", false]
 });
@@ -1487,8 +1704,12 @@ var Main = {
     },
     preload: function preload() {
         game.load.tilemap("Walls", "Walls.json", undefined, Phaser.Tilemap.TILED_JSON);
+        game.load.tilemap("Level1", "Level1.json", undefined, Phaser.Tilemap.TILED_JSON);
         game.load.spritesheet("colors", "colors.png", 4, 1);
+        game.load.spritesheet("env", "env.png", 32, 32);
         game.load.spritesheet("walls", "walls.png", 16, 16);
+
+        game.gameplay = options.gameplay;
     },
     create: function create() {
         this.floorGrp = game.add.group(undefined, "floor");
@@ -1497,6 +1718,7 @@ var Main = {
         floor.height = game.world.height;
 
         this.objGrp = game.add.group(undefined, "objects");
+        this.flowersGrp = game.add.group(undefined, "flowers");
         this.shadowsGrp = game.add.group(undefined, "shadows");
         this.lightsGrp = game.add.group(undefined, "lights");
         this.heroGrp = game.add.group(undefined, "hero");
@@ -1505,6 +1727,9 @@ var Main = {
         this.shadows = new _shadows_drawer2.default(this.shadowsGrp, options.steps);
         if (options.showRaycastShaderDebug) {
             this.shadows.showRaycastDebug();
+        }
+        if (options.pseudo3d) {
+            this.pseudo3d = new _render_pseudo_3d2.default(640, 480, this.overallGrp, !options.pseudo3dTexture, options.pseudo3dLights);
         }
         this.addWalls();
         this.addHero();
@@ -1515,12 +1740,14 @@ var Main = {
         this.shadows.init(options.mode, options);
 
         if (options.pseudo3d) {
-            this.pseudo3d = new _render_pseudo_3d2.default(320, 160, this.overallGrp);
-            this.pseudo3d.init(this.hero, this.shadows, !options.pseudo3dTexture);
+            this.pseudo3d.init(this.hero, this.shadows);
         }
+
+        this.fireflyTimeout = 0;
+        this.lastFlowersCount = 0;
     },
     addWalls: function addWalls() {
-        var tilemap = game.add.tilemap("Walls");
+        var tilemap = game.add.tilemap(options.gameplay ? "Level1" : "Walls");
         var _iteratorNormalCompletion = true;
         var _didIteratorError = false;
         var _iteratorError = undefined;
@@ -1539,7 +1766,7 @@ var Main = {
                 for (var i = 0; i < polyline.length - 1; i++) {
                     var wall = new _Wall2.default(x + polyline[i][0], y + polyline[i][1], x + polyline[i + 1][0], y + polyline[i + 1][1], textureNr);
                     this.objGrp.add(wall);
-                    var textureGetter = this.pseudo3d ? this.pseudo3d.createTextureOffsetGetter(textureNr) : undefined;
+                    var textureGetter = this.pseudo3d ? this.pseudo3d.createTextureOffsetGetter(textureNr || 0) : undefined;
                     this.shadows.addLineShadowCaster(wall.line, textureGetter);
                 }
             }
@@ -1560,72 +1787,61 @@ var Main = {
     },
     addLights: function addLights() {
         game.rnd.sow([1]);
-        var PAD = 32;
         for (var i = 0; i < options.randomLightsOnStart; i++) {
             var x = game.rnd.integerInRange(PAD, game.world.width - PAD * 2);
             var y = game.rnd.integerInRange(PAD, game.world.height - PAD * 2);
             this.addLight(x, y);
         }
+        game.rnd.sow([2]);
     },
     addLight: function addLight(x, y) {
-        var bulb = new _Bulb2.default(x, y, undefined, options.floatingBulbs);
+        var bulb = game.gameplay ? new _Firefly2.default(x, y, undefined, true) : new _Bulb2.default(x, y, options.bulbRadius, options.floatingBulbs);
         this.lightsGrp.add(bulb);
         this.shadows.addLight(bulb);
     },
     addHero: function addHero() {
         this.heroGrp.add(this.hero = new _Hero2.default(game.world.width / 2, game.world.height / 2, options.pseudo3d));
         this.cursors = game.input.keyboard.createCursorKeys();
+        this.keys = {
+            space: game.input.keyboard.addKey(Phaser.KeyCode.SPACEBAR),
+            z: game.input.keyboard.addKey(Phaser.KeyCode.Z)
+        };
         if (options.pseudo3d) {
             this.shadows.addCamera(this.hero);
         } else {
             this.shadows.addLight(this.hero);
         }
     },
-    update: function update() {
-        this.shadows.update();
-        if (this.pseudo3d) this.pseudo3d.update();
-        if (game.input.activePointer.leftButton.isDown) {
-            if (!this.isMouseDown) {
-                this.isMouseDown = true;
-                this.addLight(game.input.activePointer.worldX, game.input.activePointer.worldY);
-            }
-        } else {
-            this.isMouseDown = false;
-        }
+    moveByIfCan: function moveByIfCan(hero, speed) {
+        var forceVector = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : undefined;
 
-        var rotspeed = 1;
-        if (this.cursors.up.isDown) {
-            var speed = 4;
-            this.hero.x += speed * Math.cos(this.hero.rotation - Math.PI / 2);
-            this.hero.y += speed * Math.sin(this.hero.rotation - Math.PI / 2);
+        var dx = forceVector === undefined ? Math.cos(this.hero.rotation - Math.PI / 2) : forceVector.x;
+        var dy = forceVector === undefined ? Math.sin(this.hero.rotation - Math.PI / 2) : forceVector.y;
+        var newx = this.hero.x + speed * dx;
+        var newy = this.hero.y + speed * dy;
 
-            this.hero.x = Math.min(this.hero.x, game.world.width - this.hero.width);
-            this.hero.x = Math.max(this.hero.x, this.hero.width);
-            this.hero.y = Math.min(this.hero.y, game.world.height - this.hero.height);
-            this.hero.y = Math.max(this.hero.y, this.hero.height);
-        } else {
-            rotspeed = 2;
-        }
-        if (this.cursors.left.isDown) {
-            this.hero.rotation -= 0.02 * rotspeed;
-        }
-        if (this.cursors.right.isDown) {
-            this.hero.rotation += 0.02 * rotspeed;
-        }
-    },
-    render: function render() {
-        game.debug.text('FPS: ' + (game.time.fps || '--'), 4, 24);
-        if (options.showSegmentsDebug) {
+        if (options.collideWalls) {
             var _iteratorNormalCompletion2 = true;
             var _didIteratorError2 = false;
             var _iteratorError2 = undefined;
 
             try {
-                for (var _iterator2 = this.shadows.shadowCasters[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-                    var sc = _step2.value;
+                for (var _iterator2 = this.objGrp.children[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+                    var wall = _step2.value;
 
-                    if (sc._intersectionPoints.length === 0) continue;
-                    game.debug.geom(new Phaser.Line(sc._intersectionPoints[0].x, sc._intersectionPoints[0].y, sc._intersectionPoints[1].x, sc._intersectionPoints[1].y), "red");
+                    if ((0, _math.intersectsLineWithCircle)(wall.line, newx, newy, this.hero.colliderRadius, this.hero.colliderRadius2)) {
+                        if (forceVector === undefined) {
+                            var p = new Phaser.Point(wall.line.end.x, wall.line.end.y);
+                            p.subtract(wall.line.start.x, wall.line.start.y);
+                            p.normalRightHand();
+                            if (p.dot({ x: wall.line.start.x - this.hero.x, y: wall.line.start.y - this.hero.y }) > 0) {
+                                p.multiply(-1, -1);
+                            }
+                            p.add(dx, dy).normalize();
+                            return this.moveByIfCan(hero, speed, p);
+                        }
+                        return;
+                    }
                 }
             } catch (err) {
                 _didIteratorError2 = true;
@@ -1641,19 +1857,106 @@ var Main = {
                     }
                 }
             }
+
+            this.hero.x = newx;
+            this.hero.y = newy;
+        } else {
+            newx = Math.min(newx, game.world.width - this.hero.width);
+            this.hero.x = Math.max(newx, this.hero.width);
+            newy = Math.min(newy, game.world.height - this.hero.height);
+            this.hero.y = Math.max(newy, this.hero.height);
         }
-        if (options.showRaycastDebug) {
+    },
+    update: function update() {
+        this.shadows.update();
+        if (this.pseudo3d) this.pseudo3d.update();
+        if (game.input.activePointer.leftButton.isDown && !game.gameplay) {
+            if (!this.isMouseDown) {
+                this.isMouseDown = true;
+                this.addLight(game.input.activePointer.worldX, game.input.activePointer.worldY);
+            }
+        } else {
+            this.isMouseDown = false;
+        }
+        if (this.keys.space.justDown && !game.gameplay) {
+            this.addLight(this.hero.x, this.hero.y);
+        }
+
+        var rotspeed = 2;
+        if (this.cursors.up.isDown || this.cursors.down.isDown) {
+            var speed = this.cursors.up.isDown ? 4 : -4;
+            this.moveByIfCan(this.hero, speed);
+            this.hero.onWalk(speed);
+        } else {
+            rotspeed = 4;
+            this.hero.onWalk(0);
+        }
+        if (this.cursors.left.isDown) {
+            this.hero.rotation -= 0.02 * rotspeed;
+        }
+        if (this.cursors.right.isDown) {
+            this.hero.rotation += 0.02 * rotspeed;
+        }
+
+        if (game.gameplay) {
+            this.updateGameplay();
+        }
+    },
+    updateGameplay: function updateGameplay() {
+        if (this.keys.z.justDown) {
+            var p = new Phaser.Point(0, 16);
+            p.rotate(0, 0, this.hero.rotation, false);
+            p.add(this.hero.x, this.hero.y);
+
+            this.flowersGrp.add(new _Flower2.default(p.x, p.y));
+        }
+
+        if (this.keys.space.justDown) {
+            if (this.hero.grabbedFirefly) {
+                var ff = this.hero.grabbedFirefly;
+                ff.grabbed = false;
+                this.hero.grabbedFirefly = undefined;
+            } else {
+                var _ff = this.lightsGrp.getClosestTo(this.hero);
+                if (_ff && Phaser.Point.distance(_ff, this.hero) < 32) {
+                    this.hero.grabbedFirefly = _ff;
+                    _ff.grabbed = true;
+                }
+            }
+        }
+
+        if (this.hero.grabbedFirefly) {
+            this.hero.grabbedFirefly.cx = this.hero.grabbedFirefly.x = this.hero.x + 16 * Math.cos(this.hero.rotation - Math.PI / 2);
+            this.hero.grabbedFirefly.cy = this.hero.grabbedFirefly.y = this.hero.y + 16 * Math.sin(this.hero.rotation - Math.PI / 2);
+        }
+
+        var grownFlowersCount = this.flowersGrp.children.filter(function (f) {
+            return f.grownAnytime;
+        }).length;
+        if (grownFlowersCount > this.lastFlowersCount) {
+            this.lastFlowersCount = grownFlowersCount;
+            if (this.fireflyTimeout < 0) {
+                var x = game.rnd.integerInRange(PAD, game.world.width - PAD * 2);
+                var y = game.rnd.integerInRange(PAD, game.world.height - PAD * 6);
+                this.addLight(x, y);
+                this.fireflyTimeout = 4000;
+            }
+        }
+        this.fireflyTimeout -= game.time.physicsElapsedMS;
+    },
+    render: function render() {
+        fpsEl.innerText = game.time.fps || '--';
+        if (options.showSegmentsDebug) {
             var _iteratorNormalCompletion3 = true;
             var _didIteratorError3 = false;
             var _iteratorError3 = undefined;
 
             try {
-                for (var _iterator3 = this.shadows.lightSources[0].distancesMap.getAngles()[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-                    var _ref2 = _step3.value;
-                    var angle = _ref2.angle,
-                        distance = _ref2.distance;
+                for (var _iterator3 = this.shadows.shadowCasters[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+                    var sc = _step3.value;
 
-                    game.debug.geom(new Phaser.Line(this.hero.x, this.hero.y, this.hero.x + Math.cos(angle) * distance, this.hero.y + Math.sin(angle) * distance), "rgba(0,255,0,0.1)");
+                    if (sc._intersectionPoints.length === 0) continue;
+                    game.debug.geom(new Phaser.Line(sc._intersectionPoints[0].x, sc._intersectionPoints[0].y, sc._intersectionPoints[1].x, sc._intersectionPoints[1].y), "white");
                 }
             } catch (err) {
                 _didIteratorError3 = true;
@@ -1670,10 +1973,91 @@ var Main = {
                 }
             }
         }
+        if (options.showRaycastDebug) {
+            var _iteratorNormalCompletion4 = true;
+            var _didIteratorError4 = false;
+            var _iteratorError4 = undefined;
+
+            try {
+                for (var _iterator4 = this.shadows.lightSources[0].distancesMap.getAngles()[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+                    var _ref2 = _step4.value;
+                    var angle = _ref2.angle,
+                        distance = _ref2.distance;
+
+                    game.debug.geom(new Phaser.Line(this.hero.x, this.hero.y, this.hero.x + Math.cos(angle) * distance, this.hero.y + Math.sin(angle) * distance), "rgba(0,0,255,0.4)");
+                }
+            } catch (err) {
+                _didIteratorError4 = true;
+                _iteratorError4 = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion4 && _iterator4.return) {
+                        _iterator4.return();
+                    }
+                } finally {
+                    if (_didIteratorError4) {
+                        throw _iteratorError4;
+                    }
+                }
+            }
+        }
     }
 };
 
 window.Main = Main;
+
+/***/ }),
+
+/***/ "./math.js":
+/*!*****************!*\
+  !*** ./math.js ***!
+  \*****************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.intersectsLineWithCircle = intersectsLineWithCircle;
+exports.pointOnSegment = pointOnSegment;
+function intersectsLineWithCircle(line, x, y, radius) {
+    var radius2 = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : radius * radius;
+
+    var dx = line.end.x - line.start.x;
+    var dy = line.end.y - line.start.y;
+    var dr2 = dx * dx + dy * dy;
+    var D = (line.start.x - x) * (line.end.y - y) - (line.end.x - x) * (line.start.y - y);
+
+    var sgndy = dy < 0 ? -1 : 1;
+
+    var discr = radius2 * dr2 - D * D;
+    if (discr <= 0) {
+        return false;
+    }
+    var sqrtDiscr = Math.sqrt(discr);
+
+    var x1 = x + (D * dy + sgndy * dx * sqrtDiscr) / dr2;
+    var y1 = y + (-D * dx + Math.abs(dy) * sqrtDiscr) / dr2;
+    var x2 = x + (D * dy - sgndy * dx * sqrtDiscr) / dr2;
+    var y2 = y + (-D * dx - Math.abs(dy) * sqrtDiscr) / dr2;
+
+    return pointOnSegment(line, x1, y1) || pointOnSegment(line, x2, y2);
+}
+
+//Phaser's pointOnSegment does not use epsilon for range checks
+function pointOnSegment(line, x, y) {
+    var epsilon = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0.01;
+
+    var xMin = Math.min(line.start.x, line.end.x);
+    var xMax = Math.max(line.start.x, line.end.x);
+    var yMin = Math.min(line.start.y, line.end.y);
+    var yMax = Math.max(line.start.y, line.end.y);
+
+    return line.pointOnLine(x, y, epsilon) && x >= xMin - epsilon && x <= xMax + epsilon && y >= yMin - epsilon && y <= yMax + epsilon;
+}
 
 /***/ })
 
