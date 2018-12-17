@@ -1870,7 +1870,7 @@ var Main = {
     update: function update() {
         this.shadows.update();
         if (this.pseudo3d) this.pseudo3d.update();
-        if (game.input.activePointer.leftButton.isDown && !game.gameplay) {
+        if (!game.gameplay && game.input.activePointer.leftButton.isDown) {
             if (!this.isMouseDown) {
                 this.isMouseDown = true;
                 this.addLight(game.input.activePointer.worldX, game.input.activePointer.worldY);
@@ -1878,7 +1878,7 @@ var Main = {
         } else {
             this.isMouseDown = false;
         }
-        if (this.keys.space.justDown && !game.gameplay) {
+        if (!game.gameplay && this.keys.space.justDown) {
             this.addLight(this.hero.x, this.hero.y);
         }
 
