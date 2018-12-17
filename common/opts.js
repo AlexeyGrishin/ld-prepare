@@ -64,7 +64,7 @@ function initOptions(config) {
         }
     }
 
-    prepareUI();
+    if (!parsedConfig.hidden) prepareUI();
 
 
     return parsedConfig;
@@ -82,7 +82,7 @@ function initOptions(config) {
     function composeLocation() {
         var pairs = [];
         for (var key in parsedConfig) {
-            if (parsedConfig.hasOwnProperty(key)) {
+            if (parsedConfig.hasOwnProperty(key) && parsedConfig[key] !== config[key][1]) {
                 pairs.push(encodeURIComponent(key) + "=" + encodeURIComponent(parsedConfig[key].toString()));
             }
         }
@@ -110,6 +110,9 @@ function initOptions(config) {
                 label.style.display = "block";
                 var span = document.createElement("span");
                 span.style.marginRight = "10px";
+                if (key === "hidden") {
+                    span.style.color = "#554444";
+                }
                 span.innerHTML = key;
                 var input = controls[config[key][0]](key);
                 input.style.maxWidth = "100px";
@@ -124,4 +127,4 @@ function initOptions(config) {
 }
 
 
-
+window.initOptions = initOptions;
