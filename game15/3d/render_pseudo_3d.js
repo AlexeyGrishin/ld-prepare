@@ -92,9 +92,9 @@ class Pseudo3dShader extends Phaser.Filter {
             float z2distance(float z) { return z * 100.; }
             
             
-            vec2 getWorldXY(float angle, vec2 screenCoords, float distance, float isInsideWall) {
+            vec2 getWorldXY(float angle, vec2 screenCoords, float distance, float isInsideWall, float k) {
                 float z = screenCoords.y == 0. ? 1000. : 1./abs(screenCoords.y);
-                float actualDistance = mix(z2distance(z), distance-4., isInsideWall);  //-4 for wall width
+                float actualDistance = mix(z2distance(z)*k, distance-4., isInsideWall);  //-4 for wall width
                 
                 return vec2(cos(angle), sin(angle))*actualDistance + hero.xy;
                 
@@ -144,11 +144,14 @@ class Pseudo3dShader extends Phaser.Filter {
                 vec2 screenCoords = getNormalizedCoords();
                 
                 //float angle = hero.z + acos(screenCoords.x*ANGLE_COS);
-                float angle = hero.z + (screenCoords.x * ANGLE);
+                float relAngle = (screenCoords.x * ANGLE);
+                float angle = hero.z + relAngle;
                 float maybeFloor = step(screenCoords.y, 0.);
                 
+                float k = (cos(relAngle));
+                
                 vec4 dnt = getDistanceAndTexture(0, angle);
-                float distance = decodeDist(dnt);
+                float distance = decodeDist(dnt)*k;
                 
                 float z = distance2z(distance);
                 vec2 wallY = vec2(-1., 1.);
@@ -161,7 +164,7 @@ class Pseudo3dShader extends Phaser.Filter {
                 vec4 wallColor = decodeTexture(dnt, v);
                 
                 #ifdef USE_LIGHTS
-                vec2 worldCoords = getWorldXY(angle, screenCoords, distance, isInsideWall);
+                vec2 worldCoords = getWorldXY(angle, screenCoords, distance, isInsideWall, k);
                 float lightness = applyHeroVisibility(worldCoords);
                 lightness = applyLights(lightness, worldCoords);
                 #else
@@ -234,6 +237,7 @@ export default class Pseudo3d {
     }
 
     getTextureOffsetTex(textureNr, width) {
+        while (width < 0) width += 16;
         return ((textureNr*16+((width+16)*2)%16)*2)|0;
     }
 
