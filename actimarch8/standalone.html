@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test</title>
+    <script src="./standalone.js"></script>
+
+    <style>
+        main {
+            width: 80%;
+        }
+        .top {
+            background-color: darkblue;
+            height: 50px;
+        }
+
+        .main {
+            width: 100%;
+        }
+
+        .main > div {
+            display: inline-block;
+        }
+
+        .name {
+            /*width: 44%;*/
+        }
+
+        div[data-for] {
+            width: 83px;
+            height: 20px;
+
+        }
+
+        .inside {
+            float: right;
+            width: 800px;
+            text-align: right;
+        }
+        .inside > div {
+            display: inline-block;
+            margin: 0px;
+            padding: 0;
+        }
+        .offset {
+            padding-top: 100px;
+        }
+        .remove {
+            width: 55px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="offset"></div>
+<div>
+    <button id="prev"> << </button> <span id="date"></span> <button id="next"> >> </button>
+    <label> Time: <input type="time" id="time" value="15:00"/>  <select id="time-speed"><option value="custom" selected>Custom</option><option value="real">Real</option><option value="real600">Real*600</option></select> </label>
+</div>
+<main>
+    <div class="top"></div>
+
+    <div class="main">
+        <div class="name">Grow</div>
+        <div class="inside">
+            <div data-for="total-2020-01-01"><span data-id="0"></span><button data-id="0">+1</button></div><div data-for="total-2020-01-02"><span data-id="1"></span><button data-id="1">+1</button></div><div data-for="total-2020-01-03"><span data-id="2"></span><button data-id="2">+1</button></div><div data-for="total-2020-01-04" ><span data-id="3"></span><button data-id="3">+1</button></div><div data-for="total-2020-01-05" ><span data-id="4"></span><button data-id="4">+1</button></div><div data-for="total-2020-01-06" > </div><div data-for="total-2020-01-07" > </div><div class="remove">X</div>
+            </div>
+    </div>
+
+</main>
+</body>
+</html>
